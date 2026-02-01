@@ -2,6 +2,12 @@
 
 Automate iOS Simulator workflows: create/boot devices, install/launch apps, screenshots, and UI tapping via accessibility.
 
+## Quick install
+
+```bash
+npx skills add https://github.com/tristanmanchester/agent-skills --skill ios-simulator
+```
+
 ## Requirements
 
 - macOS with Xcode Command Line Tools (xcrun)
@@ -10,7 +16,7 @@ Automate iOS Simulator workflows: create/boot devices, install/launch apps, scre
 ## Install
 
 ```bash
-npx skills add https://github.com/<owner>/<repo> --skill ios-simulator
+npx skills add https://github.com/tristanmanchester/agent-skills --skill ios-simulator
 ```
 
 ## Usage

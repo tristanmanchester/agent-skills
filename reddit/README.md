@@ -2,6 +2,12 @@
 
 Browse and search Reddit in read-only mode using public JSON endpoints. Use this skill to find posts, search topics, and pull comment threads without posting or voting.
 
+## Quick install
+
+```bash
+npx skills add https://github.com/tristanmanchester/agent-skills --skill reddit-readonly
+```
+
 ## Requirements
 
 - Node.js
@@ -9,7 +15,7 @@ Browse and search Reddit in read-only mode using public JSON endpoints. Use this
 ## Install
 
 ```bash
-npx skills add https://github.com/<owner>/<repo> --skill reddit-readonly
+npx skills add https://github.com/tristanmanchester/agent-skills --skill reddit-readonly
 ```
 
 ## Usage

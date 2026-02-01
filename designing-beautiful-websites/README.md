@@ -2,10 +2,16 @@
 
 Designs UX/UI for websites and web apps: UX strategy, information architecture, user flows, wireframes, UI systems, and polished visual design.
 
+## Quick install
+
+```bash
+npx skills add https://github.com/tristanmanchester/agent-skills --skill designing-beautiful-websites
+```
+
 ## Install
 
 ```bash
-npx skills add https://github.com/<owner>/<repo> --skill designing-beautiful-websites
+npx skills add https://github.com/tristanmanchester/agent-skills --skill designing-beautiful-websites
 ```
 
 ## Usage

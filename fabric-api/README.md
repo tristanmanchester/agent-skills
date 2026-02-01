@@ -2,6 +2,12 @@
 
 Create and search Fabric resources via the HTTP API (notepads, folders, bookmarks, files).
 
+## Quick install
+
+```bash
+npx skills add https://github.com/tristanmanchester/agent-skills --skill fabric-api
+```
+
 ## Requirements
 
 - curl
@@ -10,7 +16,7 @@ Create and search Fabric resources via the HTTP API (notepads, folders, bookmark
 ## Install
 
 ```bash
-npx skills add https://github.com/<owner>/<repo> --skill fabric-api
+npx skills add https://github.com/tristanmanchester/agent-skills --skill fabric-api
 ```
 
 ## Usage

@@ -12,6 +12,12 @@ It includes:
   - ingests webhooks (`ingest-webhook`, `process-inbox`),
   - optionally runs an HTTP webhook receiver (`webhook-server`).
 
+## Quick install
+
+```bash
+npx skills add https://github.com/tristanmanchester/agent-skills --skill track17
+```
+
 ## Where data is stored
 
 By default (workspace-local):

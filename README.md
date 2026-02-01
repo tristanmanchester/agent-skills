@@ -2,18 +2,24 @@
 
 Collection of Clawdbot skills published on skills.sh. Each skill lives in its own folder with a SKILL.md prompt and supporting scripts/assets.
 
+## Quick install
+
+```bash
+npx skills add tristanmanchester/agent-skills
+```
+
 ## Install
 
 Install all skills from this repo:
 
 ```bash
-npx skills add <owner>/<repo>
+npx skills add tristanmanchester/agent-skills
 ```
 
 Install a single skill:
 
 ```bash
-npx skills add https://github.com/<owner>/<repo> --skill <skill-name>
+npx skills add https://github.com/tristanmanchester/agent-skills --skill <skill-name>
 ```
 
 ## Skills

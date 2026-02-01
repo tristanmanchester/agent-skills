@@ -2,6 +2,12 @@
 
 Automate Notion workspaces via the official Notion REST API and SDKs: authenticate, search, query data sources, and create/update pages/blocks.
 
+## Quick install
+
+```bash
+npx skills add https://github.com/tristanmanchester/agent-skills --skill notion-api-automation
+```
+
 ## Requirements
 
 - NOTION_TOKEN (or NOTION_API_KEY)
@@ -10,7 +16,7 @@ Automate Notion workspaces via the official Notion REST API and SDKs: authentica
 ## Install
 
 ```bash
-npx skills add https://github.com/<owner>/<repo> --skill notion-api-automation
+npx skills add https://github.com/tristanmanchester/agent-skills --skill notion-api-automation
 ```
 
 ## Usage
