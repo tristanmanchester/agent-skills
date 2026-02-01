@@ -12,12 +12,6 @@ npx skills add https://github.com/tristanmanchester/agent-skills --skill reddit-
 
 - Node.js
 
-## Install
-
-```bash
-npx skills add https://github.com/tristanmanchester/agent-skills --skill reddit-readonly
-```
-
 ## Usage
 
 See `SKILL.md` for commands and output format.

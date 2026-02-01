@@ -1,25 +1,15 @@
 # skills
 
+[![Quick install](https://img.shields.io/badge/quick%20install-npx%20skills%20add%20tristanmanchester%2Fagent-skills-4c1?logo=terminal&logoColor=white)](https://github.com/tristanmanchester/agent-skills)
+[![skills.sh](https://img.shields.io/badge/skills.sh-directory-0b7285)](https://skills.sh/)
+
+
 Collection of Clawdbot skills published on skills.sh. Each skill lives in its own folder with a SKILL.md prompt and supporting scripts/assets.
 
 ## Quick install
 
 ```bash
 npx skills add tristanmanchester/agent-skills
-```
-
-## Install
-
-Install all skills from this repo:
-
-```bash
-npx skills add tristanmanchester/agent-skills
-```
-
-Install a single skill:
-
-```bash
-npx skills add https://github.com/tristanmanchester/agent-skills --skill <skill-name>
 ```
 
 ## Skills

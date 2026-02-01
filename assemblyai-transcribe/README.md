@@ -13,12 +13,6 @@ npx skills add https://github.com/tristanmanchester/agent-skills --skill assembl
 - Node.js
 - ASSEMBLYAI_API_KEY
 
-## Install
-
-```bash
-npx skills add https://github.com/tristanmanchester/agent-skills --skill assemblyai-transcribe
-```
-
 ## Usage
 
 See `SKILL.md` for setup and commands.

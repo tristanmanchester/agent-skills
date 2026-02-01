@@ -13,12 +13,6 @@ npx skills add https://github.com/tristanmanchester/agent-skills --skill fabric-
 - curl
 - FABRIC_API_KEY
 
-## Install
-
-```bash
-npx skills add https://github.com/tristanmanchester/agent-skills --skill fabric-api
-```
-
 ## Usage
 
 See `SKILL.md` for API templates and gotchas.
