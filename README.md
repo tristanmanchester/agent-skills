@@ -1,6 +1,6 @@
 # skills
 
-[![Quick install](https://img.shields.io/badge?label=quick%20install&message=npx%20skills%20add%20tristanmanchester%2Fagent-skills&color=4c1&logo=terminal&logoColor=white)](https://github.com/tristanmanchester/agent-skills)
+[![Quick install](https://img.shields.io/static/v1?label=quick%20install&message=npx%20skills%20add%20tristanmanchester%2Fagent-skills&color=4c1&logo=terminal&logoColor=white)](https://github.com/tristanmanchester/agent-skills)
 [![skills.sh](https://img.shields.io/badge/skills.sh-directory-0b7285)](https://skills.sh/)
 
 
