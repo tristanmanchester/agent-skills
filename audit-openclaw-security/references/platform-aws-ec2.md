@@ -4,7 +4,7 @@
 
 - Public cloud instances are frequently scanned.
 - Misconfigured security groups and public IPs are common.
-- Compromise may expose cloud credentials and any attached data volumes.
+- A compromise may expose cloud credentials and any attached data volumes.
 
 ## Preferred deployment pattern (strongly recommended)
 
@@ -20,23 +20,24 @@
 
 1. **Security group inbound rules**
    - Ensure **no inbound** to `18789/tcp` from `0.0.0.0/0` or wide CIDRs.
-   - Keep SSH tightly restricted (or use SSM and disable SSH).
-2. **Public IP**
-   - If the instance has a public IP, treat that as higher risk and re-check inbound/outbound rules.
+   - If you need admin access, restrict SSH tightly (or use SSM and disable SSH).
+2. **Public IP / exposure**
+   - If the instance has a public IP, treat it as higher risk and re-check inbound/outbound rules.
 3. **Instance metadata**
-   - Prefer IMDSv2 and ensure SSRF risks are considered (especially if the agent can fetch URLs).
+   - Prefer IMDSv2 and consider SSRF risks (especially if the agent can fetch URLs or run arbitrary HTTP clients).
 4. **IAM role**
    - Least privilege only; avoid broad permissions.
 5. **Storage**
    - Encrypt EBS volumes.
 6. **Logging**
-   - Centralise logs (CloudWatch) if possible; set retention.
+   - Centralise logs (CloudWatch) if appropriate; set retention.
 
 ## OpenClaw-specific cloud guidance
 
 - Do not reverse-proxy the Control UI to the public internet.
 - Disable Bonjour discovery (no benefit in most cloud setups).
 - Keep DM pairing on; never run shared inbox + broad tools.
+- If running in Docker on EC2, also apply the Docker playbook (`platform-docker.md`).
 
 ## Verification
 

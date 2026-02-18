@@ -8,9 +8,12 @@
 ## Audit checks (macOS)
 
 1. Confirm Gateway is loopback-bound unless you have a tight, intentional plan for remote access.
-2. Confirm Gateway auth is enabled (token/password) and not using “dangerous” control UI bypass modes.
-3. Confirm mDNS/Bonjour discovery is disabled unless needed.
+2. Confirm Gateway auth is enabled (token/password) and **Control UI device identity is not bypassed**.
+3. Confirm mDNS/Bonjour discovery is set to minimal/off unless needed.
 4. Confirm file permissions on OpenClaw state/config/credentials are user-only.
+5. Confirm transcript/log retention is intentional:
+   - transcripts: `~/.openclaw/agents/<agentId>/sessions/*.jsonl`
+   - logs: `/tmp/openclaw/openclaw-YYYY-MM-DD.log` (or `logging.file`)
 
 ## Hardening actions
 
@@ -32,14 +35,18 @@
 - Do not port-forward the Gateway.
 - If you need remote access, use:
   - SSH tunnel from your admin machine to `127.0.0.1:18789`, or
-  - Tailscale Serve/Funnel with extreme caution (prefer Serve, avoid public Funnel).
+  - Tailscale Serve (prefer Serve; avoid public Funnel)
 
 ### 4) OpenClaw configuration
 
-- Keep `gateway.bind` to `loopback`.
+- Keep `gateway.bind` = `"loopback"`.
 - Set `gateway.auth.mode` to token or password and rotate it.
-- Disable Bonjour discovery if you don’t need device discovery:
-  - config: `discovery.mdns.mode: "off"` OR env: `OPENCLAW_DISABLE_BONJOUR=1`
+- Avoid Control UI insecure modes:
+  - keep `gateway.controlUi.allowInsecureAuth` **off**
+  - keep `gateway.controlUi.dangerouslyDisableDeviceAuth` **off**
+- Reduce discovery information disclosure:
+  - config: `discovery.mdns.mode: "minimal"` or `"off"`
+  - env (alternative): `OPENCLAW_DISABLE_BONJOUR=1`
 - Lock down DMs and group behaviour:
   - DM pairing
   - group mention gating
@@ -53,7 +60,7 @@
 
 ### 6) Logging and retention
 
-- Keep tool redaction on.
+- Keep tool/log redaction on.
 - Set a retention window for transcripts and logs; prune periodically.
 
 ## Verification
