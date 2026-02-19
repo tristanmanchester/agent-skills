@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "YourApp",
+    "slug": "your-app",
+    "scheme": "yourapp",
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": { "minSdkVersion": 21 },
+          "ios": { "deploymentTarget": "15.1" }
+        }
+      ]
+    ]
+  }
+}
