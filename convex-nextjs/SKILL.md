@@ -1,111 +1,95 @@
 ---
 name: convex-nextjs
 description: >-
-  Builds and maintains Convex backends inside Next.js apps, including schema design,
-  queries/mutations/actions, realtime React hooks, App Router server rendering, auth,
-  file uploads, scheduling, testing, and deployment.
-  Use when a project mentions Convex, Next.js, app router/pages router, convex/ folder,
-  useQuery/useMutation, schema.ts, actions, or needs a type-safe realtime backend.
-allowed-tools: Read,Write,Bash(npm:*),Bash(pnpm:*),Bash(yarn:*),Bash(npx:*),Bash(node:*),Bash(git:*)
+  Builds, integrates, and deploys Convex backends in Next.js (App Router by
+  default, Pages Router supported). Covers running `npx convex dev`, defining
+  Convex schema/indexes, writing queries/mutations/actions, wiring
+  ConvexReactClient + ConvexProvider hooks (useQuery/useMutation), optional SSR
+  preloading and Server Actions via convex/nextjs, authentication patterns, and
+  deployment (including Vercel + preview deployments). Use when the user
+  mentions Convex, convex.dev, Next.js + Convex, real-time database updates,
+  Convex functions, schema/indexes, NEXT_PUBLIC_CONVEX_URL, convex dev/deploy,
+  or troubleshooting Convex in a Next.js app.
+compatibility: >-
+  Intended for Next.js 13+ (App Router) with TypeScript. Requires Node.js and the
+  Convex CLI via the `convex` npm package (typically run with `npx convex ...`).
+allowed-tools: "Read,Write,Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(python:*)"
+metadata:
+  version: 1.0.0
+  ecosystem: convex
+  framework: nextjs
 ---
 
-# Convex + Next.js Agent Skill
+# Convex + Next.js skill
 
-## Why this exists
+## What this skill optimises for
+- **End-to-end features**: schema → functions → UI wiring, with type safety.
+- **Correct Next.js boundaries**: keep reactive Convex hooks in Client Components; use `convex/nextjs` helpers for SSR/server code.
+- **Low surprise deployments**: predictable environment variables and `convex deploy` flows.
 
-Convex is “batteries included” (database + backend functions + realtime subscriptions). Next.js (especially the App Router) adds constraints: **Client vs Server Components**, server rendering, env vars, and auth token plumbing. This skill standardises the *golden path* so you don’t accidentally:
-
-- call Convex React hooks in Server Components
-- put Node-only dependencies into the default Convex runtime
-- expose internal functions to clients
-- write unindexed queries that don’t scale
-- leak private data via missing auth checks
-
-## When to use this skill (triggers)
-
-Use this skill whenever you need to:
-
-- add Convex to a Next.js app (App Router or Pages Router)
-- create/modify `convex/schema.ts` and Convex functions (`query`, `mutation`, `action`, `httpAction`)
-- wire `ConvexProvider` / `ConvexReactClient` and use `useQuery`, `useMutation`, `useAction`
-- do server rendering with `preloadQuery` / `fetchQuery` in Next.js
-- implement auth and authorisation with `ctx.auth.getUserIdentity()`
-- implement file uploads (Convex file storage) or scheduled jobs (scheduler / cron)
-- deploy to production and set correct env vars for frontend + backend
-
----
-
-## Default assumptions (override when project dictates)
-
-- **Next.js App Router** (there is a Pages Router variant—see “Pages Router notes”)
-- **TypeScript**
-- Convex functions live in the default `convex/` folder
-- “Public functions” = callable by any client (must have validators + access control)
-- “Internal functions” = only callable from other Convex functions (preferred for `runQuery`, scheduling, etc.)
+## Default choices (override if the user says otherwise)
+- **Next.js App Router + TypeScript** (Pages Router still supported).
+- **Reactive UI** via `ConvexReactClient` + `<ConvexProvider>` + hooks.
+- **Validation-first** Convex functions: always define `args` validators and basic access control for any public function.
 
 ---
 
-## Golden path checklist
-
-Copy this into the task and tick it off:
-
-- [ ] Identify Next.js router: App Router (`app/`) vs Pages Router (`pages/`)
-- [ ] Install `convex` package
-- [ ] Run `npx convex dev` (creates `convex/`, writes `.env.local`, generates `convex/_generated/*`)
-- [ ] Create/confirm schema (`convex/schema.ts`) and required indexes
-- [ ] Implement queries/mutations/actions with **argument validators** and **access control**
-- [ ] Wire provider (`ConvexProvider` + `ConvexReactClient`) in a client boundary
-- [ ] Call functions from UI using typed `api` references
-- [ ] If using server rendering: use `preloadQuery` + `usePreloadedQuery` (reactive) or `fetchQuery` (non-reactive)
-- [ ] Add file storage / scheduling / HTTP actions if needed
-- [ ] Add error handling (client) and application errors (`ConvexError` or union returns)
-- [ ] Add tests with `convex-test` for function logic
-- [ ] Prep deployment: set `NEXT_PUBLIC_CONVEX_URL` (frontend) and dashboard env vars (backend)
-- [ ] Validate with `npx convex run`, `npx convex logs`, and dashboard data/functions
+## Workflow 0 — Decide the starting point
+1. **Brand new project?** Prefer `npm create convex@latest` (template-based scaffolding).
+2. **Existing Next.js app?** Add Convex via `npm install convex` + `npx convex dev`.
+3. **Cloud coding agent / no login possible?** Use Agent Mode or local deployments (see [references/07-agent-mode-and-local-dev.md](references/07-agent-mode-and-local-dev.md)).
 
 ---
 
-# 1) Project setup
+## Workflow 1 — Add Convex to a Next.js app (App Router)
 
-## Option A: scaffold quickly (recommended for greenfield)
-
-```bash
-npm create convex@latest
-```
-
-This scaffolds a Next.js + Convex app and wires defaults. Use this when there is no existing Next.js project.
-
-## Option B: add Convex to an existing Next.js app (manual)
-
+### Step 1: Install and initialise Convex
+Run:
 ```bash
 npm install convex
 npx convex dev
 ```
 
-`npx convex dev` will:
-- prompt for GitHub login and create/link a Convex project
-- create the `convex/` folder
-- keep running to sync changes to your dev deployment
-- generate types in `convex/_generated/*`
+Expected results:
+- Prompts you to log in, create/select a project, and writes your deployment URLs.
+- Creates a `convex/` directory for backend functions.
+- Keeps running to sync code to your dev deployment.
 
-### Environment variables (frontend vs backend)
+### Step 1b (optional): Seed sample data + expose a first query
+If you want a known-good end-to-end smoke test:
 
-- **Frontend (Next.js):** `NEXT_PUBLIC_CONVEX_URL` must be set to the Convex deployment URL. `npx convex dev` typically writes this to `.env.local`.
-- **Backend (Convex functions):** use env vars configured in the Convex Dashboard and read them via `process.env`. Do **not** rely on Next.js `.env*` files for backend secrets.
+1) Create `sampleData.jsonl`:
+```jsonl
+{"text":"Buy groceries","isCompleted":true}
+{"text":"Go for a swim","isCompleted":true}
+{"text":"Integrate Convex","isCompleted":false}
+```
 
----
+2) Import it into a `tasks` table:
+```bash
+npx convex import --table tasks sampleData.jsonl
+```
 
-# 2) Next.js App Router integration (client side)
+3) Add a query at `convex/tasks.ts`:
+```ts
+import { query } from "./_generated/server";
 
-## 2.1 Create a provider boundary
+export const get = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("tasks").collect();
+  },
+});
+```
 
+### Step 2: Create a client provider (Client Component)
 Create `app/ConvexClientProvider.tsx`:
 
 ```tsx
 "use client";
 
 import { ConvexProvider, ConvexReactClient } from "convex/react";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -114,7 +98,8 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
 }
 ```
 
-Wire it in `app/layout.tsx`:
+### Step 3: Wrap your app layout
+In `app/layout.tsx`, wrap the `children`:
 
 ```tsx
 import { ConvexClientProvider } from "./ConvexClientProvider";
@@ -130,433 +115,128 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-## 2.2 Use Convex hooks in Client Components only
+### Step 4: Call your first query from a Client Component
+- **Only** call `useQuery/useMutation/useAction` in files with `"use client"`.
+- Use the generated `api` object from `convex/_generated/api`.
 
-Any component that calls `useQuery`, `useMutation`, or `useAction` must be a Client Component:
-
+Example:
 ```tsx
 "use client";
-
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../convex/_generated/api";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 export function Tasks() {
-  const tasks = useQuery(api.tasks.get); // undefined while loading
-  const createTask = useMutation(api.tasks.create);
-
-  if (tasks === undefined) return <div>Loading...</div>;
-
-  return (
-    <div>
-      {tasks.map((t) => (
-        <div key={t._id}>{t.text}</div>
-      ))}
-      <button onClick={() => void createTask({ text: "New task" })}>
-        Add
-      </button>
-    </div>
-  );
+  const tasks = useQuery(api.tasks.get);
+  if (tasks === undefined) return <div>Loading…</div>;
+  return <ul>{tasks.map((t) => <li key={t._id}>{t.text}</li>)}</ul>;
 }
 ```
 
-**Loading semantics:**
-- `useQuery(...)` returns `undefined` while loading.
-- If the query returns `undefined` on the server, the client receives `null`.
+---
+
+## Workflow 2 — Build a feature end-to-end (schema → functions → UI)
+
+Copy/paste checklist:
+- [ ] Define or update tables and indexes in `convex/schema.ts`.
+- [ ] Implement **queries** for reads and **mutations** for writes (use `args` validators).
+- [ ] Keep `npx convex dev` running to regenerate `convex/_generated/*`.
+- [ ] Call functions from UI using `useQuery` / `useMutation`.
+- [ ] Add access control and validate user input for any function callable from clients.
+
+### Minimal table + query + mutation pattern
+- Schema and indexes: see [references/02-schema-and-indexes.md](references/02-schema-and-indexes.md)
+- Function patterns: see [references/03-functions.md](references/03-functions.md)
 
 ---
 
-# 3) Schema design (`convex/schema.ts`)
-
-## 3.1 Define tables with validators
-
-Use `defineSchema`, `defineTable`, and `v` validators:
-
-```ts
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
-
-export default defineSchema({
-  tasks: defineTable({
-    text: v.string(),
-    isCompleted: v.boolean(),
-  })
-    .index("by_isCompleted", ["isCompleted"]),
-});
-```
-
-Notes:
-- Convex automatically adds `_id` and `_creationTime`.
-- Prefer `Id<"table">` for foreign keys and references.
-
-## 3.2 Index strategy
-
-Rules of thumb:
-- If a query can touch **1000+** docs or is **unbounded**, design an index and use `.withIndex(...)`.
-- Avoid redundant indexes where one is a prefix of another unless you need the implicit `_creationTime` ordering behaviour.
-
----
-
-# 4) Writing Convex functions
-
-Convex functions live in `convex/*.ts` and are deployed by `npx convex dev` / `npx convex deploy`.
-
-## 4.1 Choose the right function type
-
-| Need | Use | Can access DB directly? | Network calls? | Deterministic? |
-|---|---|---:|---:|---:|
-| Read data | `query` | ✅ | ❌ | ✅ |
-| Write data (transaction) | `mutation` | ✅ | ❌ | ✅ |
-| Side effects / third-party APIs | `action` | ❌ (use `ctx.runQuery/runMutation`) | ✅ | ❌ |
-| Public HTTP endpoint/webhook | `httpAction` | ❌ (use `ctx.runQuery/runMutation`) | ✅ | ❌ |
-
-## 4.2 Queries
-
-Example `convex/tasks.ts`:
-
-```ts
-import { query } from "./_generated/server";
-
-export const get = query({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db.query("tasks").collect();
-  },
-});
-```
-
-## 4.3 Mutations (atomic writes)
-
-```ts
-import { mutation } from "./_generated/server";
-import { v } from "convex/values";
-
-export const create = mutation({
-  args: { text: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db.insert("tasks", { text: args.text, isCompleted: false });
-  },
-});
-```
-
-Important:
-- Writes inside a mutation are atomic; avoid partial-state bugs by keeping related writes in one mutation.
-- **Prefer explicit table name** when calling `ctx.db.get/patch/replace/delete`:
-
-```ts
-await ctx.db.patch("tasks", taskId, { isCompleted: true });
-```
-
-## 4.4 Actions (side effects, runtimes, and best practice patterns)
-
-Actions can call third-party APIs via `fetch` and interact with the database by calling queries/mutations via `ctx.runQuery` / `ctx.runMutation`.
-
-```ts
-import { action, internalQuery } from "./_generated/server";
-import { internal } from "./_generated/api";
-import { v } from "convex/values";
-
-export const doSomething = action({
-  args: { a: v.number() },
-  handler: async (ctx, args) => {
-    const data = await ctx.runQuery(internal.myFunctions.readData, { a: args.a });
-    // ... call external API, then write results ...
-    await ctx.runMutation(internal.myFunctions.writeData, { a: args.a, data });
-  },
-});
-
-export const readData = internalQuery({
-  args: { a: v.number() },
-  handler: async (ctx, args) => {
-    // read from ctx.db here
-    return null;
-  },
-});
-```
-
-### Picking the runtime (“use node”)
-
-- Default: actions run in Convex’s fast runtime (browser-like APIs; no cold starts).
-- If you need Node-only APIs or unsupported npm deps, put `"use node";` at the top of the file.
-
-Constraints:
-- A `"use node"` file may contain **actions only** (no queries/mutations).
-- Non-node files must not import node files.
-
-### Recommended pattern: mutation schedules action
-
-Calling actions directly from clients is often an anti-pattern. Prefer:
-
-1) client calls a mutation to write “intent” into DB  
-2) mutation schedules an internal action (`runAfter(0, ...)`) to do side effects
-
-This prevents duplicate execution and lets the mutation enforce invariants.
-
----
-
-# 5) Access control and authentication
-
-## 5.1 Minimum bar for public functions
-
-Every public `query`, `mutation`, `action`, and `httpAction` should have:
-- **argument validators**
-- **some form of access control**
-
-Typical access control uses:
-
-```ts
-const identity = await ctx.auth.getUserIdentity();
-if (identity === null) throw new Error("Unauthorised");
-```
-
-Do not use spoofable inputs (like email) as the only access control check.
-
-## 5.2 Store users in your Convex database (common pattern)
-
-Many apps store a `users` table keyed by identity and then reference user IDs from other docs.
-
-Pattern:
-- create a helper `getCurrentUserOrThrow(ctx)` that loads/creates the user doc
-- reference `user._id` in other tables (`messages.userId`, etc.)
-
-Also consider a client helper that combines auth state with “user doc exists” checks.
-
-## 5.3 Next.js server rendering with auth tokens
-
-When using `preloadQuery` / `fetchQuery` from server-side Next.js code, pass `{ token }` in the third options argument.
-
-Token retrieval depends on your auth provider (Clerk/Auth0/etc.). Keep token handling server-side.
-
----
-
-# 6) Next.js server rendering (App Router)
-
-Use these when you need SSR or want to call Convex from Server Components / Server Actions.
-
-## 6.1 Preload data for Client Components (reactive after hydration)
-
-Server Component:
-
-```ts
-import { preloadQuery } from "convex/nextjs";
-import { api } from "@/convex/_generated/api";
-import { Tasks } from "./Tasks";
-
-export async function TasksWrapper() {
-  const preloaded = await preloadQuery(api.tasks.list, { list: "default" });
-  return <Tasks preloadedTasks={preloaded} />;
-}
-```
-
-Client Component:
-
-```tsx
-"use client";
-
-import { Preloaded, usePreloadedQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-
-export function Tasks(props: { preloadedTasks: Preloaded<typeof api.tasks.list> }) {
-  const tasks = usePreloadedQuery(props.preloadedTasks);
-  return <div>{/* render tasks */}</div>;
-}
-```
-
-Notes:
-- `preloadQuery` uses `cache: "no-store"` and will prevent static rendering for that Server Component.
-- Avoid multiple `preloadQuery` calls in one render tree; the underlying HTTP client is stateless and data may be inconsistent. Prefer “one query that returns all needed data”.
-
-## 6.2 Render pure Server Components (non-reactive)
-
-Use `fetchQuery` in Server Components when reactivity is not needed.
-
-## 6.3 Server Actions and Route Handlers
-
-Use `fetchMutation` / `fetchAction` / `fetchQuery` from `convex/nextjs` inside:
-- Server Actions (`"use server"`)
-- Route Handlers (`app/api/.../route.ts`)
-
-After server-side mutations, call `revalidatePath(...)` (or related cache invalidation) so Next.js updates the page.
-
-## 6.4 Deployment URL for server-side Convex calls
-
-`preloadQuery`, `fetchQuery`, `fetchMutation`, `fetchAction` require either:
-- `NEXT_PUBLIC_CONVEX_URL` set, or
-- passing `{ url }` explicitly in the third options argument
-
----
-
-# 7) File Storage (uploads and serving)
-
-## 7.1 Upload via short-lived upload URL (scales to large files)
-
-3-step client flow:
-1) call a mutation to generate an upload URL (`ctx.storage.generateUploadUrl()`)
-2) `POST` the file to the returned URL → receive `storageId`
-3) call another mutation to save `storageId` into a document
-
-Example mutation:
-
-```ts
-import { mutation } from "./_generated/server";
-
-export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.storage.generateUploadUrl();
-  },
-});
-```
-
-Upload URLs expire (fetch shortly before upload). Use the generating mutation to enforce “who can upload”.
-
-## 7.2 Serve via `ctx.storage.getUrl` (simple)
-
-In a query/mutation/action, turn `Id<"_storage">` into a URL:
-
-```ts
-const url = await ctx.storage.getUrl(storageId);
-```
-
-Return the URL alongside your data and render it in `<img src={url} />`.
-
-## 7.3 Serve via HTTP action (access control at request time)
-
-If you need access control at serve-time, implement an `httpAction` that loads the blob via `ctx.storage.get(...)` and returns a `Response`.
-
-Note: HTTP action responses have a size limit (use URLs for larger files).
-
----
-
-# 8) Scheduling (durable background work)
-
-Use `ctx.scheduler.runAfter(delayMs, fn, args)` or `ctx.scheduler.runAt(timestampMs, fn, args)` from mutations or actions.
-
-Example: schedule self-destruct in 5 seconds:
-
-```ts
-import { mutation, internalMutation } from "./_generated/server";
-import { internal } from "./_generated/api";
-import { v } from "convex/values";
-
-export const sendExpiringMessage = mutation({
-  args: { body: v.string(), author: v.string() },
-  handler: async (ctx, args) => {
-    const id = await ctx.db.insert("messages", args);
-    await ctx.scheduler.runAfter(5000, internal.messages.destruct, { messageId: id });
-  },
-});
-
-export const destruct = internalMutation({
-  args: { messageId: v.id("messages") },
-  handler: async (ctx, args) => {
-    await ctx.db.delete("messages", args.messageId);
-  },
-});
-```
+## Workflow 3 — SSR, Server Components, Server Actions (optional)
+
+Use this when you need a faster first paint or want server-only routes:
+- **Reactive after load**: `preloadQuery` in a Server Component + `usePreloadedQuery` in a Client Component.
+- **Server-only (non-reactive)**: `fetchQuery` in a Server Component.
+- **Server Actions / Route Handlers**: `fetchMutation` / `fetchAction`.
 
 Key constraints:
-- A single function can schedule up to **1000** functions, total arg size **8MB**
-- Auth is **not propagated** to scheduled functions; pass required user info explicitly
-- Prefer scheduling **internal** functions (`internal.*`) rather than public `api.*`
+- `convex/nextjs` helpers assume `NEXT_PUBLIC_CONVEX_URL` is set, or you pass an explicit `url` option.
+- Avoid multiple `preloadQuery` calls in the same page if you need consistency (see docs caveat).
+
+Details + copy/paste examples:
+- [references/04-nextjs-ssr-and-server.md](references/04-nextjs-ssr-and-server.md)
 
 ---
 
-# 9) Error handling
+## Workflow 4 — Authentication (client-only vs server+client)
 
-## 9.1 Client-side: Error boundaries
+1. **Client-only auth (simplest)**:
+   - Wrap the provider with your auth provider + a `ConvexProviderWith…` adapter.
+   - Use `<Authenticated>`, `<Unauthenticated>`, `<AuthLoading>` from `convex/react` for UI gates.
 
-Wrap your React app (or subtrees) in an Error Boundary so query errors don’t white-screen the whole app.
+2. **Server + client auth (App Router SSR / Server Actions)**:
+   - Use your provider’s Next.js SDK to obtain a JWT on the server.
+   - Pass `{ token }` as the third argument to `preloadQuery` / `fetchQuery`.
 
-## 9.2 Expected failures: return unions or throw `ConvexError`
-
-For expected error conditions you can:
-- return a union type (TypeScript-enforced handling)
-- or throw `ConvexError` so clients can handle it like other errors
-
-Notes:
-- Throwing an error in a mutation prevents the transaction from committing.
-- `runQuery`, `runMutation`, and `runAction` calls in actions will propagate thrown errors.
+Details:
+- [references/05-auth.md](references/05-auth.md)
 
 ---
 
-# 10) Testing Convex functions (fast unit tests)
+## Workflow 5 — Deploy (production + previews)
 
-Use `convex-test` to run functions against a mock backend.
-
-Typical stack:
-- `vitest`
-- `convex-test`
-- `@edge-runtime/vm`
-
-Example pattern:
-- import your schema
-- import all modules via `import.meta.glob("./**/*.ts")`
-- call `t.query(api.foo.bar)` / `t.mutation(...)`
-
-Always still do a manual end-to-end smoke test; the mock runtime differs from the real Convex runtime.
-
----
-
-# 11) CLI workflows (debugging + ops)
-
-Common commands:
-
+### Default production deploy
 ```bash
-npx convex dev              # sync functions + generate types
-npx convex dashboard        # open dashboard
-npx convex run <fn> <args>  # run a function with JSON args
-npx convex logs             # tail logs
-npx convex deploy           # deploy to prod
-npx convex env list         # view backend env vars
-npx convex env set KEY val  # set backend env var
-npx convex import --table <t> file.jsonl  # import data
+npx convex deploy
 ```
 
-Tips:
-- Use `npx convex run ... --watch` for live-updating query output during debugging.
-- If auth seems broken, log `await ctx.auth.getUserIdentity()` in a function and check dashboard logs.
+### Vercel (recommended)
+Set Vercel Build Command to:
+```bash
+npx convex deploy --cmd 'npm run build'
+```
+and configure `CONVEX_DEPLOY_KEY` in Vercel environment variables.
+
+Details:
+- [references/06-deployment-vercel.md](references/06-deployment-vercel.md)
 
 ---
 
-# 12) Best practices (the “don’t regret it later” list)
-
-- Always `await` promises (`ctx.db.*`, `ctx.scheduler.*`, etc.)
-- Prefer `.withIndex` / `.withSearchIndex` over `.filter` on database queries
-- Only call `.collect()` when the result set is guaranteed small; otherwise use indexes, `.take`, or `.paginate`
-- Don’t use `Date.now()` inside queries (it can produce stale results); model time as data or pass time as a coarse query arg
-- Use argument validators for all public functions (optionally enforce with ESLint rules)
-- Apply access control to every public function (`ctx.auth.getUserIdentity()` or unguessable IDs)
-- Only schedule and `ctx.run*` **internal** functions
-- In actions, batch DB access; avoid sequential `ctx.runQuery` / `ctx.runMutation` calls unless intentional
-- In actions, use `ctx.runAction` only when crossing runtimes; prefer plain TS helpers otherwise
-- Prefer granular mutations (e.g. `setTeamName`) over “god” updates (e.g. `updateTeam`) to simplify access control
+## Validation loop (fast sanity checks)
+When working in an existing repo:
+1. Make changes
+2. Run the validator:
+   ```bash
+   python {baseDir}/scripts/validate_project.py --root .
+   ```
+3. Fix any errors/warnings before moving on.
 
 ---
 
-# 13) Pages Router notes (when the repo uses `pages/`)
+## THE EXACT PROMPT — Implement a Convex-backed feature in Next.js
+Copy/paste into a coding agent:
 
-If the project uses Pages Router (has `pages/` and no `app/`), use the Pages Router quickstart and Next.js Pages Router docs.
+```
+You are implementing a feature using Convex in a Next.js (App Router) app.
 
-Key difference:
-- Provider wiring happens in `pages/_app.tsx` rather than `app/layout.tsx`.
-- Server-side rendering patterns differ; use the Pages Router guide for SSR/auth specifics.
+Requirements:
+1) Update convex/schema.ts (tables + indexes) as needed.
+2) Add Convex functions (queries/mutations/actions) with argument validators.
+3) Keep reactive data fetching in Client Components using convex/react hooks.
+4) If SSR is requested, use convex/nextjs preloadQuery + usePreloadedQuery.
+5) Include basic access control for any function callable from the client.
+6) Ensure convex/_generated is up-to-date (assume npx convex dev is running).
 
----
-
-## THE EXACT PROMPT — “Convex + Next.js Implementation Plan”
-
-Use this prompt when you want the agent to plan before coding:
-
-```text
-You are implementing Convex in a Next.js project.
-
-1) Identify whether this repo uses App Router or Pages Router.
-2) Propose the data model and schema (tables + indexes).
-3) List the Convex functions you will create (queries, mutations, actions, HTTP actions),
-   including which are public vs internal, with validators and access control.
-4) Show how the Next.js app will call these functions (client hooks and/or server rendering).
-5) Identify any auth/token requirements and where they are enforced.
-6) Call out performance risks (indexes, .collect usage, pagination) and how you’ll mitigate them.
-7) Provide a step-by-step implementation checklist and then implement the code.
+Deliver:
+- Exact file paths + code diffs
+- Short usage notes (how to run, what env vars are needed)
+- Quick test plan (1-3 smoke tests)
 ```
 
+---
+
+## Quick search (when debugging)
+```bash
+# Find Convex calls in the frontend
+rg "useQuery\(|useMutation\(|useAction\(" .
+
+# Find Convex functions
+ls convex
+```
