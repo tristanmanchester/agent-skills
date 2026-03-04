@@ -80,8 +80,8 @@ async function main() {
   }
 
   const apiKey = process.env[API_KEY_ENV];
-  const baseUrl = String(args['base-url'] ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
-  const betaHeader = String(args['beta-header'] ?? DEFAULT_BETA_HEADER);
+  const baseUrl = String(args['base-url'] ?? process.env.PARALLEL_BASE_URL ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
+  const betaHeader = String(args['beta-header'] ?? process.env.PARALLEL_BETA_HEADER ?? DEFAULT_BETA_HEADER);
 
   const requestFromJson = await loadRequestJson({
     requestPath: args.request,

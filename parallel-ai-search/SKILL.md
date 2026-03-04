@@ -1,183 +1,143 @@
 ---
 name: parallel-ai-search
-description: Web search + URL extraction via Parallel Search/Extract APIs. Use for up-to-date research, domain-scoped searching, and extracting LLM-ready excerpts/markdown from URLs.
-homepage: https://docs.parallel.ai/search/search-quickstart
-metadata: {"openclaw":{"emoji":"🔎","homepage":"https://docs.parallel.ai/","requires":{"bins":["node"],"env":["PARALLEL_API_KEY"]},"primaryEnv":"PARALLEL_API_KEY"}}
+description: Search the live web and extract clean, LLM-ready excerpts/markdown from URLs (including PDFs and JS-heavy pages) using Parallel Search + Extract APIs. Use for up-to-date research, domain/date-scoped sourcing (include_domains/after_date), and turning specific URLs into citeable text.
+compatibility: Requires Node.js 18+ (global fetch), network access to https://api.parallel.ai, and the PARALLEL_API_KEY environment variable.
+metadata:
+  author: "openclaw"
+  version: "1.1.0"
+  homepage: "https://docs.parallel.ai/search/search-quickstart"
+  openclaw: "{\"emoji\":\"🔎\",\"primaryEnv\":\"PARALLEL_API_KEY\"}"
 ---
 
-# Parallel AI Search (OpenClaw skill)
+# Parallel AI Search
 
 Use this skill to run web research through **Parallel Search** (ranked, LLM-optimised excerpts) and **Parallel Extract** (clean markdown from specific URLs, including JS-heavy pages and PDFs).
 
-The skill ships tiny **Node .mjs** helpers so the agent can call the APIs deterministically via the OpenClaw **exec** tool.
+This skill follows the Agent Skills format: keep `SKILL.md` focused, and load extra details from `references/` as needed.
 
-## Quick start
+## When to use this skill
 
-### 1) Provide the API key
+Use this skill when the user needs any of the following:
 
-Prefer configuring it in `~/.openclaw/openclaw.json` (host runs):
+- **Up-to-date web research** (“look this up”, “find the latest”, “what changed recently”).
+- **Source control** (“only use official docs”, “only these domains”, “after 2025-01-01”).
+- **Readable extracts from URLs** (turn a URL/PDF into clean text/excerpts suitable for quoting/citing).
+- **Repeatable research loops** (search → shortlist → extract → answer with citations).
 
-```json5
-{
-  skills: {
-    entries: {
-      "parallel-ai-search": {
-        enabled: true,
-        apiKey: "YOUR_PARALLEL_API_KEY"
-      }
-    }
-  }
-}
-```
+## Preconditions
 
-Notes:
-- If the agent run is **sandboxed**, the Docker sandbox does **not** inherit host env. Provide the key via `agents.defaults.sandbox.docker.env` (or bake it into the image).
-- This skill is gated on `PARALLEL_API_KEY`. If it’s missing, OpenClaw won’t load the skill.
+- `PARALLEL_API_KEY` must be available in the environment.
+- Node.js 18+ is required (the scripts rely on the built-in `fetch`).
 
-### 2) Run a search
+OpenClaw-specific setup notes are in `references/openclaw-config.md`.
 
-Use **exec** to run:
+## Available scripts
+
+Run scripts using **relative paths from the skill root** (e.g. `node scripts/parallel-search.mjs ...`).
+
+- **`scripts/parallel-search.mjs`** — Calls Parallel Search (`POST /v1beta/search`) to discover sources.
+- **`scripts/parallel-extract.mjs`** — Calls Parallel Extract (`POST /v1beta/extract`) to extract clean excerpts/markdown from URLs.
+- **`scripts/parallel-search-extract.mjs`** — Convenience pipeline: search then extract the top N results.
+
+Tip: each script supports `--help`, `--dry-run`, and JSON output by default.
+
+## Workflow (recommended)
+
+### 1) Write an objective + queries
+
+- Objective: 1–3 sentences describing the question, preferred source types, and any freshness constraints.
+- Queries: 3–8 keyword queries including synonyms, version numbers, dates, or exact error strings.
+
+If you’re unsure, use `references/prompting.md` templates.
+
+### 2) Search (discover)
 
 ```bash
-node {baseDir}/scripts/parallel-search.mjs \
-  --objective "When was the United Nations established? Prefer UN websites." \
-  --query "Founding year UN" \
-  --query "Year of founding United Nations" \
-  --max-results 5 \
-  --mode one-shot
+node scripts/parallel-search.mjs \
+  --objective "Find official documentation explaining how X works. Prefer sources after 2025-01-01." \
+  --query "X official documentation" \
+  --query "X changelog 2025" \
+  --max-results 8
 ```
 
-### 3) Extract content from URLs
+Then inspect `results[].url`, `results[].title`, and `results[].publish_date` (if present) and pick the best sources.
+
+### 3) Extract (read)
+
+Extract only the URLs you actually need:
 
 ```bash
-node {baseDir}/scripts/parallel-extract.mjs \
-  --url "https://www.un.org/en/about-us/history-of-the-un" \
-  --objective "When was the United Nations established?" \
+node scripts/parallel-extract.mjs \
+  --url "https://example.com/docs/x" \
+  --objective "How does X work? Include the most important constraints." \
   --excerpts \
   --no-full-content
 ```
 
-### 4) One command: search → extract top results
+Notes:
+- Extract supports up to **10 URLs per request**; the script auto-batches if you pass more.
+- Prefer `--excerpts` unless you truly need full content.
+
+### 4) Answer (with citations)
+
+- Prefer official/primary sources when possible.
+- Quote/paraphrase only the extracted text you need.
+- Include URL + publish date (when present) for transparency.
+- If sources disagree, report both and explain why.
+
+## High-signal recipes
+
+### Recipe A: Domain-scoped research (official-only)
 
 ```bash
-node {baseDir}/scripts/parallel-search-extract.mjs \
-  --objective "Find recent research on quantum error correction" \
-  --query "quantum error correction 2024" \
-  --query "QEC algorithms" \
-  --max-results 6 \
+node scripts/parallel-search.mjs \
+  --objective "Answer the question using official sources only." \
+  --query "X authentication guide" \
+  --include-domain "docs.vendor.com" \
+  --include-domain "github.com" \
+  --max-results 10
+```
+
+### Recipe B: Freshness constrained
+
+```bash
+node scripts/parallel-search.mjs \
+  --objective "I need the latest info; prefer sources after 2026-01-01." \
+  --query "X release notes" \
+  --after-date "2026-01-01" \
+  --fetch-max-age-seconds 3600
+```
+
+### Recipe C: One command (search → extract top 3)
+
+```bash
+node scripts/parallel-search-extract.mjs \
+  --objective "Find the latest guidance on Y and extract citeable passages." \
+  --query "Y documentation" \
+  --query "Y 2026 update" \
+  --max-results 8 \
   --top 3 \
   --excerpts
 ```
 
-## When to use
+## Troubleshooting
 
-Trigger this skill when the user asks for:
-- “Parallel search”, “parallel.ai search”, “Parallel Extract”, “Search API”, “Extract API”
-- “web research with Parallel”, “LLM-optimised excerpts”, “source_policy/include_domains”, “after_date”, “fetch_policy”
-- “extract clean markdown from URL/PDF”, “crawl a JS-heavy page”, “get fresh web results”
+### Missing API key / auth failures
+- Symptom: errors mentioning missing `PARALLEL_API_KEY` or HTTP 401/403.
+- Fix: set `PARALLEL_API_KEY` in the environment. For OpenClaw, see `references/openclaw-config.md`.
 
-## Default workflow
+### No good results
+- Add or refine queries (include synonyms, product names, dates, or exact error messages).
+- Add `--include-domain` to constrain sources to known-good domains.
+- Add/adjust `--after-date` or `--fetch-max-age-seconds` for freshness.
 
-1. **Search** with an *objective* + a few *search_queries*.
-2. **Inspect** titles/URLs/publish dates; choose the best sources.
-3. **Extract** the specific pages you actually need (top N URLs).
-4. **Answer** using the extracted excerpts/full content.
+### Timeouts / slow pages during extract
+- Use `--fetch-timeout-seconds` to raise the API-side crawl timeout.
+- If you need fresh crawls, set `--fetch-max-age-seconds` (min 600 for extract).
+- If cached content is acceptable, avoid `--disable-cache-fallback`.
 
-Use **Search** to discover; use **Extract** to read.
+## References (load on demand)
 
-## Best-practice prompting for Parallel
-
-### Objective
-Write 1–3 sentences describing:
-- the real task context (why you need the info)
-- freshness constraints (“prefer 2025+”, “after 2024-01-01”, “use latest docs”)
-- preferred sources (“official docs”, “standards bodies”, “GitHub releases”)
-
-### search_queries
-Add 3–8 keyword queries that include:
-- the specific terms, version numbers, error strings
-- common synonyms
-- if relevant, date terms (“2025”, “2026”, “Jan 2026”)
-
-### Mode
-- Use `mode=one-shot` for single-pass questions (default).
-- Use `mode=agentic` for multi-step research loops (shorter, more token-efficient excerpts).
-
-### Source policy
-When you need tight control, set `source_policy`:
-- `include_domains`: allowlist (max 10)
-- `exclude_domains`: denylist (max 10)
-- `after_date`: RFC3339 date (`YYYY-MM-DD`) to filter for freshness
-
-## Scripts
-
-All scripts print a JSON response to stdout by default.
-
-### `scripts/parallel-search.mjs`
-
-Calls `POST https://api.parallel.ai/v1beta/search`.
-
-Common flags:
-- `--objective "..."`
-- `--query "..."` (repeatable)
-- `--mode one-shot|agentic`
-- `--max-results N` (1–20)
-- `--include-domain example.com` (repeatable)
-- `--exclude-domain example.com` (repeatable)
-- `--after-date YYYY-MM-DD`
-- `--excerpt-max-chars N` (per result)
-- `--excerpt-max-total-chars N` (across results)
-- `--fetch-max-age-seconds N` (force freshness; 0 disables)
-- `--request path/to/request.json` (advanced: full request passthrough)
-- `--request-json '{"objective":"..."}'` (advanced)
-
-### `scripts/parallel-extract.mjs`
-
-Calls `POST https://api.parallel.ai/v1beta/extract`.
-
-Common flags:
-- `--url "https://..."` (repeatable, max 10)
-- `--objective "..."`
-- `--query "..."` (repeatable)
-- `--excerpts` / `--no-excerpts`
-- `--full-content` / `--no-full-content`
-- `--excerpts-max-chars N` / `--excerpts-max-total-chars N`
-- `--full-max-chars N`
-- `--fetch-max-age-seconds N` (min 600 when set)
-- `--fetch-timeout-seconds N`
-- `--disable-cache-fallback`
-- `--request path/to/request.json` (advanced)
-
-### `scripts/parallel-search-extract.mjs`
-
-Convenience pipeline:
-1) Search
-2) Extract the top N URLs from the search results (single Extract call)
-
-Common flags:
-- All `parallel-search.mjs` flags
-- `--top N` (1–10)
-- Extraction toggles: `--excerpts`, `--full-content`, plus the extract excerpt/full settings
-
-## Output handling conventions
-
-When turning API output into a user-facing answer:
-- Prefer **official / primary sources** when possible.
-- Quote or paraphrase **only** the relevant extracted text.
-- Include **URL + publish_date** (when present) for transparency.
-- If results disagree, present both and say what each source claims.
-
-## Error handling
-
-Scripts exit with:
-- `0` success
-- `1` unexpected error (network, JSON parse, etc.)
-- `2` invalid arguments
-- `3` API error (non-2xx) — response body is printed to stderr when possible
-
-## References
-
-Load these only when needed:
-- `references/parallel-api.md` — compact API field/shape reference
-- `references/openclaw-config.md` — OpenClaw config + sandbox env notes
-- `references/prompting.md` — objective/query templates and research patterns
+- `references/parallel-api.md` — Compact field/shape reference for Search/Extract requests and responses.
+- `references/prompting.md` — Objective + query templates and research patterns.
+- `references/openclaw-config.md` — OpenClaw config + sandbox environment notes.
