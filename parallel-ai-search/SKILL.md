@@ -4,7 +4,7 @@ description: Search the live web and extract clean, LLM-ready excerpts/markdown 
 compatibility: Requires Node.js 18+ (global fetch), network access to https://api.parallel.ai, and the PARALLEL_API_KEY environment variable.
 metadata:
   author: "openclaw"
-  version: "1.1.0"
+  version: "1.1.1"
   homepage: "https://docs.parallel.ai/search/search-quickstart"
   openclaw: "{\"emoji\":\"🔎\",\"primaryEnv\":\"PARALLEL_API_KEY\"}"
 ---
@@ -135,6 +135,11 @@ node scripts/parallel-search-extract.mjs \
 - Use `--fetch-timeout-seconds` to raise the API-side crawl timeout.
 - If you need fresh crawls, set `--fetch-max-age-seconds` (min 600 for extract).
 - If cached content is acceptable, avoid `--disable-cache-fallback`.
+
+### Helper files disappear after `npx skills add`
+- Avoid underscore-prefixed bundled filenames like `scripts/_lib.mjs`.
+- Some installers exclude paths whose basename starts with `_`; rename helpers to something like `scripts/lib.mjs` or `scripts/common.mjs`.
+- Update any relative imports accordingly.
 
 ## References (load on demand)
 

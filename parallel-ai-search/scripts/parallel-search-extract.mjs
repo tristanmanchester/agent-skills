@@ -17,7 +17,7 @@ import {
   printMarkdownSearchResults,
   toBool,
   toInt,
-} from './_lib.mjs';
+} from './lib.mjs';
 
 function printHelp() {
   // eslint-disable-next-line no-console
