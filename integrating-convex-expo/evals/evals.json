@@ -1,0 +1,47 @@
+{
+  "skill_name": "integrating-convex-expo",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a fresh create-expo-app project using Expo Router. Add Convex correctly, make sure the provider is in the right place, and tell me what to do for EAS builds.",
+      "expected_output": "The response or edits should install Convex, run through `npx convex dev`, mount a single Convex provider in the Expo Router root layout, use `process.env.EXPO_PUBLIC_CONVEX_URL`, mention `unsavedChangesWarning: false`, and explain that the deployment URL must also be copied into EAS environment variables.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "My Expo app already has Convex but `useQuery(api.tasks.list)` never resolves. Please debug the likely causes and repair the setup.",
+      "expected_output": "The response should diagnose the common Expo-specific causes in a useful order: `npx convex dev` not running, missing or stale `_generated`, missing root provider, wrong generated API import path, missing `EXPO_PUBLIC_CONVEX_URL`, or Metro needing a restart. It should suggest running the bundled validator script.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Add a tasks feature to my Expo + Convex app. I need a schema, indexes, secure backend functions, and a screen that handles loading and empty states correctly.",
+      "expected_output": "The output should design the schema first, add indexes around the intended query shapes, use validated public functions, keep authorization on the backend, import generated API references on the frontend, and handle `useQuery(...) === undefined` cleanly in the screen.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "I want Clerk auth in my Expo app with Convex, and every user should only see and update their own documents.",
+      "expected_output": "The output should choose a coherent Clerk + Convex setup, describe or implement the provider pairing, derive identity from Convex auth on the backend, use ownership checks or auth wrappers for protected data, and avoid trusting a client-supplied user ID.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Please add image uploads from expo-image-picker to Convex storage and save file metadata in the database.",
+      "expected_output": "The output should use the upload-URL flow: generate upload URL in a mutation, fetch the local Expo URI, convert it to a Blob, POST it to the upload URL, then persist the returned `storageId` plus metadata in a second mutation. It should not try to upload raw file bytes through a normal mutation.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "My notifications screen in an Expo app loads every record with `.collect()` and it is starting to feel slow. Can you fix the backend and frontend properly?",
+      "expected_output": "The output should replace the unbounded query with a paginated query and matching indexes, then wire the screen to `usePaginatedQuery` or an equivalent Expo-friendly paginated pattern rather than keeping a full-table `.collect()`.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "We need to rename a field and split one table into two in a live Expo + Convex app. Please propose a safe migration plan that accounts for mobile clients updating slowly.",
+      "expected_output": "The output should recommend an additive migration with optional fields or new tables first, backfills in batches, dual reads or dual writes during the transition, and only then removal of the old shape after clients have caught up.",
+      "files": []
+    }
+  ]
+}

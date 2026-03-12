@@ -2,23 +2,27 @@
 
 ## Executive summary
 
-- **Overall risk rating:** (Critical / High / Medium / Low)
-- **Most urgent issues:** (1–3 bullets)
+- **Overall risk rating:** (Critical / High / Moderate / Low / Informational)
+- **OpenClaw version:** (`openclaw --version`)
+- **Most urgent issues:** (1-3 bullets)
 - **Big picture:** What is exposed, who can talk to the bot, what the bot can do.
 
-## Environment
+## Environment overview
 
-- **Host type:** (Mac mini / laptop / AWS EC2 / VPS / Docker / other)
+- **Host type:** (macOS host / laptop / Docker / EC2 / VPS / other)
 - **OS + version:**
-- **OpenClaw version:** (`openclaw --version`)
-- **Install type:** (npm global / install.sh / Docker / source / other)
-- **Gateway bind + access method:** (loopback + local only / tailnet / LAN / reverse proxy / other)
-- **Inbound channels enabled:** (WhatsApp/Telegram/Slack/etc.)
-- **Tool profile:** (messaging/minimal/custom; notable denies/allows)
+- **Gateway bind + access method:** (loopback / tailnet / reverse proxy / LAN / public)
+- **Gateway auth mode:**
+- **Control UI origin posture:**
+- **Trusted proxies / real-IP policy:**
+- **Session dmScope:**
+- **DM policy / group policy:**
+- **Tool profile and notable denies/allows:**
+- **Key sensitive paths:** (`~/.openclaw`, auth profiles, sessions, logs)
 
 ## Findings
 
-| Severity | Finding | Evidence (redacted) | Why it matters | Recommended fix | Verify |
+| Severity | Check ID / finding | Evidence (redacted) | Why it matters | Recommended fix | Verify |
 |---|---|---|---|---|---|
 | Critical |  |  |  |  |  |
 | High |  |  |  |  |  |
@@ -33,7 +37,7 @@
 2.
 3.
 
-### Phase 2 — Harden and reduce blast radius (this week)
+### Phase 2 — Reduce blast radius (this week)
 
 1.
 2.
@@ -41,20 +45,22 @@
 
 ### Phase 3 — Operationalise (ongoing)
 
-- Update cadence (OS, Node, OpenClaw)
-- Token rotation policy
-- Backup/restore plan for `~/.openclaw` (safely)
-- Log retention and redaction
+- update cadence (OS + OpenClaw)
+- token/password rotation policy
+- backup/restore routine
+- transcript/log retention and pruning
 
 ## Verification checklist
 
-- [ ] `openclaw security audit --deep` shows no Critical findings
-- [ ] Gateway not reachable from untrusted networks
-- [ ] DM pairing/allowlists in place
-- [ ] Group mention gating enabled
-- [ ] File permissions tightened for OpenClaw state and config
-- [ ] Tools limited to what is required
+- [ ] `openclaw security audit --deep --json` shows no critical findings
+- [ ] `openclaw gateway probe --json` matches the intended listener/auth path
+- [ ] `openclaw channels status --probe` shows the expected ready/connected channels
+- [ ] Gateway is not reachable from untrusted networks
+- [ ] DM pairing/allowlists are in place
+- [ ] Group mention gating is enabled where required
+- [ ] File permissions are tightened for OpenClaw state and config
+- [ ] Tools are limited to what is actually required
 
 ## Residual risk notes
 
-Even with best practices, an agent that can read messages and execute tools carries inherent risk (prompt injection, social engineering, unexpected actions). Document what you are choosing to accept and why.
+Even a well-hardened agent that can read messages and call tools still carries prompt-injection and social-engineering risk. Record which surfaces remain intentionally open, which tools remain enabled, and how recovery works if the Gateway host or credentials are compromised.

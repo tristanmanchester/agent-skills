@@ -1,0 +1,14 @@
+{
+  "should_trigger": [
+    "My `useQuery` call is crashing because the page is a Server Component.",
+    "Create a Convex action that talks to OpenAI and stores the result.",
+    "How do I run Convex in a remote coding agent without sharing my account?",
+    "Turn this growing activity log into a paginated Convex feed."
+  ],
+  "should_not_trigger": [
+    "Optimise this MongoDB aggregation pipeline.",
+    "Add Clerk auth to a Next.js app that does not use Convex.",
+    "Build a static marketing site in Next.js only.",
+    "Troubleshoot a Vercel build for a Firebase app."
+  ]
+}

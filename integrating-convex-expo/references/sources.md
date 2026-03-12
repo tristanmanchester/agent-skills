@@ -1,23 +1,60 @@
-# Sources (upstream docs)
+# Sources used to rewrite this skill
 
-This skill is based on:
+Checked or reviewed on 2026-03-12.
 
-## Expo
-- Using Convex (Expo guide): https://docs.expo.dev/guides/using-convex/
+## Agent Skills guidance
 
-## Convex
-- Convex docs home / overview: https://docs.convex.dev/home
-- React Native Quickstart: https://docs.convex.dev/quickstart/react-native
-- React Native client notes: https://docs.convex.dev/client/react-native
-- Deployment URL configuration (React client): https://docs.convex.dev/client/react/deployment-urls
-- Schemas: https://docs.convex.dev/database/schemas
-- Queries: https://docs.convex.dev/functions/query-functions
-- Mutations: https://docs.convex.dev/functions/mutation-functions
-- Indexes: https://docs.convex.dev/database/reading-data/indexes/
-- Best Practices: https://docs.convex.dev/understanding/best-practices/
-- File Storage upload URLs: https://docs.convex.dev/file-storage/upload-files
-- Clerk integration: https://docs.convex.dev/auth/clerk
+- Agent Skills specification
+- Optimizing skill descriptions
+- Evaluating skills
+- Using scripts
+- The complete skill-building guide supplied with this task
 
-## Supplemental (Convex “Stack” blog / guides)
-- Uploading files from React Native or Expo: https://stack.convex.dev/uploading-files-from-react-native-or-expo
+## Convex and Expo guidance
 
+- Expo guide for using Convex
+- Convex React Native and deployment URL docs
+- Convex validation, actions, internal functions, error handling, and pagination docs
+- Convex best practices and ESLint docs
+- Convex Clerk integration docs
+- Convex Auth docs
+- Convex file upload guidance
+- Convex blog post on uploading files from React Native or Expo
+
+## Local plugin inputs folded into this rewrite
+
+From the attached `convex-agent-plugins` repository, the rewrite incorporates guidance inspired by:
+
+- `argument-validation.mdc`
+- `async-handling.mdc`
+- `authentication-checks.mdc`
+- `custom-functions-for-auth.mdc`
+- `function-organization.mdc`
+- `no-date-now-in-queries.mdc`
+- `query-optimization.mdc`
+- `schema-design.mdc`
+- `use-components-for-encapsulation.mdc`
+- `use-eslint-always.mdc`
+- `use-node-for-actions.mdc`
+- `use-pagination-for-large-datasets.mdc`
+
+and the bundled skills:
+
+- `auth-setup`
+- `components-guide`
+- `convex-helpers-guide`
+- `convex-quickstart`
+- `function-creator`
+- `migration-helper`
+- `schema-builder`
+
+## Intent of the rewrite
+
+This skill deliberately tightens:
+
+- frontmatter quality and trigger specificity,
+- progressive disclosure through references,
+- script interfaces for agentic use,
+- Convex safety defaults,
+- Expo-specific environment handling,
+- and evaluation scaffolding.

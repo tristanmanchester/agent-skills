@@ -1,0 +1,82 @@
+[
+  {
+    "query": "I have an Expo Router app and want to add Convex for a realtime task list. Can you wire it up properly?",
+    "should_trigger": true
+  },
+  {
+    "query": "why is useQuery(api.tasks.list) always undefined in my Expo app?",
+    "should_trigger": true
+  },
+  {
+    "query": "Set EXPO_PUBLIC_CONVEX_URL for my Expo app and make sure EAS preview and production builds use the right Convex deployment",
+    "should_trigger": true
+  },
+  {
+    "query": "Add Clerk auth to my Expo + Convex app and make sure each user only sees their own notes",
+    "should_trigger": true
+  },
+  {
+    "query": "How do I upload images from expo-image-picker into Convex storage and save metadata?",
+    "should_trigger": true
+  },
+  {
+    "query": "My Convex backend in an Expo app needs Stripe calls. Which functions should be actions and which should stay mutations?",
+    "should_trigger": true
+  },
+  {
+    "query": "Can you help me migrate this Expo app from Firebase to Convex without breaking old mobile builds?",
+    "should_trigger": true
+  },
+  {
+    "query": "I need infinite scroll notifications in my React Native app using Convex. Please add pagination and the right indexes.",
+    "should_trigger": true
+  },
+  {
+    "query": "We already have Convex in an Expo app but the provider setup and generated imports are messy. Can you clean it up?",
+    "should_trigger": true
+  },
+  {
+    "query": "Help me design a Convex schema for an Expo app with users, teams, projects and tasks, and make sure the indexes match the queries",
+    "should_trigger": true
+  },
+  {
+    "query": "Animate a bottom sheet in Expo and make it feel more native on iOS",
+    "should_trigger": false
+  },
+  {
+    "query": "Build a Next.js app with Convex and Clerk",
+    "should_trigger": false
+  },
+  {
+    "query": "What's the best React Native chart library for line graphs?",
+    "should_trigger": false
+  },
+  {
+    "query": "Fix my Expo app icon, splash screen and status bar configuration",
+    "should_trigger": false
+  },
+  {
+    "query": "Write a Node.js script that uploads a file to Amazon S3",
+    "should_trigger": false
+  },
+  {
+    "query": "Explain Convex components in general; there is no mobile client involved",
+    "should_trigger": false
+  },
+  {
+    "query": "Help me configure Clerk in a Next.js App Router project",
+    "should_trigger": false
+  },
+  {
+    "query": "Set up Firebase in Expo with anonymous auth and Firestore",
+    "should_trigger": false
+  },
+  {
+    "query": "How do I add Expo Router tabs and deep links?",
+    "should_trigger": false
+  },
+  {
+    "query": "Optimise my Postgres schema for team memberships and task comments",
+    "should_trigger": false
+  }
+]

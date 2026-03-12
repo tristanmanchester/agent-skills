@@ -2,71 +2,72 @@
 
 ## Threat assumptions
 
-- Docker does **not** make an exposed service safe. If you publish `18789/tcp` to `0.0.0.0`, the internet (or your LAN) can still reach it.
-- Volume mounts (`~/.openclaw`, workspace) often contain the most sensitive data (credentials, transcripts, API keys).
-- Container user/root choices matter: a root container + broad mounts can become a host compromise.
+- Docker does **not** make an exposed service safe.
+- If you publish `18789/tcp` to `0.0.0.0`, the LAN or internet can still reach it.
+- Volume mounts often contain the most sensitive OpenClaw data: config, credentials, transcripts, workspace.
+- Host networking or privileged containers turn a bot misconfiguration into a host incident quickly.
 
-## Audit checks (Docker)
+## Audit checks
 
 1. **Published ports**
-   - Confirm the Gateway port is **not** published to all interfaces.
-   - Good: `127.0.0.1:18789->18789/tcp` (local only)
-   - Risky: `0.0.0.0:18789->18789/tcp` (LAN/internet reachable)
+   - good: `127.0.0.1:18789->18789/tcp`
+   - risky: `0.0.0.0:18789->18789/tcp`
 
    Commands:
+
    ```bash
-   docker port openclaw-gateway 18789
-   docker compose ps
+   docker ps --format 'table {{.Names}}	{{.Image}}	{{.Ports}}'
+   docker compose ps || true
+   docker port openclaw-gateway 18789 || true
    ```
 
 2. **Gateway auth and bind mode**
-   - Even with localhost port publishing, keep Gateway auth enabled.
-   - If you are running remote access, prefer SSH tunnel or Tailscale Serve.
+   - even on localhost publishing, keep Gateway auth enabled
+   - use `openclaw gateway probe --json` to see the effective target the CLI can reach
 
 3. **Volume mounts**
-   - Identify what is mounted into the container:
-     - `~/.openclaw` (state/credentials/config)
-     - workspace directory
-   - Ensure mounts are as narrow as possible and avoid mounting your entire home directory.
+   - identify mounts for `~/.openclaw` and workspace
+   - avoid mounting your entire home directory
+   - keep host-side permissions on the mounted state dir restrictive
 
-4. **Container identity and privileges**
-   - Confirm the container runs as a non-root user where possible.
-   - Avoid privileged mode, host networking, and unnecessary Linux capabilities.
+4. **Container privileges**
+   - avoid `privileged: true`
+   - avoid `network_mode: host`
+   - avoid unnecessary capabilities
+   - run as a non-root user where practical
 
-5. **Updates**
-   - Track the OpenClaw image/tag you run.
-   - Treat Docker image rebuilds and updates as part of your operational security.
+5. **Control UI and reverse proxy**
+   - if a proxy fronts the container, configure `gateway.trustedProxies`
+   - for non-loopback Control UI, set `gateway.controlUi.allowedOrigins`
+   - do not enable Host-header origin fallback casually
 
-## Hardening actions (strong defaults)
+## Hardening actions
 
-### 1) Publish the Gateway to localhost only
-
-In `docker-compose.yml`, publish the port with an explicit host IP:
+### Publish localhost only
 
 ```yaml
 ports:
   - "127.0.0.1:18789:18789"
 ```
 
-If you need LAN access, prefer a VPN/tailnet. If you must expose to LAN, firewall it to a tight allowlist.
+### Reduce tool surface
 
-### 2) Avoid public exposure on cloud VMs
+For inbox-facing agents, start with `tools.profile: "messaging"` and deny runtime/fs/automation until a specific need appears.
 
-- Cloud + Docker is the highest-risk combination if you publish the port.
-- Ensure security groups/firewalls block 18789 from `0.0.0.0/0`.
+### Keep secrets out of the repo
 
-### 3) Reduce secrets sprawl
+Use host env files or a secrets manager, not committed config values.
 
-- Keep provider credentials in `~/.openclaw/.env` on the host (or a secrets manager), not in the repo.
-- Ensure host filesystem permissions on the mounted state dir are user-only.
+### Treat browser + exec as high risk
 
-### 4) Treat browser + exec as high-risk
-
-- Deny `group:runtime` and `group:fs` tools by default for any untrusted chat surface.
-- Treat browser control as operator access.
+If untrusted users can message the bot, runtime/browser/node surfaces need especially tight controls.
 
 ## Verification
 
-- `docker port openclaw-gateway 18789` shows only `127.0.0.1:...` (or no published port).
-- `openclaw security audit --deep` shows no Critical findings.
-- External reachability tests from a different machine/network fail.
+```bash
+openclaw security audit --deep --json
+openclaw gateway probe --json
+openclaw channels status --probe
+```
+
+External reachability tests from another machine/network should fail unless the exposure is deliberate and defended.

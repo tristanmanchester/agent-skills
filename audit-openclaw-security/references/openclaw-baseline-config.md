@@ -1,21 +1,21 @@
 # OpenClaw secure baseline config (starting point)
 
-This file contains a conservative baseline derived from OpenClaw’s own security guidance.
+This file contains conservative baseline snippets for current OpenClaw builds.
 
-> OpenClaw config is **JSON5** in `~/.openclaw/openclaw.json` (comments + trailing commas allowed). Regular JSON also works.
+> OpenClaw config is usually `~/.openclaw/openclaw.json`. Depending on install/profile it may be JSON or JSON5-like. Back it up before editing.
 
-## Baseline goal
+## Baseline goals
 
-- Keep the Gateway **private** (loopback)
-- Require strong **Gateway auth**
-- Isolate DMs and require **pairing**
-- Require explicit **mention gating** in groups
-- Default tools to least privilege (deny control-plane + runtime by default)
+- keep the Gateway private
+- require strong Gateway auth
+- isolate DMs
+- require explicit mentions in groups
+- default tools to least privilege
+- avoid accidental remote browser / node / automation exposure
 
-## Minimal “secure baseline” (copy/paste)
+## 1) Minimal local baseline
 
-> Paste into your OpenClaw config (usually `~/.openclaw/openclaw.json`) *after* making a backup.
-> Replace the token with a long random secret.
+Good for a single-user local install that still wants sensible defaults.
 
 ```js
 {
@@ -24,6 +24,9 @@ This file contains a conservative baseline derived from OpenClaw’s own securit
     bind: "loopback",
     port: 18789,
     auth: { mode: "token", token: "replace-with-long-random-token" },
+  },
+  session: {
+    dmScope: "per-channel-peer",
   },
   channels: {
     whatsapp: {
@@ -34,7 +37,9 @@ This file contains a conservative baseline derived from OpenClaw’s own securit
 }
 ```
 
-## Hardened baseline including tool restrictions
+## 2) Hardened inbox-facing baseline
+
+This is the conservative starting point for support-style or user-facing agents.
 
 ```js
 {
@@ -48,17 +53,19 @@ This file contains a conservative baseline derived from OpenClaw’s own securit
   },
   tools: {
     profile: "messaging",
-    // Control plane + runtime tools denied by default.
-    // Re-enable per trusted agent if/when needed.
     deny: [
-      "group:automation", // includes gateway + cron
+      "group:automation", // gateway + cron
       "group:runtime",    // exec/bash/process
       "group:fs",         // read/write/edit/apply_patch
       "sessions_spawn",
       "sessions_send",
     ],
     fs: { workspaceOnly: true },
-    exec: { security: "deny", ask: "always" },
+    exec: {
+      security: "deny",
+      ask: "always",
+      applyPatch: { workspaceOnly: true },
+    },
     elevated: { enabled: false },
   },
   channels: {
@@ -67,40 +74,80 @@ This file contains a conservative baseline derived from OpenClaw’s own securit
 }
 ```
 
-## Optional hardening extras
+## 3) Shared inbox / multi-account note
 
-- Disable discovery if you don’t need local device discovery:
+If more than one real person can DM the bot:
+
+- use `session.dmScope: "per-channel-peer"`
+- if the same provider has multiple bot accounts, prefer `per-account-channel-peer`
+- keep `dmPolicy: "pairing"` or explicit allowlists
+- do not combine broad runtime/fs/elevated tools with open DMs or open groups
+
+## 4) Reverse proxy / non-loopback Control UI
+
+If a reverse proxy fronts the Gateway, set trusted proxy IPs and explicit browser origins.
 
 ```js
 {
-  discovery: {
-    mdns: { mode: "off" },
+  gateway: {
+    bind: "loopback",
+    trustedProxies: ["127.0.0.1"],
+    allowRealIpFallback: false,
+    auth: { mode: "token", token: "replace-with-long-random-token" },
+    controlUi: {
+      allowedOrigins: ["https://ui.example.com"],
+    },
   },
 }
 ```
 
-- Or keep discovery but reduce information disclosure (recommended default):
+Notes:
+
+- keep `gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback` off
+- keep `gateway.controlUi.dangerouslyDisableDeviceAuth` off
+- if the proxy is not on localhost, replace the trusted proxy IPs accordingly
+
+## 5) Tailscale Serve note
+
+`tailscale.mode: "serve"` can be a good remote-access pattern, but remember:
+
+- `tailscale.mode: "funnel"` is public and should be treated as a red flag
+- `gateway.auth.allowTailscale` can enable tokenless Control UI / WebSocket auth via Tailscale identity headers
+- that tokenless flow assumes the Gateway host itself is trusted
+- if untrusted code may run on the host, or if any reverse proxy sits in front, disable `gateway.auth.allowTailscale` and require normal auth
+
+## 6) Discovery and logging
+
+Reduce ambient exposure:
 
 ```js
 {
   discovery: {
-    mdns: { mode: "minimal" },
+    mdns: { mode: "minimal" }, // or "off" if unused
   },
-}
-```
-
-- Keep log redaction enabled (and let the audit auto-fix it if it’s off):
-
-```js
-{
   logging: {
     redactSensitive: true,
   },
 }
 ```
 
-## Notes
+## 7) Tool profile reminders
 
-- If you need remote access, prefer **SSH tunnelling** or **Tailscale Serve** rather than binding the Gateway to LAN/0.0.0.0.
-- After changes, rerun: `openclaw security audit --deep`.
-- Avoid sharing `~/.openclaw/openclaw.json` without redaction.
+Current high-level profiles:
+
+- `minimal` -> `session_status` only
+- `messaging` -> message + session reply/history/status
+- `coding` -> filesystem + runtime + sessions + memory + image
+- `full` -> unrestricted
+
+For user-facing inbox bots, `messaging` is usually the right starting point, then narrow further with `tools.deny`.
+
+## Verification
+
+After changes, re-run:
+
+```bash
+openclaw security audit --deep --json
+openclaw gateway probe --json
+openclaw channels status --probe
+```

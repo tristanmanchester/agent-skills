@@ -1,0 +1,19 @@
+{
+  "should_trigger": [
+    "Wire Convex into this existing Next.js app and add a comments feature.",
+    "Why is `NEXT_PUBLIC_CONVEX_URL` undefined in my App Router project?",
+    "Add infinite-scroll notifications with `usePaginatedQuery`.",
+    "Set up authenticated server actions with `convex/nextjs`.",
+    "Should I use Convex for chat in my Next.js SaaS?",
+    "Help me clean up slow Convex queries and missing indexes.",
+    "I need to deploy Convex plus Next.js to Vercel with preview environments.",
+    "Review this `convex/schema.ts` and suggest better indexes."
+  ],
+  "should_not_trigger": [
+    "Refactor this plain React component.",
+    "Explain SQL joins to me.",
+    "Fix my Prisma schema in a NestJS backend.",
+    "Help me style this Next.js landing page hero section.",
+    "Write a Postgres migration for Supabase."
+  ]
+}

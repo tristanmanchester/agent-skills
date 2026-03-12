@@ -1,44 +1,60 @@
-# Platform playbook: Personal laptop (macOS/Windows/Linux)
+# Platform playbook: Personal laptop (macOS / Windows / Linux)
 
 ## Why laptops are special
 
-- Laptops roam across networks (coffee shops, conferences).
-- They contain personal data and credentials.
-- They are often used for browsing and development, increasing exposure.
+- They roam across networks.
+- They often hold personal data, browser sessions, and development secrets.
+- They are more likely to run other untrusted tools or experiments locally.
 
 ## Preferred pattern
 
-- **Don’t run OpenClaw 24/7 on your primary laptop** unless you have a strong reason.
+- Do not run OpenClaw 24/7 on your primary laptop unless there is a strong reason.
 - Prefer isolation:
-  - Docker (with careful volume/network settings), or
-  - a VM, or
-  - a separate user account with no access to sensitive files.
+  - Docker with careful mounts and networking
+  - a VM
+  - a separate OS user with minimal access to your personal files
 
 ## Audit checks
 
 1. Is the Gateway loopback-bound?
-2. Are DMs locked down (pairing/allowlist) and groups mention-gated?
-3. Are tools constrained (workspace-only FS; exec ask/deny)?
-4. Are transcripts/logs being retained longer than necessary?
+2. Is auth enabled?
+3. Are DMs locked down with pairing/allowlists?
+4. Are groups mention-gated?
+5. Are runtime/fs/elevated tools constrained?
+6. Is transcript/log retention intentional?
 
 ## Hardening actions
 
+### Common to all laptops
+
+- keep the Gateway local-only
+- avoid running the bot on untrusted networks
+- turn it off when you do not need it
+- prefer `session.dmScope: "per-channel-peer"` for any multi-user scenario
+- start from a conservative tool profile
+
 ### macOS laptops
-- Same guidance as Mac mini, but emphasise:
-  - avoid running on untrusted networks
-  - disable LAN binds; use loopback-only
-  - keep the bot off when travelling
+
+- same guidance as the Mac mini playbook, with extra emphasis on travel and untrusted Wi-Fi
+- FileVault and the macOS firewall should both be on
 
 ### Windows laptops
-- Prefer WSL2 for OpenClaw runtime.
-- Ensure Windows Defender + full disk encryption (BitLocker) are enabled.
-- Ensure WSL2 distro is updated and has minimal packages.
+
+- prefer WSL2 for shell-driven audit and management flows
+- keep Defender and BitLocker enabled
+- keep the WSL distro updated and minimal
 
 ### Linux laptops
-- Use a host firewall (ufw/nftables).
-- Consider running OpenClaw in a dedicated user namespace/container.
+
+- use a host firewall (`ufw` / `nftables`)
+- consider a dedicated user or container boundary for OpenClaw
 
 ## Verification
 
-- Rerun `openclaw security audit --deep`.
-- Confirm no inbound exposure beyond localhost/tailnet.
+```bash
+openclaw security audit --deep --json
+openclaw gateway probe --json
+openclaw channels status --probe
+```
+
+Confirm there is no inbound exposure beyond localhost or your intentional tailnet path.

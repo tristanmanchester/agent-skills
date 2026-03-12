@@ -1,0 +1,62 @@
+{
+  "functional": [
+    {
+      "name": "Existing Next.js app: realtime notifications feed",
+      "prompt": "Add a notifications feed to my Next.js app using Convex. It needs realtime updates, auth, and infinite scroll.",
+      "expected": [
+        "Uses or mentions `npx convex dev` during development",
+        "Adds schema and indexes for user-scoped notifications",
+        "Uses `.paginate(paginationOpts)` plus `usePaginatedQuery`",
+        "Keeps Convex React hooks in Client Components",
+        "Includes auth and ownership checks"
+      ]
+    },
+    {
+      "name": "Server rendering with reactive hydration",
+      "prompt": "I need a project dashboard page in App Router with a fast first paint, but I still want live updates after load.",
+      "expected": [
+        "Uses `preloadQuery` in a Server Component",
+        "Uses `usePreloadedQuery` in a Client Component",
+        "Mentions the client/server boundary clearly",
+        "Avoids calling Convex React hooks directly in a Server Component"
+      ]
+    },
+    {
+      "name": "Third-party API orchestration",
+      "prompt": "Create a Convex feature that calls an external summarisation API and then stores the result back in my app.",
+      "expected": [
+        "Uses an action for the external call",
+        "Runs database writes through a mutation",
+        "Uses `\"use node\"` only if a Node-only SDK or API is actually required"
+      ]
+    },
+    {
+      "name": "Access-control-heavy feature",
+      "prompt": "Add workspace-scoped tasks to my Convex backend. Different users can only see tasks for workspaces they belong to.",
+      "expected": [
+        "Models membership or ownership explicitly",
+        "Checks membership on reads and writes",
+        "Suggests helpers or wrappers if auth logic repeats"
+      ]
+    },
+    {
+      "name": "Performance review",
+      "prompt": "Review this Convex repo for slow queries and bad patterns.",
+      "expected": [
+        "Looks for `.filter(...)` instead of `.withIndex(...)`",
+        "Looks for unbounded `.collect()` calls",
+        "Checks pagination, indexes, and validator coverage",
+        "Mentions the validation script"
+      ]
+    },
+    {
+      "name": "Cloud agent setup",
+      "prompt": "My cloud coding agent cannot log in to Convex. What's the safest development flow?",
+      "expected": [
+        "Uses Agent Mode for remote/background agents",
+        "Uses normal `npx convex dev` for local agents on the user's machine",
+        "Mentions local deployments as an alternative for local-only isolation"
+      ]
+    }
+  ]
+}
