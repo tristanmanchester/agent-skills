@@ -1,6 +1,0 @@
-{
-  "name": "Product updates",
-  "description": "Feature launches and release notes",
-  "default_subscription": "opt_in",
-  "visibility": "public"
-}

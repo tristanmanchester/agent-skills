@@ -1,9 +1,0 @@
-{
-  "name": "mail.example.com",
-  "region": "eu-west-1",
-  "tls": "opportunistic",
-  "capabilities": {
-    "sending": true,
-    "receiving": true
-  }
-}

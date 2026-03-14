@@ -1,5 +1,0 @@
-{
-  "name": "billing-bot-send-only",
-  "permission": "sending_access",
-  "domain_id": "dom_123456789"
-}
