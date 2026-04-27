@@ -189,3 +189,8 @@ When modifying a repo, finish with:
 - "Make this drag list reorder smoothly" -> `Reorder.Group` / `Reorder.Item`
 - "This breaks in App Router" -> inspect boundary and import path before editing
 - "Modernise our Framer Motion setup" -> audit first, then use `references/MIGRATION.md`
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export the API keys, tokens, or other secrets this skill already documents for your app, on that path, for example.
+

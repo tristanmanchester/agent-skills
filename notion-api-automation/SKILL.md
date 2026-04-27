@@ -147,3 +147,8 @@ node {baseDir}/scripts/notionctl.mjs triage --inbox-page "<inbox-page-id>" --rul
 - **404 not found**: wrong ID, or content not shared to the integration.
 - **429 rate_limited**: respect `Retry-After`; reduce concurrency.
 - **validation_error**: payload too large, too many blocks, or a property value doesn’t match schema.
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `NOTION_API_KEY` on that path, for example.
+

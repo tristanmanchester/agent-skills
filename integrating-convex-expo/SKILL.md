@@ -364,3 +364,8 @@ Load only the file that matches the current task.
 - [references/troubleshooting.md](references/troubleshooting.md) — common failures and exact fixes.
 - [references/evaluation.md](references/evaluation.md) — how to use the bundled trigger and output eval files.
 - [references/sources.md](references/sources.md) — upstream docs and materials used for this rewrite.
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `EXPO_PUBLIC_CONVEX_URL` / `CONVEX_DEPLOY_KEY` and the other env vars your Expo app and Convex project use, on that path, for example.
+

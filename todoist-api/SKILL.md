@@ -195,3 +195,8 @@ python3 scripts/todoist_api.py sync \
   --sync-token '*' \
   --resource-types '["all"]'
 ```
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `TODOIST_API_TOKEN` (or the OAuth access token) on that path, for example.
+

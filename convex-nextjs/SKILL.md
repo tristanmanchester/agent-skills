@@ -237,3 +237,8 @@ See [references/09-deploy-ci-and-vercel.md](references/09-deploy-ci-and-vercel.m
 - Local dev, Agent Mode, and local deployments: [references/08-local-dev-agent-mode-and-cloud-agents.md](references/08-local-dev-agent-mode-and-cloud-agents.md)
 - Deploy and CI: [references/09-deploy-ci-and-vercel.md](references/09-deploy-ci-and-vercel.md)
 - Troubleshooting and smoke tests: [references/10-troubleshooting-and-smoke-tests.md](references/10-troubleshooting-and-smoke-tests.md)
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `CONVEX_DEPLOY_KEY` (or the other env vars this skill / your Vercel app uses) on that path, for example.
+

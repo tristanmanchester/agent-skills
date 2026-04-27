@@ -191,3 +191,8 @@ grep -Rni "usePanGesture" {baseDir}/references
 - Gesture Handler (latest): https://docs.swmansion.com/react-native-gesture-handler/
 - Expo Reanimated: https://docs.expo.dev/versions/latest/sdk/reanimated/
 - Expo Gesture Handler: https://docs.expo.dev/versions/latest/sdk/gesture-handler/
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export the API keys, tokens, or other secrets this skill already documents for your app, on that path, for example.
+

@@ -112,3 +112,8 @@ Include a short “How to test locally” note (dev build commands + which place
 - Locale override: `references/LOCALE.md`
 - Bare RN + Expo modules: `references/BARE_REACT_NATIVE.md`
 - Migration / compat API: `references/MIGRATION_COMPAT.md`
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export the `EXPO_PUBLIC_*` Superwall (and other vendor) keys your app config uses, on that path, for example.
+

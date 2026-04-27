@@ -172,3 +172,8 @@ Use `contents.maxAgeHours` (or the `maxAgeHours` top-level alias if the API acce
 - API + parameter cheat sheet: `references/exa-search-api.md`
 - Best-practice recipes: `references/exa-search-best-practices.md`
 - Quickstart snippets (SDK + curl): `references/exa-search-quickstart.md`
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `EXA_API_KEY` on that path, for example.
+

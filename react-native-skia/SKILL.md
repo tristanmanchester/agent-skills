@@ -151,3 +151,8 @@ When you produce code with this skill:
 2. Use `Atlas` for many instances of the same texture.
 3. Use `Picture` for dynamic command lists such as trails, generative art, or changing entity counts.
 4. Use texture hooks if pre-rendering saves repeated work.
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export the API keys, tokens, or other secrets this skill already documents for your app, on that path, for example.
+

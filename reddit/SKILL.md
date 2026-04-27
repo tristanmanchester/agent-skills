@@ -114,3 +114,8 @@ export REDDIT_RO_MAX_DELAY_MS=1800
 export REDDIT_RO_TIMEOUT_MS=25000
 export REDDIT_RO_USER_AGENT='script:clawdbot-reddit-readonly:v1.0.0 (personal)'
 ```
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export the API keys, tokens, or other secrets this skill already documents for your app, on that path, for example.
+

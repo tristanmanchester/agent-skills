@@ -240,3 +240,8 @@ When you finish editing a repo, your response should include:
 - any assumptions about entitlements, product IDs, placements, restore behaviour, or account model
 - any migration debt intentionally left in place
 - how to run and test the development build
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export the RevenueCat and Superwall `EXPO_PUBLIC_*` API keys (and related keys) your app config uses, on that path, for example.
+

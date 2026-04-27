@@ -250,3 +250,8 @@ grep -Rni "tokenCache" references/
 grep -Rni "enterprise_sso" references/
 grep -Rni "__experimental_resourceCache" references/
 ```
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` and the other Clerk-related env your app uses, on that path, for example.
+

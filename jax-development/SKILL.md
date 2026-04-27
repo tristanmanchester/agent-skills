@@ -226,3 +226,8 @@ When updating this skill, refresh the JAX facts most likely to drift:
 - profiler and memory-tooling guidance
 - export / AOT APIs
 - Pallas and custom extension interfaces
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export the API keys, tokens, or other secrets this skill already documents for your app, on that path, for example.
+
