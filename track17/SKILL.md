@@ -126,3 +126,8 @@ python3 {baseDir}/scripts/track17.py quota
   - customs holds
   - carrier handoffs
 - Never echo `TRACK17_TOKEN` or `TRACK17_WEBHOOK_SECRET`.
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `TRACK17_TOKEN` on that path, for example.
+

@@ -205,3 +205,8 @@ python3 scripts/meta_ads.py create ad --params-file work/ad.json --confirm
 - [OpenClaw notes](references/OPENCLAW.md)
 - Asset templates in `assets/`
 - Example evals in `evals/evals.json`
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `META_ACCESS_TOKEN` on that path, for example.
+

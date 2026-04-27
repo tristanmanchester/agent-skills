@@ -309,3 +309,8 @@ Actions:
 3. Add structured contradiction solving and feasibility pressure-testing.
 
 For trigger tests and maintenance checks, use `references/VALIDATION.md`.
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export the API keys, tokens, or other secrets this skill already documents for your app, on that path, for example.
+

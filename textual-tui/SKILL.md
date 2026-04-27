@@ -209,3 +209,8 @@ Before you finish, aim to leave behind:
 - [Packaging and CI](references/packaging-and-ci.md)
 - [Repository map](references/repo-map.md)
 - [Upstream pattern atlas](references/upstream-pattern-atlas.md)
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export the API keys, tokens, or other secrets this skill already documents for your app, on that path, for example.
+

@@ -335,3 +335,8 @@ Do not pad the answer with writing advice unless the user asked for it.
 - [assets/nature-letter-template.md](assets/nature-letter-template.md)
 - [assets/portfolio-article-template.md](assets/portfolio-article-template.md)
 - [assets/reviewer-response-template.md](assets/reviewer-response-template.md)
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export the API keys, tokens, or other secrets this skill already documents for your app, on that path, for example.
+

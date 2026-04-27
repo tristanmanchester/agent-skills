@@ -26,4 +26,4 @@ npx skills add tristanmanchester/agent-skills
 
 See each skill folder's README.md and SKILL.md for details.
 
-Or use [`authsome`](https://github.com/manojbajaj95/authsome) with the authsome skill, which handles runtime credential injection for agent workflows.
+**Optional:** [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export the API keys, tokens, or other secrets each skill documents for your app, on that path, for example.

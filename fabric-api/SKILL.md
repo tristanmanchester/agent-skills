@@ -172,3 +172,8 @@ node {baseDir}/scripts/fabric.mjs POST /v2/search --json '{"queries":[{"mode":"t
 - OpenAPI spec (source of truth): `{baseDir}/fabric-api.yaml`
 - Extra schema notes: `{baseDir}/references/REFERENCE.md`
 - Debug playbook: `{baseDir}/references/TROUBLESHOOTING.md`
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `FABRIC_API_KEY` on that path, for example.
+

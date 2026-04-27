@@ -269,3 +269,8 @@ Read these when you need more depth:
 - If speaker naming matters, did you enable diarisation and/or provide a speaker map?
 - If the result will feed another agent, did you produce Markdown and/or agent JSON rather than only raw stdout?
 - If the transcript will be machine-consumed, did you keep the manifest or explicit output filenames?
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `ASSEMBLYAI_API_KEY` on that path, for example.
+

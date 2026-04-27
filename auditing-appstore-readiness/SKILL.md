@@ -139,3 +139,8 @@ Switch to fix mode:
 - Expo‑specific checks: [references/expo.md](references/expo.md)
 - React Native iOS checks: [references/react-native.md](references/react-native.md)
 - Native iOS checks: [references/native-ios.md](references/native-ios.md)
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export the API keys, tokens, or other secrets this skill already documents for your app, on that path, for example.
+

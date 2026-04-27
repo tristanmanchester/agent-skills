@@ -189,3 +189,8 @@ A strong answer usually includes:
 - “How do I manage multiple Resend accounts from one agent?”
 - “Can the CLI send a hosted template directly?”
 - “How should my agent parse `resend` output safely?”
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `RESEND_API_KEY` on that path, for example.
+

@@ -77,3 +77,8 @@ Output directory layout:
 - API + parameters: `references/mistral_ocr_api.md`
 - Output mapping rules (placeholders to extracted images/tables): `references/output_mapping.md`
 - Example annotation prompts for common document types: `references/annotation_prompts.md`
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `MISTRAL_API_KEY` on that path, for example.
+

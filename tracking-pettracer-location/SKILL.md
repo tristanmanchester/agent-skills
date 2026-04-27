@@ -181,3 +181,8 @@ Include:
 - Accuracy (metres) if present
 - One-line assessment: “recent fix” vs “stale fix” (use last_fix_age_s if available; interpret in the context of the current tracking mode)
 ```
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `PETTRACER_TOKEN` on that path, for example.
+

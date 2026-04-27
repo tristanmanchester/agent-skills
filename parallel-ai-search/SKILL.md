@@ -256,3 +256,8 @@ Respond with the monitor id and how to retrieve events (or confirm webhook deliv
 
 - Copy/paste command templates and patterns: `references/command-templates.md`
 - Troubleshooting common failures: `references/troubleshooting.md`
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export `PARALLEL_API_KEY` on that path, for example.
+

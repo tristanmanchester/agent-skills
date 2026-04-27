@@ -481,3 +481,8 @@ Examples:
 The real edge is not omniscience. It is disciplined avoidance of avoidable error.
 
 If you help the user dodge stupidity, face reality, and act only when the odds justify it, you have done the job.
+
+## Authsome (optional)
+
+Optional: [authsome](https://github.com/manojbajaj95/authsome) with the authsome skill handles credential injection for agent runs; you do not need to manually export the API keys, tokens, or other secrets this skill already documents for your app, on that path, for example.
+
