@@ -3,57 +3,92 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Turn the following rough study notes into a Nature-style article outline and referenced summary paragraph. Do not invent missing data. Then list any unresolved factual gaps that must be confirmed before submission.",
-      "expected_output": "A figure-led outline, a restrained Nature-style opening paragraph, and a short list of unresolved facts or missing details.",
+      "prompt": "Turn the following rough study notes and figure bullets into a full Nature-style drafting pack: manuscript brief, editorial blueprint, figure-claim matrix, referenced summary paragraph, and a figure-led Results outline. Do not invent missing data. End with the unresolved facts that must be confirmed before submission.",
+      "expected_output": "A structured drafting pack with brief, blueprint, figure-claim matrix, broad-reader summary paragraph, figure-led outline, and a clear unresolved-facts list.",
       "assertions": [
-        "The output includes a clear central claim.",
-        "The opening paragraph is aimed at broad scientific readers rather than only niche specialists.",
+        "The output includes a one-sentence central claim and a statement of what the paper is not claiming.",
+        "The output includes a figure-claim matrix or equivalent structure tying each figure to an allowed claim.",
+        "The summary paragraph is written for broad scientific readers rather than only niche specialists.",
         "The model does not invent accession numbers, ethics approvals, or numerical results that were not supplied.",
-        "The output includes an explicit list of unresolved factual gaps."
+        "The output ends with unresolved factual gaps or assumptions that still need confirmation."
       ]
     },
     {
       "id": 2,
-      "prompt": "Rewrite this generic, AI-sounding abstract for Nature Materials. Keep every factual claim, cut the hype, and make it sound like careful human scientific prose.",
-      "expected_output": "A rewritten abstract with more precise language, less hype, and no invented content.",
+      "prompt": "Rewrite this jargon-heavy, slightly generic abstract and opening for Nature. Preserve every factual claim, but make the prose more precise, more pleasurable to read, and less obviously AI-shaped. Then explain the 5 most important edits you made and why.",
+      "expected_output": "A rewritten abstract/opening with preserved facts, clearer reader movement, fewer generic phrases, and a short, concrete explanation of the most important edits.",
       "assertions": [
         "The rewrite preserves the original factual content.",
-        "The rewrite reduces hype words such as novel, groundbreaking, or unprecedented.",
-        "The rewrite avoids generic phrases such as 'opens new avenues' unless specifically justified.",
-        "The rewrite reads as natural scientific prose rather than generic AI prose."
+        "The rewrite reduces hype words and generic significance phrases.",
+        "The rewrite improves sentence variety or reduces repetitive sentence openings.",
+        "The explanation cites concrete edits rather than generic advice.",
+        "The tone remains scientific rather than becoming casual or promotional."
       ]
     },
     {
       "id": 3,
-      "prompt": "Convert this Nature Communications-style abstract and intro into a main Nature presubmission enquiry package: a cover paragraph to the editor, a referenced summary paragraph in Nature format, and a short note on fit.",
-      "expected_output": "An editor-facing cover paragraph, a referenced summary paragraph in Nature style, and a brief fit rationale.",
+      "prompt": "Using these three accepted papers from our group as style anchors, draft the Introduction and first two Results subsections for our new manuscript. Match the restraint, sentence movement, and paragraph density of the exemplars without copying their wording. Then run a prose fingerprint comparison and tell me where the draft is still misaligned.",
+      "expected_output": "A draft aligned to supplied exemplars at the level of broad habits, followed by a prose-fingerprint style comparison and revision priorities.",
       "assertions": [
-        "The response distinguishes editor-facing framing from manuscript text.",
-        "The Nature summary paragraph is broad, concise, and references are indicated.",
-        "The fit rationale explains why the work matters to an interdisciplinary readership.",
-        "The output does not simply paste the abstract into the cover paragraph."
+        "The response uses the exemplars as style anchors without copying distinctive phrasing.",
+        "The draft identifies and respects the paper's central claim and evidence ladder.",
+        "The follow-up comparison reports measurable stylistic alignment or mismatch.",
+        "The revision priorities focus on broad habits such as rhythm, nominalization, signposting, or opener variety."
       ]
     },
     {
       "id": 4,
-      "prompt": "Draft a point-by-point reply to these two reviewer comments. Keep the tone firm but courteous, specify manuscript changes, and concede points that are valid.",
-      "expected_output": "A structured rebuttal document with quoted comments, specific responses, and precise manuscript-change notes.",
+      "prompt": "Convert this chronological experiment log into a Nature-style Results section organised by question and answer rather than by lab order. Make the argument easy for an adjacent-field reader to follow, and flag anywhere the evidence does not yet support the interpretation.",
+      "expected_output": "A Results section reorganised by conceptual logic, with explicit flagging of claims that outrun the evidence.",
       "assertions": [
-        "Each reviewer comment receives a direct response.",
-        "The tone is courteous and non-defensive.",
-        "The response identifies exact manuscript changes or explains why a request was not adopted.",
-        "The rebuttal does not promise analyses that were not actually done."
+        "The Results section is organised around conceptual questions or figure logic rather than chronology.",
+        "The prose distinguishes observation from interpretation.",
+        "The output flags overclaim or missing-evidence points explicitly.",
+        "The rewritten Results remain specific and evidence-led rather than generic."
       ]
     },
     {
       "id": 5,
-      "prompt": "Run a Nature-style preflight on this draft and produce a concise report: title length, missing sections, hype words, AI-tell phrases, and any missing availability statements.",
-      "expected_output": "A concise preflight report that identifies structural and stylistic issues and suggests concrete fixes.",
+      "prompt": "Draft a Discussion for this Nature-style manuscript. Start by stating what the study establishes, compare it with the strongest prior work, surface the key limitation before the reviewer does, and end on the most defensible implication rather than a generic future-work line.",
+      "expected_output": "A Discussion section with calibrated claims, comparison to prior work, explicit limitation handling, and a restrained but meaningful ending.",
       "assertions": [
-        "The report identifies missing mandatory or expected sections.",
-        "The report flags hype words or generic AI-like phrases when present.",
+        "The Discussion separates what is established from what is only suggested.",
+        "A real limitation or scope boundary is included before the ending.",
+        "The final paragraph does not rely on generic phrases like 'opens new avenues' or 'highlights the importance of'.",
+        "The implication is scaled to the evidence rather than inflated."
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Write figure legends for Figures 1-4 from these panel notes, including brief title sentences, panel descriptions, sample sizes, centre values, error bars, and statistical tests where provided. Use placeholders where the information is still missing rather than inventing it.",
+      "expected_output": "A complete figure-legend block with title sentences, panel-wise descriptions, and explicit placeholders for missing statistical details.",
+      "assertions": [
+        "Each legend begins with a brief title sentence.",
+        "Panel descriptions appear in sequence and are easy to follow.",
+        "Sample-size or statistics information is included when provided.",
+        "Missing statistical information is marked with placeholders rather than invented."
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Turn this draft into a presubmission enquiry package for Nature: an editor-facing cover paragraph, a referenced summary paragraph in Nature format, and a concise journal-fit note. Do not simply paste the abstract into the cover paragraph.",
+      "expected_output": "A presubmission package that separates editor framing from manuscript framing and makes an explicit fit argument.",
+      "assertions": [
+        "The cover paragraph is editor-facing and not just a copied abstract.",
+        "The Nature summary paragraph is broad, concise, and appropriately referenced in form.",
+        "The fit note explains why the work matters to an interdisciplinary readership.",
+        "The output states at least one meaningful non-claim or boundary condition."
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Run a full Nature-style preflight on this draft. Report structural issues, title problems, weak availability statements, legend gaps, and any AI-ish prose patterns. Then rewrite only the three paragraphs that would most improve reader trust.",
+      "expected_output": "A prioritised preflight report plus targeted paragraph rewrites focused on high-value fixes.",
+      "assertions": [
+        "The report identifies missing required or expected sections when present.",
         "The report checks for data and code availability statements.",
-        "The report suggests concrete, actionable fixes rather than vague criticism."
+        "The report flags generic phrases, hype, or rhythm/opener problems when present.",
+        "The follow-up rewrites target the highest-value problems rather than making broad superficial edits."
       ]
     }
   ]

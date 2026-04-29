@@ -1,84 +1,91 @@
-# Journal and Content Modes
+# Modes
 
-First rule: if a named journal is provided and live web access exists, check the current author guide before fixing limits. Nature Portfolio formats vary enough that exact counts should not be guessed.
+Use these bundled modes as defaults when the user does not name a specific journal, or when live checking is unavailable. They are deliberately conservative. If the user names a specific Nature Portfolio journal and web access is available, verify the live guide before finalising exact limits, heading policy, and required end matter.
 
-## Mode 1 — `nature-article`
+## Quick mode table
 
-Use for main **Nature** Articles or when the user explicitly wants the feel of a flagship Nature research article.
+| Mode | Best use | Opening | Main-text headings | Methods | End matter |
+| --- | --- | --- | --- | --- | --- |
+| `nature-article` | Main Nature Article | Referenced summary paragraph aimed at broad readers | Usually yes | After main text and figure legends | Separate Data Availability and usually Code Availability |
+| `nature-letter` | Nature-style Letter / concise report | Referenced introductory paragraph integrated into the main text | Usually no | After main text and legends | Same policy-sensitive end matter as above |
+| `portfolio-article` | Typical Nature Portfolio research article | Abstract, often unreferenced | Usually yes | Usually after Discussion or near the end | Data Availability and Code Availability as required by journal |
+| `portfolio-letter` | Concise Nature Portfolio Letter / brief report | Introductory paragraph, often concise and referenced where applicable | Often no or minimal | Near the end | Same as above |
 
-Key characteristics:
-- Title aimed at broad scientific readers, ideally about 75 characters or fewer.
-- Referenced summary paragraph, ideally 200 words or fewer.
-- Summary paragraph aimed at readers outside the subfield and should usually avoid numbers, abbreviations, acronyms, and measurements unless essential.
-- Main text organised by short subheadings.
-- Typical length is about 2,500 words with 4 modest display items for a 6-page article, or about 4,300 words with 5–6 modest display items for an 8-page article.
-- About 50 references in the main text is a useful working ceiling.
-- Methods appear after figure legends and can be much longer than the main text if needed.
-- Separate Data Availability and Code Availability statements should be included.
+## `nature-article`
 
-Choose this mode when:
-- the user says `Nature`
-- the work needs a broad, interdisciplinary framing
-- the paper’s impact depends on making the general importance legible to outsiders
+### Shape
+- broad, editor-facing title that non-specialists can parse
+- referenced summary paragraph before the main text
+- main text often organised with informative subheadings
+- methods follow main text and legends
+- separate Data Availability and Code Availability sections near the end
 
-## Mode 2 — `nature-letter`
+### Use when
+- the user explicitly says Nature Article
+- the story supports a broad summary paragraph and several conceptual steps
+- the narrative benefits from heading-based wayfinding
 
-Use for a sharper, shorter story or when the user explicitly wants a Letter.
+### Common mistakes
+- title too technical or too long
+- summary paragraph written like a mini abstract full of numbers
+- introduction too review-like
+- discussion repeating results instead of framing meaning and limits
 
-Key characteristics:
-- Referenced introductory paragraph, often 150–200 words, considered part of the main text.
-- No main-text headings.
-- Main text often runs around 1,500–2,500 words depending on the journal.
-- Usually 2–4 or 4 display items.
-- Usually around 30–40 references.
-- Methods sit after the legends and may have their own subheadings.
+## `nature-letter`
 
-Choose this mode when:
-- the story has a single tightly integrated advance
-- the user asks for a Letter
-- the paper should read as one uninterrupted argument rather than a multi-part article
+### Shape
+- concise title
+- referenced opening paragraph integrated into the main narrative
+- continuous main text, usually without main-text headings
+- logic must travel paragraph-to-paragraph without section labels
+- methods and legends appear after the main text
 
-## Mode 3 — `portfolio-article`
+### Use when
+- the paper is compact and the story works as a continuous argument
+- the user wants a high-density narrative with minimal heading scaffolding
 
-Use for most Nature Portfolio research journals that use an abstract plus `Introduction / Results / Discussion / Methods` structure.
+### Common mistakes
+- too many internal subclaims in the opening paragraph
+- heading-style Results sections smuggled into a Letter
+- generic closing paragraph that inflates impact rather than setting scope
 
-Common characteristics:
-- Unreferenced abstract, usually 100–150 words, sometimes 200 depending on the journal.
-- Introduction often has no heading in the final typeset article, but the draft may still use one.
-- Results and Methods can use topical subheadings.
-- Discussion usually does not use subheadings.
-- Often 4–8 display items.
-- Often about 50–60 references.
-- Typical move pattern in the abstract: broad context → exact gap or rationale → `Here we show` or equivalent → implication.
+## `portfolio-article`
 
-Choose this mode when:
-- the user names a Nature Portfolio journal other than Nature itself
-- the journal is closer to `Nature Materials`, `Nature Immunology`, `Nature Metabolism`, `Nature Cardiovascular Research`, or similar
-- the structure needs a conventional abstract and explicit Results or Discussion sections
+### Shape
+- abstract, then Introduction / Results / Discussion / Methods or a close variant
+- subheadings common and often helpful
+- technical detail tolerance is usually higher than in main Nature
+- journal-specific limits vary substantially
 
-## Mode 4 — `portfolio-letter`
+### Use when
+- the user names a Nature Portfolio journal outside the main Nature flagship
+- the paper needs standard article scaffolding
+- the abstract should do more of the context and rationale work
 
-Use for concise Letters in Nature Portfolio journals.
+### Common mistakes
+- abstract too general for a specialist portfolio journal
+- Introduction bloated with literature summary
+- Results read as figure captions pasted into prose
 
-Common characteristics:
-- Referenced introductory paragraph, usually 150–200 words.
-- Main text usually has no headings, except online Methods.
-- Main text often runs around 2,000–2,500 words.
-- Often 2–5 display items.
-- Often 30–40 references.
+## `portfolio-letter`
 
-Choose this mode when:
-- the user names a specific subjournal with a Letter format
-- the story is concise and figure count is limited
-- the paper should read as a short, tightly compressed argument
+### Shape
+- concise opening, often closer to a Letter than a full article
+- lower tolerance for long scene-setting
+- narrative economy matters
+- live guide checking is especially important because letter-like formats vary across journals
 
-## Fast decision rules
+### Use when
+- the journal has a brief report or Letter format
+- the core story is sharp and does not require extended narrative scaffolding
 
-- User says `Nature` with no subjournal → default to `nature-article`
-- User says `Letter` → choose the letter mode closest to the journal
-- User says `Nature Communications` → usually close to `portfolio-article`
-- User names a specific subjournal → check the live guide if possible; otherwise map to the nearest mode here
+## Choosing among modes
 
-## Hard rule
+Choose the mode by asking:
+1. Does the journal expect a separate abstract or a referenced opening paragraph?
+2. Are main-text headings normal or discouraged?
+3. Is the paper's logic best served by a continuous argument or by explicit sections?
+4. Does the journal expect distinct Data Availability and Code Availability sections?
+5. Is the paper broad-reader-facing enough for a main Nature style summary paragraph?
 
-Never present the bundled limits as exact for a named journal unless you have verified the live guide immediately before drafting.
+When uncertain, say which bundled mode you used and which live details still need verification.

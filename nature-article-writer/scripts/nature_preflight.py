@@ -1,30 +1,39 @@
 \
 #!/usr/bin/env python3
 """
-Nature-style manuscript preflight checker.
+Nature / Nature Portfolio manuscript preflight checker.
 
-This script performs a lightweight structural and stylistic review of a draft
-intended for Nature or Nature Portfolio journals. It uses only the Python
-standard library and is designed for non-interactive agent use.
+This script performs structural, stylistic, and policy-aware checks on a draft.
+It is lightweight, stdlib-only, and intended for non-interactive agent use.
 
 Examples:
   python3 scripts/nature_preflight.py --input draft.md --mode nature-article --format text
   python3 scripts/nature_preflight.py --input draft.md --mode portfolio-article --format json
   cat draft.md | python3 scripts/nature_preflight.py --mode nature-letter
+
+Exit codes:
+  0  success
+  2  usage error or unreadable input
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
-import statistics
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+from prose_metrics import (
+    as_json,
+    metrics as prose_metrics,
+    read_text,
+    strip_frontmatter,
+    sentences,
+    words,
+)
 
 SECTION_PATTERNS = {
     "abstract": re.compile(r"^\s{0,3}(?:#+\s*)?abstract\s*$", re.I),
@@ -48,93 +57,46 @@ SECTION_PATTERNS = {
 
 MODE_REQUIREMENTS = {
     "nature-article": {
-        "opening": "summary_or_first_paragraph",
         "sections_required": ["methods", "data_availability", "references", "figure_legends"],
         "sections_recommended": ["code_availability", "funding_statement", "author_contributions", "competing_interests"],
-        "opening_should_be_referenced": True,
-        "opening_should_not_have_headings": False,
-        "opening_should_avoid_numbers": True,
-        "opening_target_words_max": 200,
+        "opening_type": "summary",
+        "opening_target_words_max": 220,
         "title_chars_max": 75,
-        "discussion_expected": False,
-        "results_expected": False,
         "main_headings_allowed": True,
     },
     "nature-letter": {
-        "opening": "introductory_or_first_paragraph",
         "sections_required": ["methods", "data_availability", "references", "figure_legends"],
         "sections_recommended": ["code_availability", "funding_statement", "author_contributions", "competing_interests"],
-        "opening_should_be_referenced": True,
-        "opening_should_not_have_headings": True,
-        "opening_should_avoid_numbers": False,
-        "opening_target_words_max": 200,
+        "opening_type": "introductory",
+        "opening_target_words_max": 220,
         "title_chars_max": 85,
-        "discussion_expected": False,
-        "results_expected": False,
         "main_headings_allowed": False,
     },
     "portfolio-article": {
-        "opening": "abstract_or_first_paragraph",
         "sections_required": ["methods", "data_availability", "references"],
         "sections_recommended": ["results", "discussion", "code_availability", "funding_statement", "author_contributions", "competing_interests", "figure_legends"],
-        "opening_should_be_referenced": False,
-        "opening_should_not_have_headings": False,
-        "opening_should_avoid_numbers": False,
-        "opening_target_words_max": 200,
+        "opening_type": "abstract",
+        "opening_target_words_max": 250,
         "title_chars_max": 120,
-        "discussion_expected": True,
-        "results_expected": True,
         "main_headings_allowed": True,
     },
     "portfolio-letter": {
-        "opening": "introductory_or_first_paragraph",
         "sections_required": ["methods", "data_availability", "references"],
         "sections_recommended": ["code_availability", "funding_statement", "author_contributions", "competing_interests", "figure_legends"],
-        "opening_should_be_referenced": True,
-        "opening_should_not_have_headings": True,
-        "opening_should_avoid_numbers": False,
-        "opening_target_words_max": 200,
+        "opening_type": "introductory",
+        "opening_target_words_max": 220,
         "title_chars_max": 120,
-        "discussion_expected": False,
-        "results_expected": False,
         "main_headings_allowed": False,
     },
 }
 
-HYPE_WORDS = [
-    "novel", "groundbreaking", "transformative", "remarkable", "unprecedented",
-    "paradigm-shifting", "robust framework", "game-changing", "exciting", "important findings",
-]
-AI_TELL_PHRASES = [
-    "highlights the importance of",
-    "underscores the importance of",
-    "plays a crucial role",
-    "taken together",
-    "in the broader context",
-    "opens new avenues",
-    "paves the way",
-    "it is important to note that",
-    "provides valuable insights",
-    "state-of-the-art",
-    "not only",
-    "not merely",
-    "in this landscape",
-    "interplay",
-    "fosters",
-    "leverages",
-]
-TRANSITIONS = [
-    "additionally", "moreover", "furthermore", "importantly", "notably", "overall",
-    "in summary", "in conclusion", "taken together",
-]
-BRACKET_CITATION_RE = re.compile(r"\[(?:\d+|\d+\s*[-,]\s*\d+)(?:\s*,\s*\d+)*\]")
-REFERENCE_LIKE_RE = re.compile(r"(?:\[\d+\]|(?:^|[^\w])\d{1,3}(?:,\d{1,3})*(?:[^\w]|$)|\^\d+)")
-ACRONYM_RE = re.compile(r"\b[A-Z][A-Z0-9-]{1,}\b")
-EM_DASH_RE = re.compile(r"—")
-SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
-WORDS_RE = re.compile(r"\b[\w'-]+\b")
-PARAGRAPH_SPLIT_RE = re.compile(r"\n\s*\n", re.M)
-
+TITLE_BAD_WORDS = {"novel", "groundbreaking", "transformative", "remarkable", "unprecedented"}
+TITLE_ACRONYM_RE = re.compile(r"\b[A-Z][A-Z0-9-]{1,}\b")
+TITLE_PUNCT_RE = re.compile(r"[:;!?]")
+BRACKET_CITATION_RE = re.compile(r"\[(?:\d+(?:\s*[-,]\s*\d+)*)\]")
+FIGURE_HEADING_RE = re.compile(r"^\s{0,3}(?:#+\s*)?(?:figure|fig\.)\s*\d+\b", re.I)
+STATS_HINT_RE = re.compile(r"\b(?:n\s*=|P\s*[<=>]|Student'?s t-test|Mann-Whitney|ANOVA|Wilcoxon|Kruskal|error bars|s\.d\.|s\.e\.m\.|median|mean)\b", re.I)
+LEGEND_TITLE_SENTENCE_RE = re.compile(r"^[A-Z].{10,200}[.!?]$")
 
 @dataclass
 class Issue:
@@ -142,398 +104,340 @@ class Issue:
     code: str
     message: str
     evidence: str = ""
+    fix: str = ""
 
 
-def read_text(input_path: str | None) -> str:
-    if input_path:
-        p = Path(input_path)
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        description="Run a structural and stylistic preflight check on a Nature-style manuscript draft."
+    )
+    p.add_argument("--input", help="Draft file to analyse. If omitted, read from stdin.")
+    p.add_argument("--mode", choices=sorted(MODE_REQUIREMENTS), required=True, help="Target manuscript mode.")
+    p.add_argument("--format", choices=["text", "json"], default="text", help="Output format.")
+    return p
+
+
+def load_text(path: str | None) -> str:
+    if path:
         try:
-            return p.read_text(encoding="utf-8")
+            return read_text(path)
         except FileNotFoundError:
-            raise SystemExit(f"Error: input file not found: {p}")
+            raise SystemExit(f"Error: input file not found: {path}")
         except OSError as exc:
-            raise SystemExit(f"Error: could not read {p}: {exc}")
-    try:
-        data = sys.stdin.read()
-    except OSError as exc:
-        raise SystemExit(f"Error: could not read stdin: {exc}")
+            raise SystemExit(f"Error: could not read {path}: {exc}")
+    data = sys.stdin.read()
     if not data.strip():
-        raise SystemExit("Error: no input provided. Use --input FILE or pipe manuscript text via stdin.")
+        raise SystemExit("Error: no input provided. Use --input FILE or pipe text via stdin.")
     return data
 
 
-def clean_text(text: str) -> str:
-    # Strip common YAML frontmatter if present.
-    if text.startswith("---\n"):
-        parts = text.split("\n---\n", 1)
-        if len(parts) == 2:
-            return parts[1]
-    return text
+def nonempty_lines(text: str) -> List[str]:
+    return [line for line in text.splitlines() if line.strip()]
 
 
-def paragraphs(text: str) -> List[str]:
-    raw = [p.strip() for p in PARAGRAPH_SPLIT_RE.split(text) if p.strip()]
-    return raw
+def normalize_heading(line: str) -> str:
+    return re.sub(r"^\s*#+\s*", "", line).strip()
 
 
-def word_count(text: str) -> int:
-    return len(WORDS_RE.findall(text))
-
-
-def first_nonempty_line(text: str) -> str:
+def first_title_line(text: str) -> str:
     for line in text.splitlines():
         s = line.strip()
-        if s:
-            return s
+        if not s:
+            continue
+        if s.startswith("#"):
+            return normalize_heading(s)
+        return s
     return ""
 
 
-def normalize_title(line: str) -> str:
-    if line.startswith("#"):
-        return re.sub(r"^#+\s*", "", line).strip()
-    return line.strip()
+def paragraphs(text: str) -> List[str]:
+    return [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
 
 
 def detect_sections(text: str) -> Dict[str, Tuple[int, int]]:
     lines = text.splitlines()
-    matches: List[Tuple[str, int]] = []
+    hits: List[Tuple[str, int]] = []
     for idx, line in enumerate(lines):
-        for name, pattern in SECTION_PATTERNS.items():
-            if pattern.match(line):
-                matches.append((name, idx))
+        for name, pat in SECTION_PATTERNS.items():
+            if pat.match(line):
+                hits.append((name, idx))
                 break
-    section_ranges: Dict[str, Tuple[int, int]] = {}
-    for i, (name, start_idx) in enumerate(matches):
-        end_idx = len(lines)
-        if i + 1 < len(matches):
-            end_idx = matches[i + 1][1]
-        section_ranges[name] = (start_idx, end_idx)
-    return section_ranges
+    ranges: Dict[str, Tuple[int, int]] = {}
+    for i, (name, start) in enumerate(hits):
+        end = len(lines) if i + 1 >= len(hits) else hits[i + 1][1]
+        ranges[name] = (start, end)
+    return ranges
 
 
-def section_text(text: str, section_ranges: Dict[str, Tuple[int, int]], name: str) -> str:
-    if name not in section_ranges:
+def section_text(text: str, ranges: Dict[str, Tuple[int, int]], name: str) -> str:
+    if name not in ranges:
         return ""
-    start, end = section_ranges[name]
+    start, end = ranges[name]
     lines = text.splitlines()
-    content = "\n".join(lines[start + 1:end]).strip()
-    return content
+    return "\n".join(lines[start + 1:end]).strip()
 
 
-def get_opening_paragraph(text: str, mode: str, sections: Dict[str, Tuple[int, int]]) -> Tuple[str, str]:
-    if mode in {"nature-article"} and "summary_paragraph" in sections:
+def get_opening_text(text: str, mode: str, sections: Dict[str, Tuple[int, int]]) -> tuple[str, str]:
+    if mode == "nature-article" and "summary_paragraph" in sections:
         return "summary_paragraph", section_text(text, sections, "summary_paragraph")
-    if mode in {"portfolio-article"} and "abstract" in sections:
+    if mode == "nature-letter" and "introductory_paragraph" in sections:
+        return "introductory_paragraph", section_text(text, sections, "introductory_paragraph")
+    if mode == "portfolio-article" and "abstract" in sections:
         return "abstract", section_text(text, sections, "abstract")
-    if mode in {"nature-letter", "portfolio-letter"} and "introductory_paragraph" in sections:
+    if mode == "portfolio-letter" and "introductory_paragraph" in sections:
         return "introductory_paragraph", section_text(text, sections, "introductory_paragraph")
 
-    # Fallback: first substantial paragraph after title and author lines.
-    paras = paragraphs(text)
-    if not paras:
-        return "first_paragraph", ""
-    title = normalize_title(first_nonempty_line(text))
-    filtered: List[str] = []
-    for p in paras:
-        # Skip paragraph if it is exactly the title or very short author/affiliation blocks.
-        if p == title:
-            continue
-        if word_count(p) < 6:
-            continue
-        filtered.append(p)
-    opening = filtered[0] if filtered else ""
-    return "first_paragraph", opening
+    title = first_title_line(text)
+    paras = [p for p in paragraphs(text) if p != title and len(words(p)) >= 6]
+    return "first_paragraph", paras[0] if paras else ""
 
 
-def sentence_stats(text: str) -> Dict[str, float]:
-    parts = [s.strip() for s in SENTENCE_RE.split(text) if s.strip()]
-    lengths = [word_count(s) for s in parts if word_count(s) > 0]
-    if not lengths:
-        return {"count": 0, "mean_words": 0.0, "stdev_words": 0.0}
-    if len(lengths) == 1:
-        return {"count": 1, "mean_words": float(lengths[0]), "stdev_words": 0.0}
-    return {
-        "count": len(lengths),
-        "mean_words": round(statistics.mean(lengths), 2),
-        "stdev_words": round(statistics.pstdev(lengths), 2),
-    }
+def contains_reference_like_markers(text: str) -> bool:
+    return bool(BRACKET_CITATION_RE.search(text))
 
 
-def count_phrases(text: str, phrases: List[str]) -> Dict[str, int]:
-    lower = text.lower()
-    counts: Dict[str, int] = {}
-    for phrase in phrases:
-        n = lower.count(phrase.lower())
-        if n:
-            counts[phrase] = n
-    return counts
-
-
-def detect_transition_openers(text: str) -> Dict[str, int]:
-    counts: Dict[str, int] = {}
-    for p in paragraphs(text):
-        words = WORDS_RE.findall(p.lower())
-        if not words:
-            continue
-        opener = " ".join(words[:2]) if len(words) >= 2 else words[0]
-        for t in TRANSITIONS:
-            if opener.startswith(t):
-                counts[t] = counts.get(t, 0) + 1
-    return counts
-
-
-def detect_main_heading_usage(text: str) -> List[str]:
-    bad = []
-    for line in text.splitlines():
-        s = line.strip()
-        if not s.startswith("#"):
-            continue
-        heading = re.sub(r"^#+\s*", "", s).strip().lower()
-        if heading in {"introduction", "results", "discussion"}:
-            bad.append(heading)
-    return bad
-
-
-def detect_figure_stats_coverage(legend_text: str) -> Dict[str, bool]:
-    lower = legend_text.lower()
-    return {
-        "has_n": bool(re.search(r"\bn\s*[=:=]", lower)) or bool(re.search(r"\bn\s+\d", lower)),
-        "has_p": bool(re.search(r"\bp\s*[<=>]", lower)),
-        "has_error_bar": "error bar" in lower or "error bars" in lower or "s.d." in lower or "s.e.m." in lower or "sem" in lower or "sd" in lower,
-    }
-
-
-def analyse(text: str, mode: str) -> Dict[str, object]:
-    cfg = MODE_REQUIREMENTS[mode]
+def title_checks(title: str, mode: str) -> List[Issue]:
     issues: List[Issue] = []
-    cleaned = clean_text(text)
-    title = normalize_title(first_nonempty_line(cleaned))
-    sections = detect_sections(cleaned)
-    opening_name, opening_text = get_opening_paragraph(cleaned, mode, sections)
-    title_chars = len(title)
-    total_words = word_count(cleaned)
-    opening_words = word_count(opening_text)
-    sentence_info = sentence_stats(cleaned)
-    em_dash_count = len(EM_DASH_RE.findall(cleaned))
-    hype_counts = count_phrases(cleaned, HYPE_WORDS)
-    ai_tell_counts = count_phrases(cleaned, AI_TELL_PHRASES)
-    transition_openers = detect_transition_openers(cleaned)
-    bracket_citation_hits = BRACKET_CITATION_RE.findall(cleaned)
-    acronym_hits = ACRONYM_RE.findall(cleaned)
-    acronym_count = len(acronym_hits)
-
+    limit = MODE_REQUIREMENTS[mode]["title_chars_max"]
     if not title:
-        issues.append(Issue("critical", "missing_title", "No title detected.", "Add a clear manuscript title at the top of the file."))
-    elif title_chars > cfg["title_chars_max"]:
-        issues.append(Issue("warning", "long_title", f"Title length is {title_chars} characters.", f"Target for mode `{mode}` is about {cfg['title_chars_max']} characters or fewer."))
+        issues.append(Issue("error", "title_missing", "No title line detected.", fix="Add a manuscript title at the start of the document."))
+        return issues
+    if len(title) > limit:
+        issues.append(Issue("warning", "title_too_long", f"Title length is {len(title)} characters; target is <= {limit} for this mode.", evidence=title, fix="Shorten the title and remove non-essential modifiers."))
+    lower_words = {w.lower() for w in words(title)}
+    bad = sorted(lower_words & TITLE_BAD_WORDS)
+    if bad:
+        issues.append(Issue("warning", "title_hype", "Title contains evaluative or hype language.", evidence=", ".join(bad), fix="Replace evaluative adjectives with the actual object, process, or finding."))
+    if mode.startswith("nature"):
+        if TITLE_ACRONYM_RE.search(title):
+            issues.append(Issue("warning", "title_acronym", "Nature-style titles usually avoid acronyms unless essential.", evidence=title, fix="Spell out the term or remove the acronym if possible."))
+        if TITLE_PUNCT_RE.search(title):
+            issues.append(Issue("warning", "title_punctuation", "Nature-style titles usually avoid decorative punctuation such as colons or question marks.", evidence=title, fix="Simplify the title into a single clear clause if possible."))
+    return issues
 
-    if not opening_text:
-        issues.append(Issue("critical", "missing_opening", "Could not detect an abstract, summary paragraph, or opening paragraph.", "Add an explicit opening paragraph or a headed Abstract/Summary section."))
-    else:
-        if opening_words > cfg["opening_target_words_max"] + 30:
-            issues.append(Issue("warning", "opening_too_long", f"Opening section is {opening_words} words.", f"Target for mode `{mode}` is roughly {cfg['opening_target_words_max']} words."))
-        if cfg["opening_should_be_referenced"]:
-            if not REFERENCE_LIKE_RE.search(opening_text):
-                issues.append(Issue("warning", "opening_unreferenced", f"Detected opening as `{opening_name}` with no citation-like markers.", "Nature-style summary or introductory paragraphs are usually referenced."))
+
+def section_checks(text: str, mode: str, sections: Dict[str, Tuple[int, int]]) -> List[Issue]:
+    issues: List[Issue] = []
+    reqs = MODE_REQUIREMENTS[mode]
+    for sec in reqs["sections_required"]:
+        if sec not in sections:
+            issues.append(Issue("error", f"missing_{sec}", f"Missing required section: {sec.replace('_', ' ').title()}.", fix=f"Add a {sec.replace('_', ' ').title()} section or mark it as pending."))
+    for sec in reqs["sections_recommended"]:
+        if sec not in sections:
+            issues.append(Issue("note", f"missing_{sec}", f"Recommended section not found: {sec.replace('_', ' ').title()}.", fix=f"Confirm whether a {sec.replace('_', ' ').title()} section is required by the target journal."))
+    if not reqs["main_headings_allowed"]:
+        for forbidden in ("results", "discussion", "introduction"):
+            if forbidden in sections:
+                issues.append(Issue("warning", f"heading_policy_{forbidden}", f"{mode} usually reads as a continuous narrative; explicit '{forbidden.title()}' heading detected.", fix="Check whether the target format discourages main-text headings."))
+    return issues
+
+
+def opening_checks(text: str, mode: str, sections: Dict[str, Tuple[int, int]]) -> List[Issue]:
+    issues: List[Issue] = []
+    label, opening = get_opening_text(text, mode, sections)
+    expected_heading = {
+        "nature-article": "summary_paragraph",
+        "nature-letter": "introductory_paragraph",
+        "portfolio-article": "abstract",
+        "portfolio-letter": "introductory_paragraph",
+    }[mode]
+    if expected_heading not in sections:
+        issues.append(Issue("warning", "opening_heading_missing", f"Expected opening section not found for {mode}: {expected_heading.replace('_', ' ').title()}.", evidence=label, fix="Add the expected opening section heading or confirm that the fallback first paragraph is acceptable for the target journal."))
+    if not opening:
+        issues.append(Issue("error", "opening_missing", "Could not find an opening summary/abstract/introduction paragraph.", fix="Add the required opening section for the chosen mode."))
+        return issues
+    n_words = len(words(opening))
+    target_max = MODE_REQUIREMENTS[mode]["opening_target_words_max"]
+    if n_words > target_max:
+        issues.append(Issue("warning", "opening_too_long", f"Opening section is {n_words} words; target is <= {target_max} for this mode.", evidence=label, fix="Cut low-value background, repeated claims, or non-essential numeric detail."))
+    if mode.startswith("nature") and not contains_reference_like_markers(opening):
+        issues.append(Issue("note", "opening_references", "Nature-style opening paragraph may need reference markers if this is the final manuscript form.", evidence=label, fix="Add references if the target journal/article type expects them."))
+    if mode == "nature-article":
+        if sum(1 for t in words(opening) if t.isupper() and len(t) > 1) > 2:
+            issues.append(Issue("note", "opening_acronym_load", "Opening summary paragraph contains several acronyms; Nature-style openings are usually lighter on abbreviations.", fix="Spell out or remove non-essential abbreviations in the opening paragraph."))
+    return issues
+
+
+def availability_checks(text: str, sections: Dict[str, Tuple[int, int]]) -> List[Issue]:
+    issues: List[Issue] = []
+    if "data_availability" in sections:
+        dat = section_text(text, sections, "data_availability")
+        if "upon request" in dat.lower() and not any(x in dat.lower() for x in ("repository", "accession", "controlled", "available from")):
+            issues.append(Issue("warning", "data_vague", "Data Availability statement relies on vague 'upon request' wording.", evidence=dat[:180], fix="State repository, accession, or transparent access conditions if possible."))
+    if "code_availability" in sections:
+        code = section_text(text, sections, "code_availability")
+        if "upon request" in code.lower() and "github" not in code.lower() and "gitlab" not in code.lower() and "zenodo" not in code.lower():
+            issues.append(Issue("note", "code_vague", "Code Availability statement may be too vague if custom code is central.", evidence=code[:180], fix="State repository, DOI, or clear release conditions if possible."))
+    return issues
+
+
+def figure_legend_checks(text: str, sections: Dict[str, Tuple[int, int]]) -> List[Issue]:
+    issues: List[Issue] = []
+    legends = section_text(text, sections, "figure_legends")
+    if not legends:
+        return issues
+    lines = [line.rstrip() for line in legends.splitlines()]
+    current_figure = None
+    current_block: List[str] = []
+    blocks: List[Tuple[str, str]] = []
+    for line in lines:
+        if FIGURE_HEADING_RE.match(line.strip()):
+            if current_figure is not None:
+                blocks.append((current_figure, "\n".join(current_block).strip()))
+            current_figure = normalize_heading(line)
+            current_block = []
         else:
-            if REFERENCE_LIKE_RE.search(opening_text):
-                issues.append(Issue("warning", "abstract_has_citations", f"Detected citation-like markers in `{opening_name}`.", "Many Nature Portfolio abstracts should be unreferenced."))
-        if cfg["opening_should_avoid_numbers"] and re.search(r"\d", opening_text):
-            issues.append(Issue("advisory", "opening_has_numbers", "Opening paragraph contains digits.", "For main Nature, avoid numbers in the summary paragraph unless essential."))
-        if "here we show" not in opening_text.lower() and "here, we show" not in opening_text.lower() and "in this work" not in opening_text.lower():
-            issues.append(Issue("advisory", "missing_here_we_show", "Opening paragraph does not use `Here we show`, `Here, we show`, or `In this work`.", "Many Nature-style openings benefit from a single explicit main-conclusion sentence."))
+            current_block.append(line)
+    if current_figure is not None:
+        blocks.append((current_figure, "\n".join(current_block).strip()))
 
-    # Required sections.
-    for sec in cfg["sections_required"]:
-        if sec not in sections:
-            issues.append(Issue("critical", f"missing_{sec}", f"Missing expected section: {sec.replace('_', ' ').title()}.", "Add the section or make a deliberate case for why it is not needed."))
-    for sec in cfg["sections_recommended"]:
-        if sec not in sections:
-            issues.append(Issue("advisory", f"missing_{sec}", f"Missing recommended section: {sec.replace('_', ' ').title()}.", "Check whether the target journal and study type require this section."))
+    for fig, block in blocks:
+        if not block:
+            issues.append(Issue("warning", "legend_empty", f"{fig} has no legend text.", fix="Add a title sentence and panel description."))
+            continue
+        first_line = next((ln.strip() for ln in block.splitlines() if ln.strip()), "")
+        if first_line and not LEGEND_TITLE_SENTENCE_RE.match(first_line):
+            issues.append(Issue("note", "legend_title_sentence", f"{fig} does not obviously begin with a brief title sentence.", evidence=first_line[:180], fix="Start the legend with one sentence that names the figure's point."))
+        if not STATS_HINT_RE.search(block):
+            issues.append(Issue("note", "legend_stats", f"{fig} legend contains no obvious statistics or sample-size cues.", evidence=fig, fix="Check whether n, error bars, centre values, or statistical tests need to be defined."))
+    return issues
 
-    if cfg["results_expected"] and "results" not in sections:
-        issues.append(Issue("warning", "missing_results", "Portfolio-style article mode usually expects a Results section.", "Add Results or confirm that the target journal uses a different structure."))
-    if cfg["discussion_expected"] and "discussion" not in sections:
-        issues.append(Issue("warning", "missing_discussion", "Portfolio-style article mode usually expects a Discussion section.", "Add Discussion or confirm that interpretation is intentionally merged elsewhere."))
 
-    if not cfg["main_headings_allowed"]:
-        bad_headings = detect_main_heading_usage(cleaned)
-        if bad_headings:
-            issues.append(Issue("warning", "headings_in_letter", f"Detected main headings in a letter mode: {', '.join(sorted(set(bad_headings)))}.", "Nature-style letters usually keep the main text unheaded."))
+def citation_checks(text: str) -> List[Issue]:
+    issues: List[Issue] = []
+    hits = BRACKET_CITATION_RE.findall(text)
+    if hits:
+        issues.append(Issue("note", "bracket_citations", "Bracket-style citations detected.", evidence=", ".join(hits[:8]), fix="Check whether the target journal wants superscript or another citation format."))
+    return issues
 
-    if bracket_citation_hits:
-        preview = ", ".join(bracket_citation_hits[:5])
-        issues.append(Issue("advisory", "bracket_citations", f"Detected bracket citation style: {preview}", "Nature-style manuscripts usually use numbered citations rather than square-bracket citation formatting."))
 
-    if em_dash_count > 2:
-        issues.append(Issue("advisory", "emdash_overuse", f"Detected {em_dash_count} em dashes.", "Scientific prose often reads more naturally with fewer em dashes."))
+def style_checks(text: str) -> List[Issue]:
+    issues: List[Issue] = []
+    m = prose_metrics(text)
+    if m["hype_word_total"] > 0:
+        examples = ", ".join(f"{k}({v})" for k, v in list(m["hype_words"].items())[:8])
+        issues.append(Issue("warning", "hype_words", "Evaluative or hype words detected.", evidence=examples, fix="Replace adjective-led importance language with concrete claims."))
+    if m["generic_phrase_total"] > 0:
+        examples = ", ".join(f"{k}({v})" for k, v in list(m["generic_phrases"].items())[:8])
+        issues.append(Issue("warning", "generic_phrases", "Generic AI-ish manuscript phrases detected.", evidence=examples, fix="Replace generic phrases with the exact implication or delete them."))
+    if m["nominalization_rate"] > 0.045:
+        issues.append(Issue("note", "nominalization_rate", f"Nominalization rate is high ({m['nominalization_rate']}).", fix="Turn hidden verbs back into actions where possible."))
+    if m["participial_clause_rate"] > 0.18:
+        issues.append(Issue("note", "participial_rate", f"Many sentences contain '-ing' clause cues ({m['participial_clause_rate']}).", fix="Break multi-clause sentences into clearer main clauses."))
+    if m["transition_opener_rate"] > 0.08:
+        issues.append(Issue("note", "transition_rate", f"Transition-opener rate is high ({m['transition_opener_rate']}).", fix="Cut conveyor-belt transitions and let structure carry more of the logic."))
+    if m["weak_opener_rate"] > 0.45:
+        issues.append(Issue("note", "weak_openers", f"Many sentences begin with weak openers ({m['weak_opener_rate']}).", evidence=", ".join(f"{k}:{v}" for k, v in list(m["top_sentence_openers"].items())[:5]), fix="Vary sentence openings around the object, comparison, or condition rather than repeating pronouns."))
+    if m["flatness_score"] > 0.18 and m["sentence_count"] >= 8:
+        issues.append(Issue("note", "rhythm_flat", f"Sentence-length variation appears low (flatness score {m['flatness_score']}).", fix="Mix shorter claim sentences with longer explanatory ones."))
+    return issues
 
-    if sentence_info["count"] >= 6 and sentence_info["stdev_words"] < 4:
-        issues.append(Issue("advisory", "flat_rhythm", "Sentence-length variation is low.", "Consider modest variation in sentence length to avoid monotonous prose."))
 
-    for phrase, count in hype_counts.items():
-        issues.append(Issue("advisory", "hype_word", f"Detected hype phrase `{phrase}` {count} time(s).", "Check whether the data justify this wording."))
-    for phrase, count in ai_tell_counts.items():
-        issues.append(Issue("advisory", "ai_tell", f"Detected AI-tell phrase `{phrase}` {count} time(s).", "Replace generic phrasing with the exact implication or mechanism."))
+def ending_checks(text: str) -> List[Issue]:
+    issues: List[Issue] = []
+    sents = sentences(text)
+    if not sents:
+        return issues
+    last = sents[-1].lower()
+    cliches = [
+        "opens new avenues",
+        "future work",
+        "highlight the importance of",
+        "underscores the importance of",
+        "will be needed to fully understand",
+    ]
+    for phrase in cliches:
+        if phrase in last:
+            issues.append(Issue("note", "generic_ending", "Final sentence ends on a generic future-work or importance phrase.", evidence=sents[-1][:220], fix="End on the most defensible implication or boundary condition instead."))
+            break
+    return issues
 
-    for trans, count in transition_openers.items():
-        if count >= 2:
-            issues.append(Issue("advisory", "repeated_transition", f"Paragraphs repeatedly open with `{trans}` ({count} times).", "Vary paragraph openings and remove unnecessary signposts."))
 
-    if acronym_count > max(8, total_words // 150):
-        issues.append(Issue("advisory", "acronym_density", f"Detected {acronym_count} all-caps acronym-like tokens.", "Nature-style prose usually benefits from fewer acronyms, especially early in the manuscript."))
+def prioritise(issues: List[Issue]) -> List[Issue]:
+    order = {"error": 0, "warning": 1, "note": 2}
+    return sorted(issues, key=lambda x: (order.get(x.severity, 9), x.code, x.message))
 
-    figure_legend_text = section_text(cleaned, sections, "figure_legends")
-    if figure_legend_text:
-        legend_stats = detect_figure_stats_coverage(figure_legend_text)
-        missing_bits = [k for k, present in legend_stats.items() if not present]
-        if missing_bits:
-            issues.append(Issue(
-                "advisory",
-                "legend_stats_missing",
-                "Figure legends may be missing some statistical details.",
-                f"Could not clearly detect: {', '.join(missing_bits)}."
-            ))
 
-    # Detect `seeks to`, common weak construction.
-    weak_seek_count = len(re.findall(r"\b(?:seek|seeks|sought|aims|aimed)\s+to\b", cleaned, re.I))
-    if weak_seek_count:
-        issues.append(Issue("advisory", "aims_to_language", f"Detected {weak_seek_count} `seeks to`/`aims to` style constructions.", "Where results already exist, prefer direct statements of what the study shows or finds."))
+def render_text(mode: str, title: str, opening_label: str, metrics: dict, issues: List[Issue]) -> str:
+    lines = []
+    lines.append("Nature-style preflight report")
+    lines.append("============================")
+    lines.append(f"Mode: {mode}")
+    lines.append(f"Title: {title or '[missing]'}")
+    lines.append("")
+    lines.append("Document profile")
+    lines.append("----------------")
+    lines.append(f"- words: {metrics['word_count']}")
+    lines.append(f"- sentences: {metrics['sentence_count']}")
+    lines.append(f"- paragraphs: {metrics['paragraph_count']}")
+    lines.append(f"- mean sentence length: {metrics['mean_sentence_words']} words")
+    lines.append(f"- sentence-length variation: {metrics['stdev_sentence_words']}")
+    lines.append(f"- nominalization rate: {metrics['nominalization_rate']}")
+    lines.append(f"- participial-clause rate: {metrics['participial_clause_rate']}")
+    lines.append(f"- transition-opener rate: {metrics['transition_opener_rate']}")
+    lines.append(f"- weak-opener rate: {metrics['weak_opener_rate']}")
+    lines.append(f"- opening source: {opening_label}")
+    lines.append("")
+    lines.append("Prioritised issues")
+    lines.append("------------------")
+    if not issues:
+        lines.append("- No major issues detected by the bundled heuristics. Review journal-specific details manually.")
+    else:
+        for issue in issues:
+            line = f"- [{issue.severity.upper()}] {issue.message}"
+            lines.append(line)
+            if issue.evidence:
+                lines.append(f"  evidence: {issue.evidence}")
+            if issue.fix:
+                lines.append(f"  fix: {issue.fix}")
+    lines.append("")
+    lines.append("Interpretation")
+    lines.append("--------------")
+    lines.append("Use this report to fix structure first, then claim calibration, then line-level prose. These heuristics are advisory; they are meant to surface likely weak spots, not to replace scientific judgement.")
+    return "\n".join(lines)
 
-    metrics = {
-        "mode": mode,
+
+def main() -> int:
+    parser = build_parser()
+    args = parser.parse_args()
+    raw = load_text(args.input)
+    text = strip_frontmatter(raw)
+    title = first_title_line(text)
+    sections = detect_sections(text)
+    opening_label, _ = get_opening_text(text, args.mode, sections)
+    m = prose_metrics(text)
+
+    issues: List[Issue] = []
+    issues.extend(title_checks(title, args.mode))
+    issues.extend(section_checks(text, args.mode, sections))
+    issues.extend(opening_checks(text, args.mode, sections))
+    issues.extend(availability_checks(text, sections))
+    issues.extend(figure_legend_checks(text, sections))
+    issues.extend(citation_checks(text))
+    issues.extend(style_checks(text))
+    issues.extend(ending_checks(text))
+    issues = prioritise(issues)
+
+    payload = {
+        "mode": args.mode,
         "title": title,
-        "title_characters": title_chars,
-        "total_words": total_words,
-        "opening_detected_as": opening_name,
-        "opening_words": opening_words,
-        "sentence_count": sentence_info["count"],
-        "mean_sentence_words": sentence_info["mean_words"],
-        "sentence_word_stdev": sentence_info["stdev_words"],
-        "em_dash_count": em_dash_count,
-        "acronym_like_token_count": acronym_count,
+        "opening_source": opening_label,
+        "metrics": m,
+        "issues": [asdict(i) for i in issues],
+        "summary": {
+            "errors": sum(1 for i in issues if i.severity == "error"),
+            "warnings": sum(1 for i in issues if i.severity == "warning"),
+            "notes": sum(1 for i in issues if i.severity == "note"),
+            "total": len(issues),
+        },
     }
 
-    section_presence = {name: (name in sections) for name in sorted(set(list(SECTION_PATTERNS.keys())))}
-
-    summary = {
-        "critical": sum(1 for i in issues if i.severity == "critical"),
-        "warning": sum(1 for i in issues if i.severity == "warning"),
-        "advisory": sum(1 for i in issues if i.severity == "advisory"),
-        "total": len(issues),
-    }
-
-    actions = []
-    for issue in issues:
-        if issue.code in {"missing_title", "missing_opening", "missing_methods", "missing_data_availability", "missing_references", "missing_figure_legends"}:
-            actions.append(issue.message)
-        elif issue.severity in {"warning", "advisory"} and len(actions) < 8:
-            actions.append(issue.message)
-
-    return {
-        "summary": summary,
-        "metrics": metrics,
-        "section_presence": section_presence,
-        "issues": [issue.__dict__ for issue in issues],
-        "suggested_actions": actions,
-    }
-
-
-def render_text(report: Dict[str, object]) -> str:
-    lines: List[str] = []
-    summary = report["summary"]
-    metrics = report["metrics"]
-    lines.append("Nature-style preflight")
-    lines.append("======================")
-    lines.append(f"Mode: {metrics['mode']}")
-    lines.append(f"Title: {metrics['title'] or '[missing]'}")
-    lines.append(f"Title length: {metrics['title_characters']} chars")
-    lines.append(f"Total words: {metrics['total_words']}")
-    lines.append(f"Opening detected as: {metrics['opening_detected_as']} ({metrics['opening_words']} words)")
-    lines.append(
-        f"Sentence stats: {metrics['sentence_count']} sentences, mean {metrics['mean_sentence_words']} words, stdev {metrics['sentence_word_stdev']}"
-    )
-    lines.append(f"Em dashes: {metrics['em_dash_count']}")
-    lines.append(f"Acronym-like tokens: {metrics['acronym_like_token_count']}")
-    lines.append("")
-    lines.append(
-        f"Issues: {summary['critical']} critical, {summary['warning']} warning, {summary['advisory']} advisory"
-    )
-    lines.append("")
-    if report["issues"]:
-        lines.append("Detailed issues")
-        lines.append("---------------")
-        for issue in report["issues"]:
-            sev = issue["severity"].upper()
-            lines.append(f"[{sev}] {issue['message']}")
-            if issue.get("evidence"):
-                lines.append(f"  Evidence: {issue['evidence']}")
-        lines.append("")
+    if args.format == "json":
+        print(as_json(payload))
     else:
-        lines.append("No obvious issues detected by the heuristic checker.")
-        lines.append("")
-
-    if report["suggested_actions"]:
-        lines.append("Suggested next actions")
-        lines.append("----------------------")
-        for action in report["suggested_actions"]:
-            lines.append(f"- {action}")
-    return "\n".join(lines).rstrip() + "\n"
-
-
-def parse_args(argv: List[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Check a manuscript draft against Nature-style structural and stylistic heuristics."
-    )
-    parser.add_argument(
-        "--input",
-        help="Path to the manuscript file. If omitted, text is read from stdin.",
-    )
-    parser.add_argument(
-        "--mode",
-        required=True,
-        choices=sorted(MODE_REQUIREMENTS.keys()),
-        help="Target journal mode.",
-    )
-    parser.add_argument(
-        "--format",
-        choices=["json", "text"],
-        default="json",
-        help="Output format. Defaults to json.",
-    )
-    parser.add_argument(
-        "--output",
-        help="Write the report to this file instead of stdout.",
-    )
-    parser.add_argument(
-        "--strict",
-        action="store_true",
-        help="Exit with code 2 when any critical issue is found.",
-    )
-    return parser.parse_args(argv)
-
-
-def write_output(payload: str, output_path: str | None) -> None:
-    if output_path:
-        p = Path(output_path)
-        try:
-            p.write_text(payload, encoding="utf-8")
-        except OSError as exc:
-            raise SystemExit(f"Error: could not write {p}: {exc}")
-    else:
-        sys.stdout.write(payload)
-
-
-def main(argv: List[str]) -> int:
-    args = parse_args(argv)
-    text = read_text(args.input)
-    report = analyse(text, args.mode)
-    payload = json.dumps(report, indent=2, ensure_ascii=False) if args.format == "json" else render_text(report)
-    write_output(payload + ("" if payload.endswith("\n") else "\n"), args.output)
-    if args.strict and report["summary"]["critical"] > 0:
-        return 2
+        print(render_text(args.mode, title, opening_label, m, issues))
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv[1:]))
+    raise SystemExit(main())

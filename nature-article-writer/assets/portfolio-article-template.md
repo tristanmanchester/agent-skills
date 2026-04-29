@@ -1,56 +1,46 @@
-# [Title]
+# Title
+[Journal-appropriate title]
 
-[Authors]
+# Abstract
+[Context.]
+[Rationale or gap.]
+[Main result.]
+[Implication.]
 
-[Affiliations]
+# Introduction
+[Focused framing and gap.]
 
-## Abstract
-[Unreferenced abstract. Usually 100–150 words, sometimes 200 depending on journal. Background → rationale → `Here we show` or equivalent → implication.]
+# Results
 
-## Introduction
-[Keep short. End with what the study does.]
+## [Claim-led subheading]
+[Evidence.]
 
-## Results
+## [Claim-led subheading]
+[Evidence.]
 
-### [Topical subheading]
-[Result text]
+# Discussion
+[Meaning, scope, comparison with prior work, limitation.]
 
-### [Topical subheading]
-[Result text]
+# Methods
+[Operational detail.]
 
-## Discussion
-[Interpretation, scope, limitations, field-level implication.]
-
-## Online Methods
-
-### [Subsection]
-[Methods text]
-
-### Data availability
+# Data Availability
 [Insert statement.]
 
-### Code availability
-[Insert statement.]
+# Code Availability
+[Insert statement if relevant.]
 
-## References
-1. [Insert references.]
+# References
+1. [Insert references]
 
-## Acknowledgements
-[Insert.]
+# Acknowledgements
+[Insert]
 
-## Funding Statement
-[Insert.]
+# Funding
+[Insert]
 
-## Author Contributions
-[Insert.]
+# Author Contributions
+[Insert]
 
-## Competing Interests
-[Insert.]
-
-## Figure legends
-
-**Figure 1 | [Brief title sentence].**  
-[...]
-
-**Figure 2 | [Brief title sentence].**  
-[...]
+# Competing Interests
+[Insert]

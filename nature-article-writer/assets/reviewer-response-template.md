@@ -1,48 +1,33 @@
-# Response to Reviewers
+# Reviewer response template
 
-We thank the editor and reviewers for their careful reading of the manuscript and for the constructive suggestions. We have revised the manuscript accordingly. Below we respond point by point and indicate where changes were made.
-
-## Summary of major changes
-1. [High-level change]
-2. [High-level change]
-3. [High-level change]
-
----
+We thank the reviewers for their careful reading and constructive comments. Below we address each point in turn. Reviewer comments are reproduced in **bold**, followed by our responses and the changes made in the manuscript.
 
 ## Reviewer 1
 
 ### Comment 1
-> [Quote the reviewer comment briefly.]
+**[Paste or paraphrase the reviewer comment briefly.]**
 
-**Response:**  
-[Answer directly. State what was changed, what was not changed, and why.]
+Response:
+[Answer directly. State what the reviewer is right about, what was changed, and why.]
 
-**Manuscript changes:**  
-- Page [x], paragraph [y]:
-- Figure [z]:
-- Methods subsection:
+Changes in manuscript:
+- Page / section / figure:
+- New text or analysis:
+- If not adopted, why not:
 
 ### Comment 2
-> [Quote.]
+**[Paste or paraphrase briefly.]**
 
-**Response:**  
-[...]
+Response:
+[Direct answer.]
 
----
+Changes in manuscript:
+- Page / section / figure:
+- New text or analysis:
+- If not adopted, why not:
 
 ## Reviewer 2
+[Repeat.]
 
-### Comment 1
-> [Quote.]
-
-**Response:**  
-[...]
-
----
-
-## Notes on tone
-
-- Thank the reviewer once; do not repeat gratitude mechanically.
-- Be specific about manuscript changes.
-- If declining a request, explain why and offer the closest rigorous alternative.
-- Do not overstate certainty or promise analyses that were not done.
+## Closing
+We hope that these revisions and clarifications have addressed the reviewers' concerns. Where we were unable to perform a requested analysis or experiment, we now state the limitation explicitly and explain why the request exceeds the present study's scope.

@@ -1,161 +1,83 @@
-# Integrity and Compliance
+# Integrity and compliance
 
-Use this file during the final manuscript pass. The purpose is not to create boilerplate but to avoid accidental non-compliance or fabricated end matter.
+Use this file to keep the manuscript publication-ready and policy-aware.
 
-## 1. AI and authorship
+## Core publication disciplines
 
-Current Nature policy in brief:
-- LLMs do not qualify as authors.
-- Human authors are accountable for the final manuscript.
-- AI-assisted copy editing for readability and style does not need declaration.
-- If AI contributed beyond copy editing, the use should be documented in the Methods section or another suitable part of the manuscript.
-- AI-generated images are not permitted for publication in Nature journals.
+- Do not invent missing facts. Use placeholders and a clear `Issues to confirm` list.
+- Keep the wording of claims proportionate to the evidence.
+- Separate direct results from interpretation.
+- If a statement depends on a reference, a figure, or a method detail, make that dependency visible.
 
-Practical rule:
-- If the task is polishing or line editing, you can revise the prose directly.
-- If the task asks you to generate content that the authors did not supply, clearly separate drafted wording from missing scientific content and never pretend the text reflects completed experiments or verified facts.
+## AI-related policy discipline
 
-## 2. Data, code, and materials
+- Large language models are not authors.
+- AI-assisted copy editing for readability and language is generally treated differently from deeper scientific use, but humans remain responsible for the manuscript.
+- If AI contributed beyond surface editing, the user should verify the current policy for disclosure in the target journal.
+- Do not generate or submit AI-generated research figures or images.
 
-Nature Portfolio expects authors to make data, code, materials, and associated protocols available without undue restriction, subject to legal or ethical limits.
+## Data and code availability
 
-### Data Availability statement
+For original research, expect a Data Availability statement.
+Where custom code is central to the findings, expect a Code Availability statement.
 
-Every manuscript should have a data availability statement.
+### Data Availability template
+`Data Availability`
+The data that support the findings of this study are available from [repository / accession / controlled-access route]. [If restrictions apply, explain them clearly rather than hiding them.]
 
-Safe templates:
-- `The datasets generated during and/or analysed during the current study are available in the [repository name] repository, [persistent URL or accession number].`
-- `All data generated or analysed during this study are included in this published article and its Supplementary Information files.`
-- `The datasets generated during and/or analysed during the current study are available from the corresponding author on reasonable request.`
-- `The datasets are not publicly available because [reason], but are available from the corresponding author on reasonable request.`
+### Code Availability template
+`Code Availability`
+Custom code used for [analysis / modelling / figure generation] is available at [repository URL / DOI / accession]. [If release will occur on publication or on reasonable request, say so precisely.]
 
-Hard rule:
-Never invent an accession number, DOI, or repository link.
+Do not fabricate repository links or accession numbers.
 
-### Code Availability statement
+## Reporting summaries and methods discipline
 
-Use when code is central to the conclusions.
+Some Nature and Nature Portfolio areas require reporting summaries or field-specific checklists. Where relevant:
+- note that the reporting summary must be completed for submission
+- ensure Methods include the operational details that govern interpretation
+- make sure statistical analysis is described concretely, not only with stock phrases
 
-Safe templates:
-- `Code used for the analyses in this study is available at [repository URL] under [licence], archived at [DOI].`
-- `Custom code used in this study is available from the corresponding author on reasonable request.`
-- `No custom code was used in this study.`
+## Figure-legend checklist
 
-Hard rule:
-If the user has not provided a repository or access condition, insert a placeholder rather than fabricating one.
-
-## 3. Reporting Summary and field-specific checklists
-
-Many Nature Portfolio journals ask for a completed Reporting Summary and publish it alongside accepted manuscripts.
-
-Typical areas covered:
-- experimental design
-- statistics and effect sizes
-- software and code availability
-- data availability
-- sex and gender reporting where relevant
-- human or animal ethics
-- population characteristics and recruitment
-
-Practical rule:
-If the study involves life sciences, behavioural science, ecology, environmental science, or sensitive human data, remind the user that a Reporting Summary or related checklist may be required.
-
-## 4. Authorship, funding, and competing interests
-
-### Author Contributions
-
-Nature-style author contribution statements should specify who conceived the study, performed experiments, analysed data, wrote code, interpreted results, and wrote or revised the manuscript.
-
-Safe template:
-`A.B. and C.D. conceived the study. A.B. performed the experiments. E.F. carried out the computational analyses. A.B., E.F. and C.D. interpreted the data. A.B. wrote the first draft with input from all authors. All authors revised and approved the manuscript.`
-
-### Funding Statement
-
-Funding should be separate from Acknowledgements and should name only funding that directly supported the work.
-
-Safe template:
-`A.B. acknowledges support from [funder, grant number]. C.D. acknowledges support from [funder, grant number]. The authors declare no other relevant funding.`
-
-### Competing Interests
-
-Safe templates:
-- `The authors declare no competing interests.`
-- `A.B. is a consultant for [company]. All other authors declare no competing interests.`
-
-Hard rule:
-Never create a declaration the user did not give you.
-
-## 5. References
-
-Nature-style references are numbered sequentially in the order cited.
-
-Important constraints:
-- only published work, accepted work, recognised preprints, patents, datasets, or protocols with suitable identifiers belong in the reference list
-- one numbered reference should correspond to one work
-- titles of cited articles are usually required in long-form research manuscripts
-- web pages belong in references only when the journal permits them; many are better cited parenthetically in text
-- papers `in preparation` should not be dressed up as formal references
-
-Practical rule:
-If the user has not supplied a reference list, do not fabricate one. Use `[insert refs]` markers or a citation-needed list.
-
-## 6. Figures and legends
-
-Legends should:
+Each figure legend should usually:
 - begin with a brief title sentence
-- describe each panel in order
-- define all symbols, colours, centre values, and error bars
-- state n, statistical tests, and P values where relevant
+- describe panels in order
+- define sample size `n`
+- define centre values and error bars
+- state statistical tests and exact P values where appropriate
+- decode colours, symbols, and abbreviations
 
-Figures should:
-- be cited in numerical order
-- use scale bars rather than magnification factors when relevant
-- avoid flattened labels on microscopy images
-- keep labels editable and legible
+## Title checklist
 
-Practical rule:
-If the legend cannot be understood without the methods, the main claim probably is not yet clear enough.
+For main Nature-style submissions, titles should usually:
+- be concise
+- be understandable outside the immediate subfield
+- avoid acronyms and abbreviations unless truly essential
+- avoid decorative punctuation and slogans
 
-## 7. Methods
+## End-matter checklist
 
-Methods should include, where relevant:
-- ethics approval and consent
-- experimental design and controls
-- inclusion or exclusion rules
-- randomisation or blinding
-- statistical tests and software versions
-- model or training details
-- accession numbers and repository links
-- protocol references
+Where relevant, check for:
+- Methods
+- Data Availability
+- Code Availability
+- References
+- Acknowledgements
+- Funding
+- Author Contributions
+- Competing Interests
+- Additional Information / Correspondence
+- Extended Data legends
+- Ethics statement language if required by the study design
 
-Hard rule:
-If the user did not provide ethics information, do not invent approval numbers or committee names.
+## Reviewer-response discipline
 
-## 8. Submission-facing materials
+Never promise analyses, experiments, or deposits that have not been done or approved. If the manuscript will be revised in a specific way, say exactly what will change and where.
 
-### Presubmission enquiry
+## Practical rule
 
-For main Nature, the enquiry normally needs:
-- a cover paragraph to the editor
-- a fully referenced summary paragraph in Nature format
-- a reference list
-
-### Cover letter
-
-A good cover letter should state:
-- the advance
-- why it matters broadly
-- why the evidence is sufficient now
-- why the paper fits the journal
-
-Do not use the cover letter to add claims absent from the manuscript.
-
-## 9. Final compliance checklist
-
-- Are all accession numbers and URLs real?
-- Does the manuscript include a Data Availability statement?
-- Does it need a Code Availability statement?
-- Are ethics statements present where required?
-- Are author contributions, funding, and competing interests separated?
-- Are any claims stronger in the title or abstract than in the Results?
-- Are any references placeholders that still need author verification?
+A manuscript sounds more credible when it openly names:
+- what the study can support
+- what remains unresolved
+- what supporting files or statements are still pending

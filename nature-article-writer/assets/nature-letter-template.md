@@ -1,47 +1,41 @@
-# [Title — concise, broad, no gimmicks]
+# Title
+[Concise title]
 
-[Authors]
+# Introductory paragraph
+[Referenced opening paragraph with broad context, precise gap, main answer, and immediate implication.]
 
-[Affiliations]
+[Continue directly into the main narrative without main-text headings.]
 
-## Introductory paragraph
-[Referenced introductory paragraph, usually 150–200 words, summarising background, rationale, main results, and implications. This paragraph is part of the main text.]
+[Results-driven continuous prose.]
+[Move from observation to mechanism or explanation.]
+[Surface limitations before the close.]
+[End on the strongest defensible implication.]
 
-[Main text continues without headings. Keep the argument continuous and tightly integrated.]
+# Figure legends
 
-## References
-1. [Insert references in Nature style.]
+## Figure 1 | [Brief title sentence]
+[Panel sequence and statistics.]
 
-## Figure legends
+## Figure 2 | [Brief title sentence]
+[Panel sequence and statistics.]
 
-**Figure 1 | [Brief title sentence].**  
-[Panel descriptions and statistics.]
+# Methods
+[Concise methods with clear operational detail.]
 
-**Figure 2 | [Brief title sentence].**  
-[...]
-
-## Methods
-
-### [Short subsection]
-[Methods text]
-
-### Data availability
+# Data Availability
 [Insert statement.]
 
-### Code availability
-[Insert statement, if relevant.]
+# Code Availability
+[Insert statement if relevant.]
 
-## Acknowledgements
-[Insert.]
+# References
+1. [Insert references]
 
-## Funding Statement
-[Insert.]
+# Acknowledgements
+[Insert]
 
-## Author Contributions
-[Insert.]
+# Author Contributions
+[Insert]
 
-## Competing Interests
-[Insert.]
-
-## Additional Information
-Correspondence and requests for materials should be addressed to [corresponding author].
+# Competing Interests
+[Insert]

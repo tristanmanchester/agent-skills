@@ -1,191 +1,206 @@
-# Section-by-Section Rubric
+# Section rubric
 
-Use this rubric when drafting, rewriting, or performing the final editorial pass.
+Use this file when drafting or repairing specific sections. For each section, first ask what job it must perform. Then repair whichever part of the section prevents it from doing that job.
 
-## 1. Manuscript brief
+## Title
 
-Before writing, you should be able to state:
-- the paper’s central claim in one sentence
-- the exact gap in the literature
-- the 3–6 results that directly support the claim
-- the strongest limitation
-- why the work matters beyond the immediate niche
+### Job
+Make the paper legible, searchable, and credible in one line.
 
-If you cannot do this, stop polishing sentences and repair the argument first.
+### It succeeds when
+- an adjacent-field scientist can infer what the paper is about
+- the title names the right entity, process, system, or intervention
+- the claim is neither mushy nor overstated
 
-## 2. Title
+### Common failure modes
+- too much mechanism packed into one line
+- a generality with no identifiable subject
+- promotional adjectives doing the work of evidence
+- excessive punctuation or a two-part slogan structure
 
-A good title:
-- names the system, entity, or process
-- tells the reader what changed, was discovered, or was shown
-- is readable outside the subfield
-- stays proportionate to the evidence
+### Repair moves
+- cut the weakest noun phrase
+- replace evaluative adjectives with the actual object or process
+- move from "what this means" back to "what this paper shows"
 
-Common failures:
-- slogan titles
-- vague `insights into` or `towards`
-- hype adjectives standing in for evidence
-- too many abbreviations
-- title makes a stronger claim than the paper itself
+## Summary paragraph or abstract
 
-Quick test:
-Would a scientist in a related field know what the study is about from the title alone?
+### Job
+Orient a broad reader, define the gap, state the principal answer, and end on the nearest real implication.
 
-## 3. Summary paragraph or abstract
+### It succeeds when
+- the first lines give a reader enough footing to care
+- the gap is specific, not just "little is known"
+- the main finding is stated once, plainly
+- the last sentence names an implication that truly follows
 
-A strong opening usually makes six moves:
-1. broad field context
-2. narrower background and the unresolved problem
-3. the exact aim or rationale
-4. main result introduced by `Here we show` or an equivalent
-5. immediate implication
-6. scope statement or limitation when needed
+### Common failure modes
+- starts too narrowly
+- sounds like a compressed Results section
+- too many numbers or acronyms
+- final sentence leaps into unsupported future claims
 
-Common failures:
-- method inventory instead of argument
-- too many details too early
-- abstract reads like a press release
-- ends with `opens new avenues` or other vague future-work language
-- contains unsupported claims of novelty
+### Repair moves
+- widen the first two sentences
+- name the specific unresolved issue
+- strip out non-load-bearing numeric detail
+- replace general importance claims with the exact consequence of the result
 
-Revision targets:
-- cut every adjective that is doing evidentiary work
-- remove numbers that are not load-bearing
-- simplify noun clusters
-- make sure the closing sentence says what changed in the field, not merely that the work is interesting
+## Introduction or opening
 
-## 4. Introduction or opening
+### Job
+Move from field context to the paper's problem and promise without becoming a literature dump.
 
-A good opening:
-- gives just enough background for a broad scientific reader
-- identifies the precise gap or unresolved tension
-- ends by stating what the study does
+### It succeeds when
+- readers know why the problem matters
+- the exact unresolved issue is named
+- the paper's response feels necessary and proportionate
 
-Common failures:
-- literature-dump mini-review
-- too many citations in a single sentence
-- extended problem framing with no clear gap
-- final paragraph still speaking in aims and intentions rather than results
+### Common failure modes
+- mini-review sprawl
+- a gap framed so broadly that any paper could fill it
+- final paragraph that merely repeats the abstract
+- transition sentences that say "however" without sharpening the problem
 
-Target length:
-Usually shorter than the authors first think. If the first half of the paper can be cut without harming the argument, it probably should be.
+### Repair moves
+- cut citations and background that do not set up the problem
+- replace generic "however" moves with the actual unresolved point
+- end with what the paper does and why that design can answer the question
 
-## 5. Results
+## Results
 
-Write Results around figures, not around the calendar of the project.
+### Job
+Carry the reader through the evidence in the order needed to support the paper's central claim.
 
-Good Results sections:
-- start with the cleanest, most load-bearing experiment or analysis
-- make one main claim per subsection
-- use prose to interpret the figure instead of repeating it
-- keep methodological detours short and located where they matter
+### It succeeds when
+- each subsection answers a question
+- each paragraph earns its place in the argument
+- interpretation is separated from observation
+- the reader always knows why the next figure matters
 
-Useful subsection pattern:
-- question
-- approach
-- observation
-- inference
+### Common failure modes
+- chronological lab notebook structure
+- paragraphs that narrate procedures rather than findings
+- every sentence starts from "we"
+- excessive number dumping
+- figure captions transplanted into prose
 
-Common failures:
-- chronological storytelling
-- every paragraph starts with `To investigate...`
-- long method descriptions in the Results
-- multiple claims bundled into a single paragraph
-- speculative mechanism presented before evidence
+### Repair moves
+- reorganise by conceptual dependency
+- start subsections with the question they answer
+- keep only the numbers that alter interpretation
+- end paragraphs on the finding that enables the next step
 
-## 6. Discussion
+## Discussion
 
-A good Discussion:
-- states the principal conclusion plainly
-- distinguishes what was shown from what is inferred
-- surfaces the strongest limitation
-- explains the generality and boundaries of the result
-- ends on a defensible field-level implication
+### Job
+State what the work establishes, what it suggests, and where its scope ends.
 
-Common failures:
-- repeats the Results section
-- inflates significance at the very end
-- hides limitations until the supplement
-- makes cross-species, translational, or clinical claims that outstrip the evidence
+### It succeeds when
+- the main conclusion is re-stated with better perspective, not just repeated
+- competing explanations or limitations are acknowledged
+- implications are scaled to the evidence
+- the ending leaves the reader with a precise field-level consequence
 
-Useful move order:
-1. principal conclusion
-2. mechanism or interpretation
-3. alternative explanations or limitations
-4. broader implication
+### Common failure modes
+- generic "these findings highlight the importance of" ending
+- sudden new literature review
+- limit-free victory lap
+- future-work paragraph with no real synthesis
 
-## 7. Methods
+### Repair moves
+- identify the strongest limitation and address it directly
+- replace generic significance language with specific consequences
+- separate what is proved, supported, and still unresolved
 
-Methods should be concise but sufficient for interpretation and replication.
+## Methods
 
-Include, where relevant:
-- experimental design
-- sampling, exclusions, randomisation, blinding
-- preprocessing and normalisation
-- statistical tests and software versions
-- ethical approvals and consent
-- model architecture and training details
-- repository links, accession numbers, and protocol references
+### Job
+Give the reader the details that govern interpretability and reproducibility.
 
-Common failures:
-- unclear unit of analysis
-- missing exclusions
-- `standard methods were used` with no detail
-- software named without version or settings
-- code central to the claim but absent from availability statements
+### It succeeds when
+- the reader can see what was measured, how, on what, and under what rules
+- statistical and preprocessing choices are explicit
+- software, pipelines, exclusion rules, and sample definitions are clear where material
 
-## 8. Figure legends
+### Common failure modes
+- beautiful prose but missing operational detail
+- result-critical decisions buried in supplement-only material
+- vague "standard methods were used" wording
+- statistical analysis described only in slogans
 
-A strong legend:
-- starts with a brief title sentence
-- describes each panel in sequence
-- defines symbols, colours, centre values, and error bars
-- states n, statistical tests, and P values where relevant
-- can be understood with minimal reference back to the main text
+### Repair moves
+- add the information a sceptical reader would need to judge the claim
+- separate acquisition, preprocessing, modelling, and statistics
+- name software versions and parameters when they affect interpretation
 
-Common failures:
-- methods buried in legends instead of the Methods section
-- no definition of error bars
-- ambiguous sample size
-- shorthand that only the authors understand
+## Figure legends
 
-## 9. End matter
+### Job
+Let the reader understand the figure without searching the main text for basic decoding.
 
-Check these sections explicitly:
-- Data Availability
-- Code Availability
-- Acknowledgements
-- Funding Statement
-- Author Contributions
-- Competing Interests
-- Additional Information
-- Extended Data legends
+### It succeeds when
+- the legend starts with a short title sentence
+- panels are described in order
+- sample size, statistics, centre values, and error bars are defined where relevant
+- specialised symbols are explained
 
-Common failures:
-- availability statements missing or too vague
-- author contributions generic and uninformative
-- no funding separation
-- corresponding author details missing
-- declarations invented because the draft felt incomplete
+### Common failure modes
+- legend begins directly with panel letters and no framing
+- no statistical definitions
+- half the information is hidden in the Methods
+- verbose retelling of the main text
 
-## 10. Cover letter or presubmission paragraph
+### Repair moves
+- add a title sentence naming the figure's point
+- define symbols and statistics explicitly
+- keep only the minimal methodological detail needed to read the figure correctly
 
-Good editorial framing answers:
-- what is the advance?
-- why does it matter to a broad readership?
-- why is the evidence strong enough now?
-- why does the paper fit this journal rather than a narrower venue?
+## Data Availability
 
-Common failures:
-- abstract pasted into the letter
-- high-energy hype with no fit rationale
-- no articulation of what makes the work general
-- no sense of what the paper is *not* claiming
+### Job
+Tell readers where the underlying data are and how they can obtain them.
 
-## Final pass questions
+### It succeeds when
+- a repository, accession, or access condition is named
+- restrictions are explained, not obscured
 
-- Is every major claim anchored in data or citation?
-- Does the title make a smaller, equal, or larger claim than the paper?
-- Would a referee identify the main limitation before the authors do?
-- Is there any sentence that could be pasted into a hundred unrelated papers without anyone noticing?
-- Does the opening make the paper legible to a scientist outside the niche?
+### Common failure modes
+- vague "available upon request"
+- statement absent entirely
+- multiple data types mixed together without clarity
+
+### Repair moves
+- separate public deposition from controlled access
+- say what is already deposited and what will be released on acceptance if that is the case
+- use placeholders rather than making anything up
+
+## Code Availability
+
+### Job
+Tell readers whether custom code exists, where it is, and under what conditions it can be accessed.
+
+### It succeeds when
+- custom analysis or modelling code is mentioned when central
+- repository or access condition is stated
+- versioning or release timing is clear where relevant
+
+## Cover letter or presubmission enquiry
+
+### Job
+Help an editor see fit, importance, and evidential strength quickly.
+
+### It succeeds when
+- it reads like an editor memo, not a reheated abstract
+- it explains why the paper belongs in this journal rather than in science generally
+- it names the main evidential reasons to trust the claim
+
+### Common failure modes
+- abstract pasted into letter form
+- overclaiming without editorial fit logic
+- no mention of scope or limitations
+
+### Repair moves
+- write for a time-poor editor
+- make the fit argument explicit
+- state what the paper is not claiming

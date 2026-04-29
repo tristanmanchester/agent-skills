@@ -1,49 +1,58 @@
-# Manuscript Brief
+# Manuscript brief template
 
-Use this sheet before drafting a full paper.
+Use this template when the source material is messy, incomplete, or spread across notes, figures, or slides.
 
 ## Target
-- Target journal:
-- Content type:
-- Working mode (`nature-article`, `nature-letter`, `portfolio-article`, `portfolio-letter`):
+- Journal:
+- Article type:
+- Closest bundled mode:
+- Specific author-guide details already verified:
+- Details that still need checking:
 
-## Core claim
+## Paper promise
 - One-sentence central claim:
-- Why readers outside the narrow subfield should care:
-- Exact gap vs prior work:
+- What the paper is **not** claiming:
+- Why it matters outside the immediate subfield:
+- Why this journal's readers should care now:
 
 ## Evidence ladder
-List the 3–6 results or figures that carry the paper.
+List 3-6 load-bearing results.
 
-1. Figure or result:
-   - Question addressed:
-   - Main finding:
-   - Claim supported:
-2. Figure or result:
-   - Question addressed:
-   - Main finding:
-   - Claim supported:
-3. Figure or result:
-   - Question addressed:
-   - Main finding:
-   - Claim supported:
+1. Figure / analysis:
+   - Question answered:
+   - Observation:
+   - Allowed claim:
+   - Main caveat:
+2. Figure / analysis:
+3. Figure / analysis:
+4. Figure / analysis:
+5. Figure / analysis:
+6. Figure / analysis:
 
-## Boundary conditions
+## Gap and prior work
+- Strongest prior work:
+- Exact unresolved problem:
+- Why existing approaches were insufficient:
+
+## Limitations and risk points
 - Strongest limitation:
-- Alternative explanation to address:
-- Scope of generalisation:
+- Most likely reviewer concern:
+- Most dangerous overclaim to avoid:
+- Alternative explanation that must be addressed:
 
-## Compliance and end matter
-- Data availability:
-- Code availability:
-- Materials availability:
-- Ethics approvals:
-- Funding:
-- Competing interests:
-- Author contributions:
+## Methods and compliance
+- System / samples / cohort:
+- Key methods:
+- Statistics:
+- Ethics / approvals / consent:
+- Reporting checklist likely required:
+- Data availability status:
+- Code availability status:
+- Materials availability status:
 
-## Unresolved placeholders
-- [confirm]
-- [insert ref]
-- [insert accession]
-- [insert statistics]
+## Editorial notes
+- Broad-reader bridge sentence:
+- Candidate title keywords:
+- Acronyms that are essential:
+- Acronyms to avoid:
+- Unknown facts to confirm before submission:

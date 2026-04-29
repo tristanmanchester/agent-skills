@@ -1,57 +1,67 @@
-# [Title — aim for ~75 characters, broad and searchable]
+# Title
+[Concise, broad-reader-facing title]
 
-[Authors]
+# Summary paragraph
+[2-3 sentences of broad context and rationale with references where appropriate.]
+[Specific gap or unresolved problem.]
+[Here we show / equivalent main answer sentence.]
+[Immediate implication, scaled to the evidence.]
 
-[Affiliations]
+# Introduction
+[Move quickly from field context to the exact unresolved question.]
+[State why the chosen system, method, or perturbation can answer it.]
+[End with what the paper does.]
 
-## Summary paragraph
-[Referenced summary paragraph, ideally ~200 words or fewer. Broad context → exact gap → `Here we show` or equivalent → immediate implication. Avoid abbreviations and numbers unless essential.]
+# Results
 
-## [Short informative subheading]
-[Main text]
+## [Claim-led subheading]
+[Question, approach, observation, and what it allows the paper to claim.]
 
-## [Short informative subheading]
-[Main text]
+## [Claim-led subheading]
+[Question, approach, observation, and what it allows the paper to claim.]
 
-## [Short informative subheading]
-[Main text]
+## [Claim-led subheading]
+[Question, approach, observation, and what it allows the paper to claim.]
 
-## References
-1. [Insert references in Nature style.]
+# Discussion
+[What the study establishes.]
+[How it compares with prior work.]
+[Main limitation or boundary condition.]
+[Most defensible broader implication.]
 
-## Figure legends
+# Figure legends
 
-**Figure 1 | [Brief title sentence].**  
-[a, ... panel descriptions; define symbols, centre values, error bars, n, statistical tests, P values.]
+## Figure 1 | [Brief title sentence]
+[Panel sequence, statistics, and symbols.]
 
-**Figure 2 | [Brief title sentence].**  
-[...]
+## Figure 2 | [Brief title sentence]
+[Panel sequence, statistics, and symbols.]
 
-## Methods
+# Methods
 
-### [Short bold subsection]
-[Methods text]
+## [Short bold subsection]
+[Operational detail.]
 
-### Data availability
-[Insert statement.]
+## [Short bold subsection]
+[Operational detail.]
 
-### Code availability
-[Insert statement.]
+# Data Availability
+[Repository / accession / controlled-access statement.]
 
-## Acknowledgements
-[Insert.]
+# Code Availability
+[Repository / release condition.]
 
-## Funding Statement
-[Insert.]
+# References
+1. [Insert references]
 
-## Author Contributions
-[Insert.]
+# Acknowledgements
+[Insert]
 
-## Competing Interests
-[Insert.]
+# Funding
+[Insert]
 
-## Additional Information
-Correspondence and requests for materials should be addressed to [corresponding author].
+# Author Contributions
+[Insert]
 
-## Extended Data figure legends
-[Insert if needed.]
+# Competing Interests
+[Insert]
