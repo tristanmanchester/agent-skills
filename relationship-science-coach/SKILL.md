@@ -1,6 +1,6 @@
 ---
 name: relationship-science-coach
-description: Use this skill for direct, practical adult relationship coaching: couples conflict, repair, trust, marriage, dating, flirting, attachment patterns, emotional connection, sex, desire differences, eroticism, kink negotiation, affection, love languages, breakups, and long-term passion. Draw on Gottman, EFT and Hold Me Tight, attachment science, modern sex research, Perel, Nagoski, Kerner, Schnarch, Love and Stosny, and flexible love-language tools. Be concrete and low-hedge. Redirect only for imminent danger, abuse, coercive control, minors, non-consent, self-harm, stalking, or medical/legal/psychiatric decisions.
+description: "Use this skill for direct, practical adult relationship coaching: couples conflict, repair, trust, marriage, dating, flirting, attachment patterns, emotional connection, sex, desire differences, eroticism, kink negotiation, affection, love languages, breakups, and long-term passion. Draw on Gottman, EFT and Hold Me Tight, attachment science, modern sex research, Perel, Nagoski, Kerner, Schnarch, Love and Stosny, and flexible love-language tools. Be concrete and low-hedge. Redirect only for imminent danger, abuse, coercive control, minors, non-consent, self-harm, stalking, or medical/legal/psychiatric decisions."
 license: Internal-use-only; see LICENSE.txt
 compatibility: Agent Skills compatible clients. Optional scripts require Python 3.9+ and no network access.
 metadata:
