@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "relationship-science-coach": {
+      "source": "tristanmanchester/agent-skills",
+      "sourceType": "github",
+      "skillPath": "relationship-science-coach/SKILL.md",
+      "computedHash": "547d086084050985f38a3ee9a67e41139d41c92775093bc52b36cc25a1336aa1"
+    }
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "goal": "Create a paused sales campaign structure with one ad set, one creative, and one ad.",
+  "risk": "budget",
+  "requires_user_approval": true,
+  "allow_budget": true,
+  "assumptions": [
+    "Replace placeholders before execution",
+    "Objects must remain paused unless separately approved for activation"
+  ],
+  "commands": [
+    {
+      "id": "help-campaign",
+      "intent": "Verify installed campaign create syntax.",
+      "command": [
+        "meta",
+        "ads",
+        "campaign",
+        "create",
+        "--help"
+      ]
+    },
+    {
+      "id": "create-campaign",
+      "intent": "Create paused sales campaign.",
+      "command": [
+        "meta",
+        "ads",
+        "campaign",
+        "create",
+        "--name",
+        "CAMPAIGN_NAME",
+        "--objective",
+        "OUTCOME_SALES",
+        "--daily-budget",
+        "BUDGET_MINOR_UNITS"
+      ],
+      "allow_budget": true
+    },
+    {
+      "id": "create-adset",
+      "intent": "Create paused ad set for campaign.",
+      "command": [
+        "meta",
+        "ads",
+        "adset",
+        "create",
+        "CAMPAIGN_ID",
+        "--name",
+        "ADSET_NAME",
+        "--optimization-goal",
+        "LINK_CLICKS",
+        "--billing-event",
+        "IMPRESSIONS",
+        "--targeting-countries",
+        "US"
+      ]
+    },
+    {
+      "id": "create-creative",
+      "intent": "Create link/image creative.",
+      "command": [
+        "meta",
+        "ads",
+        "creative",
+        "create",
+        "--name",
+        "CREATIVE_NAME",
+        "--page-id",
+        "PAGE_ID",
+        "--image",
+        "./creative.jpg",
+        "--body",
+        "PRIMARY_TEXT",
+        "--title",
+        "HEADLINE",
+        "--link-url",
+        "https://example.com",
+        "--call-to-action",
+        "SHOP_NOW"
+      ]
+    },
+    {
+      "id": "create-ad",
+      "intent": "Create ad attached to ad set and creative.",
+      "command": [
+        "meta",
+        "ads",
+        "ad",
+        "create",
+        "ADSET_ID",
+        "--name",
+        "AD_NAME",
+        "--creative-id",
+        "CREATIVE_ID"
+      ]
+    }
+  ],
+  "rollback_or_stop_rules": [
+    "Stop after any failed create",
+    "Verify each created ID",
+    "Do not activate"
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "goal": "Produce a weekly Meta ads performance report without changing anything.",
+  "risk": "read",
+  "requires_user_approval": false,
+  "commands": [
+    {
+      "id": "campaign-insights",
+      "intent": "Campaign-level weekly performance.",
+      "command": [
+        "meta",
+        "ads",
+        "insights",
+        "get",
+        "--level",
+        "campaign",
+        "--date-preset",
+        "last_7d",
+        "--fields",
+        "campaign_id,campaign_name,spend,impressions,clicks,ctr,cpc,actions,action_values,purchase_roas"
+      ]
+    },
+    {
+      "id": "adset-insights",
+      "intent": "Ad set-level weekly performance for diagnosis.",
+      "command": [
+        "meta",
+        "ads",
+        "insights",
+        "get",
+        "--level",
+        "adset",
+        "--date-preset",
+        "last_7d",
+        "--fields",
+        "adset_id,adset_name,campaign_id,spend,clicks,ctr,cpc,actions,action_values,purchase_roas"
+      ]
+    },
+    {
+      "id": "ad-insights",
+      "intent": "Ad-level weekly performance for creative ranking.",
+      "command": [
+        "meta",
+        "ads",
+        "insights",
+        "get",
+        "--level",
+        "ad",
+        "--date-preset",
+        "last_7d",
+        "--fields",
+        "ad_id,ad_name,adset_id,campaign_id,spend,clicks,ctr,cpc,actions,action_values,purchase_roas"
+      ]
+    }
+  ],
+  "expected_outputs": [
+    "Top performers",
+    "Underperformers",
+    "Caveats",
+    "Recommendations only"
+  ],
+  "rollback_or_stop_rules": [
+    "No writes",
+    "If conversion metrics are missing, report tracking caveat"
+  ]
+}

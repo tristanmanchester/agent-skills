@@ -1,0 +1,89 @@
+{
+  "version": "2.0.0",
+  "source_of_truth": "Installed `meta ... --help` output and official Meta Ads CLI docs",
+  "global_patterns": {
+    "json_output": "meta --output json ads <resource> <action> [options]",
+    "account_scope": "meta ads --ad-account-id <AD_ACCOUNT_ID> <resource> <action> [options]",
+    "help": "meta ads <resource> <action> --help"
+  },
+  "commands": [
+    {
+      "id": "auth_status",
+      "template": ["meta", "auth", "status"],
+      "risk": "read",
+      "purpose": "Check authentication state without exposing token values."
+    },
+    {
+      "id": "campaign_list",
+      "template": ["meta", "ads", "campaign", "list", "--limit", "25"],
+      "risk": "read",
+      "purpose": "List campaigns."
+    },
+    {
+      "id": "campaign_create",
+      "template": ["meta", "ads", "campaign", "create", "--name", "<NAME>", "--objective", "OUTCOME_SALES", "--daily-budget", "<MINOR_UNITS>"],
+      "risk": "budget",
+      "purpose": "Create a campaign, expected to remain paused unless separately activated."
+    },
+    {
+      "id": "campaign_pause",
+      "template": ["meta", "ads", "campaign", "update", "<CAMPAIGN_ID>", "--status", "PAUSED"],
+      "risk": "write",
+      "purpose": "Pause a campaign after approval."
+    },
+    {
+      "id": "campaign_activate",
+      "template": ["meta", "ads", "campaign", "update", "<CAMPAIGN_ID>", "--status", "ACTIVE"],
+      "risk": "active",
+      "purpose": "Activate a campaign after explicit review and approval."
+    },
+    {
+      "id": "adset_create",
+      "template": ["meta", "ads", "adset", "create", "<CAMPAIGN_ID>", "--name", "<NAME>", "--optimization-goal", "LINK_CLICKS", "--billing-event", "IMPRESSIONS", "--targeting-countries", "US"],
+      "risk": "write",
+      "purpose": "Create an ad set after approved targeting/budget plan."
+    },
+    {
+      "id": "creative_create_image_link",
+      "template": ["meta", "ads", "creative", "create", "--name", "<NAME>", "--page-id", "<PAGE_ID>", "--image", "./creative.jpg", "--body", "<PRIMARY_TEXT>", "--title", "<HEADLINE>", "--link-url", "https://example.com", "--call-to-action", "SHOP_NOW"],
+      "risk": "write",
+      "purpose": "Create an image/link creative. Verify exact flags with installed help."
+    },
+    {
+      "id": "ad_create",
+      "template": ["meta", "ads", "ad", "create", "<ADSET_ID>", "--name", "<NAME>", "--creative-id", "<CREATIVE_ID>"],
+      "risk": "write",
+      "purpose": "Create an ad attached to an ad set and creative."
+    },
+    {
+      "id": "insights_weekly_campaign",
+      "template": ["meta", "ads", "insights", "get", "--level", "campaign", "--date-preset", "last_7d", "--fields", "campaign_id,campaign_name,spend,impressions,clicks,ctr,cpc,actions,action_values,purchase_roas"],
+      "risk": "read",
+      "purpose": "Weekly campaign performance report."
+    },
+    {
+      "id": "catalog_create",
+      "template": ["meta", "ads", "catalog", "create", "--name", "<NAME>"],
+      "risk": "write",
+      "purpose": "Create product catalog."
+    },
+    {
+      "id": "product_item_create",
+      "template": ["meta", "ads", "product-item", "create", "--catalog-id", "<CATALOG_ID>", "--retailer-id", "<SKU>", "--name", "<PRODUCT_NAME>", "--url", "<URL>", "--price", "<PRICE_MINOR_UNITS>", "--currency", "USD", "--image-url", "<IMAGE_URL>"],
+      "risk": "write",
+      "purpose": "Create catalog product item; verify duplicate SKU and currency."
+    },
+    {
+      "id": "dataset_create",
+      "template": ["meta", "ads", "dataset", "create", "--name", "<NAME>"],
+      "risk": "write",
+      "purpose": "Create dataset/pixel."
+    },
+    {
+      "id": "dataset_connect",
+      "template": ["meta", "ads", "dataset", "connect", "<DATASET_ID>", "--ad-account-id", "<AD_ACCOUNT_ID>", "--catalog-id", "<CATALOG_ID>"],
+      "risk": "write",
+      "purpose": "Connect dataset to account/catalog; tracking-affecting write."
+    }
+  ]
+}

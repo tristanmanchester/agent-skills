@@ -1,0 +1,61 @@
+{
+  "goal": "Read-only account snapshot: accounts, campaigns, and 7-day traffic metrics.",
+  "risk": "read",
+  "requires_user_approval": false,
+  "commands": [
+    {
+      "id": "doctor",
+      "intent": "Check CLI/auth readiness.",
+      "command": [
+        "meta",
+        "auth",
+        "status"
+      ]
+    },
+    {
+      "id": "accounts",
+      "intent": "List accessible ad accounts.",
+      "command": [
+        "meta",
+        "ads",
+        "adaccount",
+        "list"
+      ]
+    },
+    {
+      "id": "campaigns",
+      "intent": "List recent campaigns.",
+      "command": [
+        "meta",
+        "ads",
+        "campaign",
+        "list",
+        "--limit",
+        "50"
+      ]
+    },
+    {
+      "id": "insights",
+      "intent": "Get 7-day traffic snapshot.",
+      "command": [
+        "meta",
+        "ads",
+        "insights",
+        "get",
+        "--date-preset",
+        "last_7d",
+        "--fields",
+        "spend,impressions,clicks,ctr,cpc"
+      ]
+    }
+  ],
+  "expected_outputs": [
+    "Account context",
+    "Campaign list",
+    "Spend/traffic metrics"
+  ],
+  "rollback_or_stop_rules": [
+    "Stop on auth failure",
+    "Do not mutate anything"
+  ]
+}

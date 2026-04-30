@@ -1,0 +1,64 @@
+{
+  "goal": "Change an ad set budget after confirming currency and before/after values.",
+  "risk": "budget",
+  "requires_user_approval": true,
+  "allow_budget": true,
+  "assumptions": [
+    "Replace ADSET_ID and NEW_BUDGET_MINOR_UNITS",
+    "Show before/after budget to user before running"
+  ],
+  "commands": [
+    {
+      "id": "read-account",
+      "intent": "Read account context/currency.",
+      "command": [
+        "meta",
+        "ads",
+        "adaccount",
+        "list"
+      ]
+    },
+    {
+      "id": "read-adset",
+      "intent": "Read current ad set budget/status.",
+      "command": [
+        "meta",
+        "ads",
+        "adset",
+        "get",
+        "ADSET_ID"
+      ]
+    },
+    {
+      "id": "update-budget",
+      "intent": "Apply approved ad set budget.",
+      "command": [
+        "meta",
+        "ads",
+        "adset",
+        "update",
+        "ADSET_ID",
+        "--daily-budget",
+        "NEW_BUDGET_MINOR_UNITS"
+      ],
+      "allow_budget": true
+    },
+    {
+      "id": "verify-budget",
+      "intent": "Verify budget after update.",
+      "command": [
+        "meta",
+        "ads",
+        "adset",
+        "get",
+        "ADSET_ID"
+      ],
+      "verification_for": "update-budget"
+    }
+  ],
+  "rollback_or_stop_rules": [
+    "Stop if currency is unknown",
+    "Stop if update fails",
+    "Do not activate anything"
+  ]
+}

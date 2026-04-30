@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Meta Ads CLI Agent Command Plan",
+  "type": "object",
+  "required": [
+    "goal",
+    "commands"
+  ],
+  "properties": {
+    "goal": {
+      "type": "string"
+    },
+    "ad_account_id": {
+      "type": "string"
+    },
+    "risk": {
+      "enum": [
+        "read",
+        "write",
+        "budget",
+        "active",
+        "destructive",
+        "regulated",
+        "mixed"
+      ]
+    },
+    "requires_user_approval": {
+      "type": "boolean",
+      "default": true
+    },
+    "allow_active": {
+      "type": "boolean",
+      "default": false
+    },
+    "allow_budget": {
+      "type": "boolean",
+      "default": false
+    },
+    "allow_destructive": {
+      "type": "boolean",
+      "default": false
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "preflight": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "intent",
+          "command"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "intent": {
+            "type": "string"
+          },
+          "command": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "prefer_json": {
+            "type": "boolean",
+            "default": true
+          },
+          "allow_active": {
+            "type": "boolean",
+            "default": false
+          },
+          "allow_budget": {
+            "type": "boolean",
+            "default": false
+          },
+          "allow_destructive": {
+            "type": "boolean",
+            "default": false
+          },
+          "allow_unknown": {
+            "type": "boolean",
+            "default": false
+          },
+          "verification_for": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "expected_outputs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rollback_or_stop_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}

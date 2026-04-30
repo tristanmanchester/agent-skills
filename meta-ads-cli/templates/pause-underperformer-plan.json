@@ -1,0 +1,67 @@
+{
+  "goal": "Pause one underperforming ad after reading object and recent performance.",
+  "risk": "write",
+  "requires_user_approval": true,
+  "assumptions": [
+    "Replace AD_ID before execution",
+    "Approval must identify the exact ad ID"
+  ],
+  "commands": [
+    {
+      "id": "read-ad",
+      "intent": "Read current ad status before mutation.",
+      "command": [
+        "meta",
+        "ads",
+        "ad",
+        "get",
+        "AD_ID"
+      ]
+    },
+    {
+      "id": "read-performance",
+      "intent": "Read recent ad performance.",
+      "command": [
+        "meta",
+        "ads",
+        "insights",
+        "get",
+        "--ad_id",
+        "AD_ID",
+        "--date-preset",
+        "last_7d",
+        "--fields",
+        "ad_id,ad_name,spend,clicks,ctr,cpc,actions,action_values,purchase_roas"
+      ]
+    },
+    {
+      "id": "pause-ad",
+      "intent": "Pause the approved ad.",
+      "command": [
+        "meta",
+        "ads",
+        "ad",
+        "update",
+        "AD_ID",
+        "--status",
+        "PAUSED"
+      ]
+    },
+    {
+      "id": "verify-ad",
+      "intent": "Verify ad is paused.",
+      "command": [
+        "meta",
+        "ads",
+        "ad",
+        "get",
+        "AD_ID"
+      ],
+      "verification_for": "pause-ad"
+    }
+  ],
+  "rollback_or_stop_rules": [
+    "Stop if read-ad or read-performance fails",
+    "Do not continue if pause-ad fails"
+  ]
+}

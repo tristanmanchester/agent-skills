@@ -1,0 +1,57 @@
+{
+  "goal": "Audit dataset/pixel and catalog state without modifying connections.",
+  "risk": "read",
+  "requires_user_approval": false,
+  "commands": [
+    {
+      "id": "campaigns",
+      "intent": "List campaigns to understand active conversion campaigns.",
+      "command": [
+        "meta",
+        "ads",
+        "campaign",
+        "list",
+        "--limit",
+        "50"
+      ]
+    },
+    {
+      "id": "conversion-insights",
+      "intent": "Check whether conversion-related actions are appearing.",
+      "command": [
+        "meta",
+        "ads",
+        "insights",
+        "get",
+        "--date-preset",
+        "last_7d",
+        "--fields",
+        "campaign_id,campaign_name,spend,actions,action_values,purchase_roas"
+      ]
+    },
+    {
+      "id": "catalog-help",
+      "intent": "Discover installed catalog commands if needed.",
+      "command": [
+        "meta",
+        "ads",
+        "catalog",
+        "--help"
+      ]
+    },
+    {
+      "id": "dataset-help",
+      "intent": "Discover installed dataset commands if needed.",
+      "command": [
+        "meta",
+        "ads",
+        "dataset",
+        "--help"
+      ]
+    }
+  ],
+  "rollback_or_stop_rules": [
+    "No dataset connect/create in an audit",
+    "No catalog writes"
+  ]
+}

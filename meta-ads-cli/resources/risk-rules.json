@@ -1,0 +1,38 @@
+{
+  "version": "2.0.0",
+  "default": "read-before-write",
+  "risks": {
+    "read": {
+      "actions": ["list", "get", "show", "status", "help", "inspect", "preview", "search", "export"],
+      "approval_required": false
+    },
+    "write": {
+      "actions": ["create", "update", "connect", "disconnect", "upload", "pause", "archive", "assign", "unassign", "import"],
+      "approval_required": true,
+      "verify_after": true
+    },
+    "budget": {
+      "tokens": ["--daily-budget", "--lifetime-budget", "--budget", "--bid-amount", "--spend-cap", "budget", "bid"],
+      "approval_required": true,
+      "guard_flag": "--allow-budget",
+      "requires_before_after_values": true
+    },
+    "active": {
+      "tokens": ["activate", "--status ACTIVE", "--status=ACTIVE"],
+      "approval_required": true,
+      "guard_flag": "--allow-active",
+      "requires_review_checklist": true
+    },
+    "destructive": {
+      "tokens": ["delete", "remove", "--force"],
+      "approval_required": true,
+      "guard_flag": "--allow-destructive",
+      "prefer_alternatives": ["PAUSED", "ARCHIVED"]
+    },
+    "regulated": {
+      "topics": ["housing", "employment", "credit", "politics", "social issues", "health", "minors", "financial hardship", "sensitive personal attributes"],
+      "approval_required": true,
+      "human_review_required": true
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "goal": "Add paused creative/ad variants to an existing ad set.",
+  "risk": "write",
+  "requires_user_approval": true,
+  "assumptions": [
+    "Replace ADSET_ID, PAGE_ID, URLs, and local file paths",
+    "No budget changes"
+  ],
+  "commands": [
+    {
+      "id": "read-adset",
+      "intent": "Confirm target ad set.",
+      "command": [
+        "meta",
+        "ads",
+        "adset",
+        "get",
+        "ADSET_ID"
+      ]
+    },
+    {
+      "id": "create-creative-benefit",
+      "intent": "Create benefit-angle creative.",
+      "command": [
+        "meta",
+        "ads",
+        "creative",
+        "create",
+        "--name",
+        "Benefit angle",
+        "--page-id",
+        "PAGE_ID",
+        "--image",
+        "./benefit.jpg",
+        "--body",
+        "PRIMARY_TEXT",
+        "--title",
+        "HEADLINE",
+        "--link-url",
+        "https://example.com",
+        "--call-to-action",
+        "SHOP_NOW"
+      ]
+    },
+    {
+      "id": "create-ad-benefit",
+      "intent": "Create paused benefit-angle ad.",
+      "command": [
+        "meta",
+        "ads",
+        "ad",
+        "create",
+        "ADSET_ID",
+        "--name",
+        "Benefit angle ad",
+        "--creative-id",
+        "CREATIVE_ID"
+      ]
+    }
+  ],
+  "rollback_or_stop_rules": [
+    "Stop if local asset missing",
+    "Do not modify budgets",
+    "Do not activate"
+  ]
+}
