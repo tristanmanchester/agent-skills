@@ -1,0 +1,19 @@
+{
+  "email": "ada@example.net",
+  "first_name": "Ada",
+  "last_name": "Lovelace",
+  "unsubscribed": false,
+  "properties": {
+    "plan_tier": "pro",
+    "account_age_days": 365
+  },
+  "segments": [
+    "seg_123456789"
+  ],
+  "topics": [
+    {
+      "id": "top_123456789",
+      "subscription": "opt_in"
+    }
+  ]
+}

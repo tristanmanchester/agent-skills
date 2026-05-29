@@ -1,0 +1,10 @@
+{
+  "name": "march-launch",
+  "segment_id": "seg_123456789",
+  "from": "Acme News <news@example.com>",
+  "subject": "March product update",
+  "preview_text": "A quick look at what shipped this month",
+  "html": "<h1>March updates</h1><p>Lots of new things landed.</p>",
+  "topic_id": "top_123456789",
+  "send": false
+}

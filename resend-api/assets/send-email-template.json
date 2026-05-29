@@ -1,0 +1,12 @@
+{
+  "from": "Acme <onboarding@example.com>",
+  "to": "user@example.net",
+  "subject": "Welcome to Acme",
+  "template": {
+    "id": "tpl_123456789",
+    "variables": {
+      "first_name": "Ada",
+      "plan_name": "Pro"
+    }
+  }
+}

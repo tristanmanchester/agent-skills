@@ -1,0 +1,26 @@
+[
+  {
+    "from": "Acme <orders@example.com>",
+    "to": "ada@example.net",
+    "subject": "Your order has shipped",
+    "html": "<p>Your order 1001 has shipped.</p>",
+    "tags": [
+      {
+        "name": "flow",
+        "value": "shipping"
+      }
+    ]
+  },
+  {
+    "from": "Acme <orders@example.com>",
+    "to": "grace@example.net",
+    "subject": "Your order has shipped",
+    "html": "<p>Your order 1002 has shipped.</p>",
+    "tags": [
+      {
+        "name": "flow",
+        "value": "shipping"
+      }
+    ]
+  }
+]

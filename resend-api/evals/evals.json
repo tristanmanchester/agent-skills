@@ -1,0 +1,93 @@
+{
+  "skill_name": "resend-api",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add Resend to my Next.js app and schedule a password reset email for tomorrow at 09:00 Berlin time.",
+      "expected_output": "A runnable Resend example that uses the correct send primitive, an ISO 8601 scheduled timestamp, idempotency guidance, and a note about scheduling limits.",
+      "assertions": [
+        "The response chooses POST /emails rather than batch or broadcast",
+        "The response includes a concrete ISO 8601 scheduled timestamp example",
+        "The response mentions idempotency for the send request",
+        "The response mentions that scheduled sends have a 72 hour ceiling"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I need to send 70 different shipment notifications with slightly different content. Which Resend endpoint should I use?",
+      "expected_output": "A recommendation to use batch sends, including the 100-email limit and the restrictions that matter for batch sends.",
+      "assertions": [
+        "The response chooses POST /emails/batch",
+        "The response mentions the 100-email per request limit",
+        "The response warns that attachments are not supported in batch sends",
+        "The response warns that scheduled_at is not supported in batch sends"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create a verified Resend domain for eu.example.com in the EU region and turn receiving on as well.",
+      "expected_output": "A domain-creation workflow with the correct region, receiving capability, DNS verification steps, and a note about MX/subdomain considerations.",
+      "assertions": [
+        "The response chooses the Domains API",
+        "The response mentions eu-west-1 as the EU region value",
+        "The response mentions sending and receiving capabilities",
+        "The response includes a DNS verification step"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Set up inbound email processing for support@example.com with signature verification.",
+      "expected_output": "A webhook + receiving API design that verifies the raw body signature and then fetches the full message body/attachments through receiving endpoints.",
+      "assertions": [
+        "The response mentions the email.received webhook event",
+        "The response says verification must use the raw body",
+        "The response mentions svix-id, svix-timestamp, and svix-signature",
+        "The response explains that the webhook payload does not contain the full message body or attachments"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "I want a reusable welcome email template in Resend and then I want to send it with variables.",
+      "expected_output": "A template lifecycle that creates, publishes, and then sends the template with variables, without mixing template and raw HTML/text in the same send payload.",
+      "assertions": [
+        "The response includes a template publish step",
+        "The response uses POST /emails to send the published template",
+        "The response says not to send html or text alongside template usage",
+        "The response warns about reserved variable names"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Help me model newsletter subscriptions in Resend with contacts, topics, properties, segments, and broadcasts.",
+      "expected_output": "A coherent subscription architecture that prefers segments over deprecated audiences and uses the right layer for global unsubscribes, topic preferences, and campaign targeting.",
+      "assertions": [
+        "The response prefers Segments over Audiences",
+        "The response distinguishes global unsubscribed from topic subscriptions",
+        "The response includes Contact Properties as typed profile data",
+        "The response uses Broadcasts for campaign delivery"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "My raw Resend REST call returns 403. What should I check first?",
+      "expected_output": "A debugging checklist that inspects API key validity, User-Agent presence, and sender-domain verification before moving on.",
+      "assertions": [
+        "The response mentions invalid or missing API keys",
+        "The response mentions the required User-Agent for raw HTTP",
+        "The response mentions unverified or test-only sender domains",
+        "The response does not jump straight to unrelated webhook advice"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Can Resend wait for my custom event and then send a follow-up email automatically?",
+      "expected_output": "An explanation of the Workflows + Events beta/private-alpha model, including the need to confirm account availability before treating it as production-ready.",
+      "assertions": [
+        "The response mentions Workflows and Events",
+        "The response says they are beta or private alpha",
+        "The response mentions a wait_for_event step or event-driven workflow concept",
+        "The response explicitly tells the user to confirm availability before relying on it"
+      ]
+    }
+  ]
+}
