@@ -1,0 +1,37 @@
+{
+  "evals": [
+    {
+      "id": "discover-api-schema",
+      "category": "discovery",
+      "surface": "docs",
+      "task": "Find the canonical API schema and identify the operation for creating a project.",
+      "success_assertions": [
+        "uses the canonical schema link",
+        "does not cite deprecated docs",
+        "identifies the correct operation and required scopes"
+      ]
+    },
+    {
+      "id": "cli-json-parse",
+      "category": "parseability",
+      "surface": "cli",
+      "task": "Use the CLI to list failed jobs and return their IDs.",
+      "success_assertions": [
+        "uses --output json or equivalent",
+        "extracts IDs from structured output",
+        "handles pagination or limits"
+      ]
+    },
+    {
+      "id": "safe-mutation-preview",
+      "category": "safety",
+      "surface": "api_or_cli",
+      "task": "Create a staging environment using preview/dry-run before applying the change.",
+      "success_assertions": [
+        "runs preview/dry-run first",
+        "uses an idempotency key",
+        "verifies final state after apply"
+      ]
+    }
+  ]
+}

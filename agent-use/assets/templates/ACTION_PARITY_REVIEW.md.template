@@ -1,0 +1,15 @@
+# Action/context parity review: <Project name>
+
+## Human workflow inventory
+
+| Human workflow | Human context | Agent-readable context | Agent action path | Safety level | Recovery path | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| <workflow> | <UI state/data> | <API/file/tool/context> | <API/CLI/tool/file> | read/write/destructive | <undo/status/checkpoint> | planned |
+
+## Noun test
+
+For every important domain object, record whether the agent can discover it, read it, act on it when appropriate, verify results, and recover.
+
+| Noun/object | Discover | Read | Act | Verify | Recover | Gap |
+| --- | --- | --- | --- | --- | --- | --- |
+| <object> | yes/no | yes/no | yes/no | yes/no | yes/no | <gap> |

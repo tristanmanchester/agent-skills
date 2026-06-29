@@ -1,0 +1,27 @@
+# <Product or docs name>
+
+> Concise summary of what this product/docs site does and what agents should use it for.
+
+## Core
+
+- [Overview](<url>): What the product does and core concepts.
+- [Quickstart](<url>): Fastest safe path for first successful use.
+- [Agent/automation guide](<url>): Agent-specific instructions, limits, and safe operating rules.
+
+## Capabilities
+
+- [API reference](<url>): Canonical machine-readable API contract and examples.
+- [CLI reference](<url>): Commands, flags, JSON output, exit codes, and automation mode.
+- [SDK reference](<url>): Typed SDK methods, examples, errors, and pagination.
+- [MCP server card](<url>): Tool/resource/prompt discovery and auth.
+
+## Safety and operations
+
+- [Authentication and scopes](<url>): Token creation, scopes, least-privilege examples, and permission errors.
+- [Errors and retries](<url>): Error codes, retryability, rate limits, and remediation.
+- [Changelog and deprecations](<url>): Current versions and migration notes.
+
+## Optional
+
+- [Examples](<url>): Extra examples and recipes.
+- [Full reference](<url>): Large exhaustive reference for deeper lookup.

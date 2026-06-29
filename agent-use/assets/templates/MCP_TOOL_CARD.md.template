@@ -1,0 +1,43 @@
+# MCP/tool server agent card: <server-name>
+
+## Purpose
+
+<What context/resources/actions this server exposes.>
+
+## Discovery
+
+- Server card: <url/path>
+- Tool list: <how to list>
+- Resources: <how to list>
+- Prompts: <how to list>
+- Auth/scopes: <url/path>
+
+## Tools
+
+| Tool | Purpose | Side effects | Required context | Safety level | Output shape |
+| --- | --- | --- | --- | --- | --- |
+| `<namespace.action>` | <one sentence> | none/write/destructive | <resources/list calls> | read/write/destructive | <schema/link> |
+
+## Tool definition checklist
+
+For every tool:
+
+- Name is namespaced and intent-oriented.
+- Description says when to use it and what side effects it has.
+- Input schema has required fields, enums, bounds, and examples.
+- Output shape includes IDs, links, status, warnings, and next actions.
+- Errors include code, message, retryability, remediation, and correlation ID.
+- Large responses are paginated or summarized.
+- Dangerous actions support preview/approval/rollback.
+
+## Example tool response
+
+```json
+{
+  "id": "resource_123",
+  "status": "created",
+  "url": "https://example.com/resources/resource_123",
+  "warnings": [],
+  "correlation_id": "req_123"
+}
+```

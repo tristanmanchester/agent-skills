@@ -1,0 +1,60 @@
+# API agent contract: <api-name>
+
+## Canonical contract
+
+- OpenAPI/GraphQL/schema: <url/path>
+- Version: <version>
+- Changelog: <url/path>
+- Sandbox: <url/path>
+- Status page: <url/path>
+
+## Auth
+
+| Task | Minimum scope | Example credential type |
+| --- | --- | --- |
+| Read resources | `<scope>` | read-only token |
+| Create resource | `<scope>` | service account |
+| Delete resource | `<scope>` | approved write token |
+
+## Resource model
+
+| Resource | Stable ID | List | Get | Create | Update | Delete/archive | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `<resource>` | `<id>` | `GET /...` | `GET /.../{id}` | `POST /...` | `PATCH /.../{id}` | `DELETE /.../{id}` | `<notes>` |
+
+## Pagination and filtering
+
+```http
+GET /resources?limit=50&cursor=<cursor>&fields=id,name,status
+```
+
+Response:
+
+```json
+{
+  "data": [],
+  "next_cursor": null,
+  "request_id": "req_123"
+}
+```
+
+## Mutations
+
+- Idempotency header/field: `<name>`
+- Dry-run/preview support: `<endpoint/flag>`
+- Long-running job pattern: `<endpoint>`
+- Rollback/undo: `<endpoint or none>`
+
+## Error envelope
+
+```json
+{
+  "error": {
+    "code": "permission_denied",
+    "message": "The token lacks resources:write.",
+    "retryable": false,
+    "remediation": "Request resources:write or use a read-only endpoint.",
+    "correlation_id": "req_123"
+  }
+}
+```

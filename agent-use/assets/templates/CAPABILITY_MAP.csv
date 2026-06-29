@@ -1,0 +1,4 @@
+capability,human_ui_path,agent_context_path,agent_action_path,safety_level,recovery_path,status,owner,notes
+Create project,New project form,GET /orgs/{org_id} + project schema,POST /projects,write,DELETE /projects/{id} or archive,planned,@owner,Add idempotency key
+List deployments,Deployments tab,GET /deployments?project_id=...,GET /deployments,read,pagination cursor,done,@owner,
+Delete environment,Settings > Environments > Delete,GET /environments/{id},DELETE /environments/{id},destructive,soft delete restore,missing,@owner,Requires approval and dry-run

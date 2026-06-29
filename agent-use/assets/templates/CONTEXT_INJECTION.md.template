@@ -1,0 +1,17 @@
+# Context injection contract: <Project name>
+
+## Runtime context agents need
+
+| Context item | Source of truth | Freshness | Size bound | Sensitive? | How injected/exposed |
+| --- | --- | --- | --- | --- | --- |
+| Current workspace/project | <source> | per request | <limit> | no | <prompt/resource/tool> |
+| User permissions/scopes | <source> | per request | <limit> | yes | <redacted summary/tool> |
+| Available objects and IDs | <source> | per request | <limit> | maybe | <resource/list tool> |
+| Recent activity | <source> | per session | <limit> | maybe | <summary/link> |
+
+## Rules
+
+- Inject IDs and constraints, not just names.
+- Bound large lists and provide search/list tools.
+- Redact secrets and personal data unless essential and permitted.
+- Include completion criteria and recovery paths for long-running work.

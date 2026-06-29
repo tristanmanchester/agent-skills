@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent tool result envelope",
+  "type": "object",
+  "required": ["ok", "status", "request_id"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "status": {"type": "string", "enum": ["succeeded", "failed", "pending", "partial", "preview"]},
+    "request_id": {"type": "string"},
+    "data": {},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "next_actions": {"type": "array", "items": {"type": "string"}},
+    "links": {"type": "array", "items": {"type": "object"}},
+    "error": {"$ref": "cli-error-envelope.schema.json#/properties/error"}
+  },
+  "additionalProperties": true
+}

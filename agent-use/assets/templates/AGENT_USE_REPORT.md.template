@@ -1,0 +1,56 @@
+# Agent-use audit: <target>
+
+Overall: <score>/100 (<grade>)
+Date: <date>
+Reviewer: <name/agent>
+Surfaces reviewed: <repo/docs/CLI/API/SDK/MCP/UI/files/skill>
+Surfaces not reviewed: <limits>
+
+## Executive summary
+
+<3-7 sentences. State the main agent-use strengths, biggest blockers, and highest-leverage fixes.>
+
+## Scores
+
+| Dimension | Applicable | Score | Evidence | Main gap |
+| --- | --- | ---: | --- | --- |
+| Discoverability | yes/no | 0-10 | <file/url/command> | <gap> |
+| Content readability | yes/no | 0-10 | <file/url/command> | <gap> |
+| Capability contracts | yes/no | 0-10 | <file/url/command> | <gap> |
+| Action parity | yes/no | 0-10 | <file/url/command> | <gap> |
+| Context parity | yes/no | 0-10 | <file/url/command> | <gap> |
+| Composability and primitive quality | yes/no | 0-10 | <file/url/command> | <gap> |
+| Parseable, bounded outputs | yes/no | 0-10 | <file/url/command> | <gap> |
+| Safety, permissions, and governance | yes/no | 0-10 | <file/url/command> | <gap> |
+| Recovery and resilience | yes/no | 0-10 | <file/url/command> | <gap> |
+| Evals and observability | yes/no | 0-10 | <file/url/command> | <gap> |
+
+## Action/context parity map
+
+| Human capability | Human context | Agent-readable context | Agent action path | Safety level | Recovery path | Gap |
+| --- | --- | --- | --- | --- | --- | --- |
+| <workflow> | <UI state> | <endpoint/file/tool> | <command/API/tool> | <level> | <undo/status> | <gap> |
+
+## Top remediation plan
+
+### 0-2 days
+
+1. <Fix, evidence, owner, acceptance test>
+
+### 2-7 days
+
+1. <Fix, evidence, owner, acceptance test>
+
+### 7-30 days
+
+1. <Fix, evidence, owner, acceptance test>
+
+## Evals to add
+
+| Eval | Surface | Current failure mode | Passing condition |
+| --- | --- | --- | --- |
+| <task> | <surface> | <failure> | <assertion> |
+
+## Assumptions and limits
+
+- <What could not be inspected or verified.>

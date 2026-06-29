@@ -1,0 +1,4 @@
+action,risk_level,min_scope,requires_preview,requires_human_approval,audit_log,rollback_path,notes
+list resources,read,example:read,no,no,yes,n/a,
+create draft,local reversible write,example:write,yes,no,yes,delete/archive draft,
+delete production resource,destructive,example:delete,yes,yes,yes,soft delete restore or backup,

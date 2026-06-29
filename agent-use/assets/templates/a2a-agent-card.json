@@ -1,0 +1,11 @@
+{
+  "name": "example-agent",
+  "description": "Accepts delegated tasks for Example workflows.",
+  "version": "1.0.0",
+  "url": "https://example.com/.well-known/agent-card.json",
+  "capabilities": ["tasks", "artifacts", "status", "cancel", "resume"],
+  "auth": {
+    "type": "oauth2",
+    "scopes_supported": ["example.tasks"]
+  }
+}

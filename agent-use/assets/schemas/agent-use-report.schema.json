@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/agent-use-report.schema.json",
+  "title": "AgentUseReport",
+  "type": "object",
+  "required": ["target", "overall_score", "dimensions", "top_recommendations"],
+  "properties": {
+    "target": {"type": "string"},
+    "generated_at": {"type": "string"},
+    "overall_score": {"type": ["integer", "null"], "minimum": 0, "maximum": 100},
+    "grade": {"type": ["string", "null"], "enum": ["A", "B", "C", "D", "F", null]},
+    "dimensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "applicable", "score", "evidence", "gaps", "recommendations"],
+        "properties": {
+          "name": {"type": "string"},
+          "applicable": {"type": "boolean"},
+          "score": {"type": ["number", "null"], "minimum": 0, "maximum": 10},
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["signal", "path"],
+              "properties": {
+                "signal": {"type": "string"},
+                "path": {"type": "string"},
+                "line": {"type": "integer"},
+                "snippet": {"type": "string"}
+              },
+              "additionalProperties": true
+            }
+          },
+          "gaps": {"type": "array", "items": {"type": "string"}},
+          "recommendations": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
+    },
+    "top_recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["dimension", "severity", "recommendation"],
+        "properties": {
+          "dimension": {"type": "string"},
+          "severity": {"type": "string", "enum": ["critical", "high", "medium", "low"]},
+          "recommendation": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,234 @@
+{
+  "skill_dir": "/mnt/data/agent-use-v2/agent-use",
+  "valid": true,
+  "summary": {
+    "pass": 36,
+    "warn": 0,
+    "fail": 0
+  },
+  "frontmatter": {
+    "name": "agent-use",
+    "description": "Audit or design websites, docs, apps, CLIs/TUIs, APIs, SDKs, MCP/A2A agents, Agent Skills, and repos so AI agents can discover, understand, safely operate, verify, and recover from real tasks. Use for agent-readiness audits, action/context parity reviews, AGENTS.md/llms.txt/OpenAPI/API catalog/MCP/A2A/tool design, CLI JSON/non-interactive ergonomics, shared workspaces, prompt-native features, evals, templates, and implementation roadmaps.",
+    "license": "MIT",
+    "compatibility": "Optional scripts require Python 3.10+. Web checks require network access. Repository scans require read access to the target tree.",
+    "metadata": ""
+  },
+  "checks": [
+    {
+      "id": "frontmatter",
+      "status": "pass",
+      "severity": "low",
+      "message": "SKILL.md frontmatter delimiters found"
+    },
+    {
+      "id": "name",
+      "status": "pass",
+      "severity": "low",
+      "message": "Skill name is valid and matches parent directory"
+    },
+    {
+      "id": "description",
+      "status": "pass",
+      "severity": "low",
+      "message": "Description is 442 chars and has 9 intent/context signals"
+    },
+    {
+      "id": "compatibility",
+      "status": "pass",
+      "severity": "low",
+      "message": "compatibility field is within size limit"
+    },
+    {
+      "id": "progressive-disclosure",
+      "status": "pass",
+      "severity": "low",
+      "message": "SKILL.md size is reasonable: 101 lines / 9830 bytes"
+    },
+    {
+      "id": "dir-references",
+      "status": "pass",
+      "severity": "low",
+      "message": "references/ exists with 19 files"
+    },
+    {
+      "id": "dir-scripts",
+      "status": "pass",
+      "severity": "low",
+      "message": "scripts/ exists with 8 files"
+    },
+    {
+      "id": "dir-assets",
+      "status": "pass",
+      "severity": "low",
+      "message": "assets/ exists with 24 files"
+    },
+    {
+      "id": "referenced-paths",
+      "status": "pass",
+      "severity": "low",
+      "message": "All 20 referenced bundled paths exist"
+    },
+    {
+      "id": "json-resources",
+      "status": "pass",
+      "severity": "low",
+      "message": "All 17 JSON resources parse"
+    },
+    {
+      "id": "trigger-evals",
+      "status": "pass",
+      "severity": "low",
+      "message": "trigger_queries.json: 10 should-trigger and 10 should-not-trigger queries"
+    },
+    {
+      "id": "evals",
+      "status": "pass",
+      "severity": "low",
+      "message": "evals/ contains 2 files"
+    },
+    {
+      "id": "script-action_parity_inventory.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script uses argparse/help patterns or delegates to a validated CLI"
+    },
+    {
+      "id": "script-pycompile-action_parity_inventory.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script compiles"
+    },
+    {
+      "id": "script-help-action_parity_inventory.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "--help exited zero"
+    },
+    {
+      "id": "script-agent_use_audit.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script uses argparse/help patterns or delegates to a validated CLI"
+    },
+    {
+      "id": "script-pycompile-agent_use_audit.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script compiles"
+    },
+    {
+      "id": "script-help-agent_use_audit.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "--help exited zero"
+    },
+    {
+      "id": "script-audit_agent_use.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script uses argparse/help patterns or delegates to a validated CLI"
+    },
+    {
+      "id": "script-pycompile-audit_agent_use.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script compiles"
+    },
+    {
+      "id": "script-help-audit_agent_use.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "--help exited zero"
+    },
+    {
+      "id": "script-generate_agent_assets.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script uses argparse/help patterns or delegates to a validated CLI"
+    },
+    {
+      "id": "script-pycompile-generate_agent_assets.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script compiles"
+    },
+    {
+      "id": "script-help-generate_agent_assets.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "--help exited zero"
+    },
+    {
+      "id": "script-generate_llms_txt.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script uses argparse/help patterns or delegates to a validated CLI"
+    },
+    {
+      "id": "script-pycompile-generate_llms_txt.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script compiles"
+    },
+    {
+      "id": "script-help-generate_llms_txt.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "--help exited zero"
+    },
+    {
+      "id": "script-validate_agent_assets.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script uses argparse/help patterns or delegates to a validated CLI"
+    },
+    {
+      "id": "script-pycompile-validate_agent_assets.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script compiles"
+    },
+    {
+      "id": "script-help-validate_agent_assets.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "--help exited zero"
+    },
+    {
+      "id": "script-validate_skill.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script uses argparse/help patterns or delegates to a validated CLI"
+    },
+    {
+      "id": "script-pycompile-validate_skill.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script compiles"
+    },
+    {
+      "id": "script-help-validate_skill.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "--help exited zero"
+    },
+    {
+      "id": "script-web_agent_readiness.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script uses argparse/help patterns or delegates to a validated CLI"
+    },
+    {
+      "id": "script-pycompile-web_agent_readiness.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script compiles"
+    },
+    {
+      "id": "script-help-web_agent_readiness.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "--help exited zero"
+    }
+  ]
+}

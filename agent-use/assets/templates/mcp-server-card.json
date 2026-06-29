@@ -1,0 +1,24 @@
+{
+  "name": "example-mcp-server",
+  "description": "Exposes read-only context and safe write tools for Example.",
+  "version": "1.0.0",
+  "documentation_url": "https://example.com/docs/mcp",
+  "auth": {
+    "type": "oauth2",
+    "protected_resource_metadata_url": "https://example.com/.well-known/oauth-protected-resource",
+    "scopes_supported": ["example:read", "example:write"]
+  },
+  "capabilities": {
+    "tools": true,
+    "resources": true,
+    "prompts": true
+  },
+  "discovery": {
+    "well_known_url": "https://example.com/.well-known/mcp.json"
+  },
+  "safety": {
+    "destructive_actions_require_approval": true,
+    "dry_run_supported": true,
+    "audit_log_url": "https://example.com/audit"
+  }
+}

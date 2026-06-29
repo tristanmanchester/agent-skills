@@ -1,0 +1,44 @@
+# agent-use
+
+> Concise index of canonical documentation and references for AI agents.
+
+This file is a generated draft. Review the links and descriptions before publishing.
+
+## Core
+
+- [AGENTS.md](https://example.com/agent-use/AGENTS): This package is an Agent Skill for auditing and designing systems so AI agents can use them reliably and safely.
+- [Changelog](https://example.com/agent-use/CHANGELOG): - Fixed stale script references and restored working v2 command names plus v1 compatibility entry points.
+- [agent-use](https://example.com/agent-use/SKILL): Audit or design websites, docs, apps, CLIs/TUIs, APIs, SDKs, MCP/A2A agents, Agent Skills, and repos so AI agents can discover, understand, safely operate, verify, and recover fro…
+- [agent-use skill v2](https://example.com/agent-use/README): A comprehensive Agent Skill for auditing and designing systems that AI agents can use well.
+
+## Examples
+
+- [Action/context parity inventory](https://example.com/agent-use/examples/action-parity-inventory): Root: `/mnt/data/agent-use-v2/agent-use`
+- [Agent-use audit: `/mnt/data/agent-use-v2/agent-use`](https://example.com/agent-use/examples/self-audit): | Dimension | Applicable | Score | Main gaps |
+- [Skill validation: `/mnt/data/agent-use-v2/agent-use`](https://example.com/agent-use/examples/skill-validation): Summary: {'pass': 36, 'warn': 0, 'fail': 0}
+
+## References
+
+- [API, SDK, MCP, A2A, and tool readiness](https://example.com/agent-use/references/api-sdk-mcp-readiness): Use this when auditing or designing HTTP APIs, SDKs, tool servers, MCP servers, A2A agents, webhooks, and automation contracts.
+- [Agent instructions and skills](https://example.com/agent-use/references/agent-instructions-and-skills): A root `AGENTS.md` should tell coding agents how to work safely and effectively. Include project purpose, setup, tests, lint/build commands, architecture map, generated-file polic…
+- [Agent-native architecture](https://example.com/agent-use/references/agent-native-architecture): This reference preserves the strongest ideas from the original Compound skills and generalizes them beyond a single app stack.
+- [Agent-use audit playbook](https://example.com/agent-use/references/audit-playbook): Use this playbook to audit existing work. The goal is not to prove that a system is “bad for agents.” The goal is to find the smallest concrete changes that make agents more succe…
+- [Agent-use audit report template](https://example.com/agent-use/references/report-template): | Surface/dimension | Applies? | Why |
+- [Agent-use build playbook](https://example.com/agent-use/references/build-playbook): Use this playbook when designing new work or refactoring an existing system so agents can use it well.
+- [Agent-use framework](https://example.com/agent-use/references/framework): Agent-usefulness is the degree to which an AI agent can discover, understand, operate, verify, and recover while using a system to complete real user goals.
+- [Agent-use scoring rubric](https://example.com/agent-use/references/scoring-rubric): Score only applicable dimensions. A docs-only site should not be penalized for lacking a TUI; a CLI-only package should not be penalized for lacking a web app. Explain applicabili…
+- [App UI and workspace readiness](https://example.com/agent-use/references/app-ui-and-workspace-readiness): Use this when auditing or designing products where humans use an app UI but agents also need to act.
+- [CLI and TUI readiness](https://example.com/agent-use/references/cli-tui-readiness): Use this when the agent surface is a command-line app, terminal UI, developer tool, build/deploy command, package manager, or local automation script.
+- [Comparison with the original compound agent-native skills](https://example.com/agent-use/references/original-compound-comparison): The deprecated Compound package was opinionated in a good way. It made a strong claim that agent support is not a bolt-on chatbot: the user and the agent should share action paths…
+- [Evaluating agent-usefulness](https://example.com/agent-use/references/evaluation): Agent-usefulness should be measured with task-level evaluations. A good eval asks whether an agent can complete realistic work using the provided surfaces, not whether it can answ…
+- [Files, mobile, and long-running work](https://example.com/agent-use/references/files-mobile-and-long-running-work): Files are often the simplest shared workspace. Good file-based agent surfaces have stable paths, clear ownership, explicit generated-file markers, sidecar metadata where needed, a…
+- [Research notes and synthesis](https://example.com/agent-use/references/research-notes): Accessed 2026-06-29. This file summarizes the sources used to build the skill and how they inform the recommendations. It is a synthesis, not a copy of the source material.
+- [Review recipes](https://example.com/agent-use/references/review-recipes): 1. Run `scripts/audit_agent_use.py --root --markdown --output agent-use-report.md --json-output agent-use-report.json`.
+- [Security, safety, and recovery patterns](https://example.com/agent-use/references/security-recovery): Agent-useful systems should be safe by construction. Agents can move quickly, retry aggressively, and compose tools in surprising ways. The interface must make correct, reversible…
+- [Source synthesis and standards map](https://example.com/agent-use/references/source-map): This skill synthesizes three groups of material.
+- [Surface guides](https://example.com/agent-use/references/surface-guides): Use these guides to inspect or design specific surfaces. Many products combine several surfaces; judge the whole agent journey, not each surface in isolation.
+- [Web and docs readiness](https://example.com/agent-use/references/web-and-docs-readiness): Use this when auditing or designing a website, documentation site, support portal, marketing site with product actions, or public developer docs for agent use.
+
+## Optional
+
+- Add links to large references, archived docs, exhaustive API pages, or secondary examples here when they are useful but not essential.

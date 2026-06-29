@@ -1,0 +1,28 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://api.example.com/",
+      "service-desc": [
+        {
+          "href": "https://example.com/openapi.json",
+          "type": "application/vnd.oai.openapi+json",
+          "title": "Example OpenAPI contract"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://example.com/docs/api",
+          "type": "text/html",
+          "title": "Example API documentation"
+        }
+      ],
+      "alternate": [
+        {
+          "href": "https://example.com/docs/api.md",
+          "type": "text/markdown",
+          "title": "Markdown API documentation"
+        }
+      ]
+    }
+  ]
+}

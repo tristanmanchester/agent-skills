@@ -1,0 +1,14 @@
+would_write	AGENTS.md	Repository instructions for coding agents
+would_write	llms.txt	Concise LLM/agent docs index
+would_write	docs/agent-use/web-discovery-headers.txt	HTTP Link header examples
+would_write	docs/agent-use/capability-map.csv	Capability map worksheet
+would_write	docs/agent-use/action-parity-review.md	Action/context parity worksheet
+would_write	docs/agent-use/context-injection-contract.md	Dynamic context injection contract
+would_write	docs/agent-use/permission-matrix.csv	Permission/approval matrix
+would_write	docs/agent-use/api-agent-contract.md	API agent contract
+would_write	docs/agent-use/cli-agent-contract.md	CLI/TUI agent contract
+would_write	evals/agent-use-evals.json	Agent task eval seed file
+would_write	.well-known/api-catalog	RFC 9727 API catalog Linkset draft
+would_write	.well-known/mcp.json	MCP server-card draft
+would_write	.well-known/agent-card.json	A2A-style agent card draft
+would_write	.well-known/agent-skills/index.json	Agent skills index draft

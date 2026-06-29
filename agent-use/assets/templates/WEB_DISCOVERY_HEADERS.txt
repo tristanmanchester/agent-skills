@@ -1,0 +1,9 @@
+# Example HTTP Link headers for key HTML/docs responses.
+# Publish only headers that point to real, maintained resources.
+
+Link: </llms.txt>; rel="llms-txt"; type="text/plain"
+Link: </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"
+Link: </openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"
+Link: </.well-known/oauth-protected-resource>; rel="oauth-protected-resource"; type="application/json"
+Link: </.well-known/mcp.json>; rel="mcp-server-card"; type="application/json"
+Link: </.well-known/agent-skills/index.json>; rel="agent-skills"; type="application/json"

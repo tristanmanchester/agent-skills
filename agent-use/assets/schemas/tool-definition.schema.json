@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/tool-definition.schema.json",
+  "title": "AgentToolDefinition",
+  "type": "object",
+  "required": ["name", "description", "input_schema"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
+      "description": "Namespaced action name such as project.create"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 40,
+      "description": "Explain when to use the tool, side effects, constraints, and output."
+    },
+    "side_effects": {"type": "string", "enum": ["none", "local_write", "remote_write", "destructive", "external"]},
+    "safety_level": {"type": "string", "enum": ["read", "write", "destructive", "high_impact"]},
+    "input_schema": {"type": "object"},
+    "output_schema": {"type": "object"},
+    "examples": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": true
+}

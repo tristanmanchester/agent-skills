@@ -1,0 +1,11 @@
+{
+  "skills": [
+    {
+      "name": "example-skill",
+      "description": "Use when completing Example workflows with docs, API, CLI, and SDK guidance.",
+      "version": "1.0.0",
+      "download_url": "https://example.com/skills/example-skill.zip",
+      "documentation_url": "https://example.com/docs/agents/example-skill"
+    }
+  ]
+}

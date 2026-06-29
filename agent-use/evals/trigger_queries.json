@@ -1,0 +1,26 @@
+{
+  "trigger_queries": [
+    "Audit this repo for agent readiness.",
+    "Make this CLI easier for AI agents to use.",
+    "Review whether our API is agent-friendly.",
+    "Create an AGENTS.md and llms.txt plan for this project.",
+    "How should we expose this UI workflow to agents?",
+    "Score our MCP tools for agent usability.",
+    "Design evals for whether agents can use our SDK.",
+    "Check if our docs are good for LLM agents.",
+    "Help me build an automation-safe command-line interface.",
+    "Map user actions to agent actions for this product."
+  ],
+  "non_trigger_queries": [
+    "Explain what an AI agent is in general.",
+    "Write marketing copy for our product launch.",
+    "Debug this Python stack trace without considering agent usability.",
+    "Summarize this blog post.",
+    "Make a logo for my CLI.",
+    "What is the weather tomorrow?",
+    "Translate this README into German.",
+    "Create a project plan for a mobile app only for human users.",
+    "Tell me whether this API call is syntactically valid.",
+    "Write a poem about robots."
+  ]
+}

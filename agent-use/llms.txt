@@ -1,0 +1,32 @@
+# agent-use skill
+
+> Agent Skill for auditing or designing repositories, websites, CLIs, APIs, SDKs, MCP/A2A/tool servers, Agent Skills, app UIs, files, docs, and other surfaces so AI agents can use them reliably and safely.
+
+## Core
+
+- [Skill entry point](SKILL.md): Default audit and build workflows, scripts, and reference routing.
+- [Framework](references/framework.md): Overall agent-usefulness model.
+- [Scoring rubric](references/scoring-rubric.md): Score only applicable dimensions.
+- [Audit playbook](references/audit-playbook.md): Existing-work audit process.
+- [Build playbook](references/build-playbook.md): New-work design process.
+- [Original Compound comparison](references/original-compound-comparison.md): What v2 preserves and expands.
+
+## Surface guidance
+
+- [Agent-native architecture](references/agent-native-architecture.md): Action/context parity, noun test, shared workspace, prompt-native behavior.
+- [Web and docs readiness](references/web-and-docs-readiness.md): llms.txt, markdown docs, API catalog, auth metadata, MCP/A2A/skills discovery.
+- [CLI/TUI readiness](references/cli-tui-readiness.md): Non-interactive JSON mode, stdout/stderr, errors, bounded output.
+- [API/SDK/MCP readiness](references/api-sdk-mcp-readiness.md): Contracts, schemas, tool design, task lifecycle.
+- [App UI and workspace readiness](references/app-ui-and-workspace-readiness.md): UI/action parity and shared workspaces.
+- [Files/mobile/long-running work](references/files-mobile-and-long-running-work.md): Checkpoints, offline constraints, task status.
+- [Security and recovery](references/security-recovery.md): Permissions, dry-run, approval, rollback, idempotency.
+- [Evaluation](references/evaluation.md): Task-level evals and regression checks.
+
+## Scripts
+
+- [Repository audit](scripts/audit_agent_use.py): Heuristic scan for agent-usefulness signals.
+- [Action parity inventory](scripts/action_parity_inventory.py): Candidate capability map from UI/action/tool evidence.
+- [Web readiness](scripts/web_agent_readiness.py): Bounded probe for agent-readiness endpoints.
+- [llms.txt generator](scripts/generate_llms_txt.py): Draft an llms.txt from docs files.
+- [Asset scaffolder](scripts/generate_agent_assets.py): Create agent-facing starter assets.
+- [Skill validator](scripts/validate_agent_assets.py): Validate Agent Skill structure, JSON, scripts, and evals.

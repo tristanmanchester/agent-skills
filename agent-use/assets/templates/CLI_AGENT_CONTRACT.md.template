@@ -1,0 +1,61 @@
+# CLI agent contract: <cli-name>
+
+## Purpose
+
+<What the CLI does and when agents should use it.>
+
+## Discovery
+
+```bash
+<cli> --help
+<cli> --version
+<cli> <command> --help
+```
+
+## Machine mode guarantees
+
+- Non-interactive mode: <default/flag>
+- JSON output: `<flag>`
+- Data stream: stdout
+- Diagnostics/progress/errors: stderr
+- Color/spinner disabled by: `<flag/env>`
+- Maximum default output: `<limit>`
+- Pagination: `<cursor/limit flags>`
+
+## Command taxonomy
+
+| Command | Side effects | JSON output | Dry-run | Idempotent | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `<cli> resource list` | no | yes | n/a | yes | paginated |
+| `<cli> resource create` | yes | yes | yes | with key | returns object ID |
+
+## Error envelope in JSON mode
+
+```json
+{
+  "error": {
+    "code": "validation_failed",
+    "message": "Name is required.",
+    "retryable": false,
+    "remediation": "Pass --name.",
+    "correlation_id": "req_123"
+  }
+}
+```
+
+## Exit codes
+
+| Code | Meaning | Retryable |
+| ---: | --- | --- |
+| 0 | success | n/a |
+| 1 | general failure | maybe |
+| 2 | usage/validation error | no |
+| 3 | permission denied | no |
+| 4 | transient/retryable error | yes |
+
+## Safety
+
+- Destructive commands require `--dry-run` before apply: <yes/no>
+- Automation confirmation flag: `<--yes/--apply>`
+- Rollback command: `<command>`
+- Audit log: `<path/url>`
