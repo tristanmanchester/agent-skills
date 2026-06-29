@@ -17,6 +17,7 @@ python scripts/web_agent_readiness.py https://example.com/docs --markdown --prof
 python scripts/generate_llms_txt.py ./docs --site-url https://example.com/docs --output llms.txt
 python scripts/generate_agent_assets.py --root ./project --project-name "Example" --surface all --dry-run
 python scripts/validate_agent_assets.py --skill-dir ./agent-use --run-help --py-compile --markdown
+python scripts/test_agent_use_scanners.py
 ```
 
 V1-compatible entry points remain available: `scripts/agent_use_audit.py` and `scripts/validate_skill.py`.

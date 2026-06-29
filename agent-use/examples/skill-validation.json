@@ -1,8 +1,8 @@
 {
-  "skill_dir": "/mnt/data/agent-use-v2/agent-use",
+  "skill_dir": "/Users/tristan/Projects/skills/agent-use",
   "valid": true,
   "summary": {
-    "pass": 36,
+    "pass": 39,
     "warn": 0,
     "fail": 0
   },
@@ -42,7 +42,7 @@
       "id": "progressive-disclosure",
       "status": "pass",
       "severity": "low",
-      "message": "SKILL.md size is reasonable: 101 lines / 9830 bytes"
+      "message": "SKILL.md size is reasonable: 109 lines / 10345 bytes"
     },
     {
       "id": "dir-references",
@@ -54,7 +54,7 @@
       "id": "dir-scripts",
       "status": "pass",
       "severity": "low",
-      "message": "scripts/ exists with 8 files"
+      "message": "scripts/ exists with 9 files"
     },
     {
       "id": "dir-assets",
@@ -172,6 +172,24 @@
     },
     {
       "id": "script-help-generate_llms_txt.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "--help exited zero"
+    },
+    {
+      "id": "script-test_agent_use_scanners.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script uses argparse/help patterns or delegates to a validated CLI"
+    },
+    {
+      "id": "script-pycompile-test_agent_use_scanners.py",
+      "status": "pass",
+      "severity": "low",
+      "message": "script compiles"
+    },
+    {
+      "id": "script-help-test_agent_use_scanners.py",
       "status": "pass",
       "severity": "low",
       "message": "--help exited zero"

@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import sys
 from dataclasses import asdict, dataclass
 from html.parser import HTMLParser
 from pathlib import Path
@@ -27,6 +26,8 @@ class EndpointResult:
     bytes_read: int
     notes: list[str]
     link_header: str | None = None
+    discovered_from: str | None = None
+    discovery_rel: str | None = None
 
 class HeadingParser(HTMLParser):
     def __init__(self) -> None:
@@ -48,6 +49,28 @@ def origin_for(url: str) -> str:
     p = urlparse(normalize_url(url))
     return urlunparse((p.scheme, p.netloc, "", "", "", ""))
 
+def label_for_rel(rel: str, url: str) -> str:
+    low = (rel + " " + url).lower()
+    if "api-catalog" in low: return "linked API catalog"
+    if "openid" in low: return "linked OpenID configuration"
+    if "oauth-protected-resource" in low or "resource_metadata" in low: return "linked OAuth protected resource metadata"
+    if "oauth-authorization-server" in low or "authorization-server" in low: return "linked OAuth authorization server metadata"
+    if "openapi" in low or "swagger" in low or "service-desc" in low: return "linked OpenAPI"
+    if "mcp" in low: return "linked MCP server card"
+    if "agent-card" in low or "agent.json" in low: return "linked A2A agent card"
+    if "agent-skills" in low: return "linked Agent skills index"
+    if "llms" in low: return "linked llms.txt"
+    if "canonical" in low: return "linked canonical"
+    return f"linked {rel or 'alternate'}"
+
+def accept_for_label(label: str) -> str:
+    low = label.lower()
+    if "openapi" in low: return "application/vnd.oai.openapi+json,application/json,*/*;q=0.5"
+    if any(k in low for k in ["api catalog", "oauth", "openid", "mcp", "agent card", "agent skills"]):
+        return "application/linkset+json,application/json,*/*;q=0.5"
+    if "llms" in low or "canonical" in low: return "text/markdown,text/plain,text/html,*/*;q=0.5"
+    return "application/json,text/markdown,text/plain,text/html,*/*;q=0.5"
+
 def analyze_json(label: str, data: object) -> list[str]:
     notes=["valid JSON"]
     lower=label.lower()
@@ -65,6 +88,77 @@ def analyze_json(label: str, data: object) -> list[str]:
     if "openapi" in lower and isinstance(data, dict) and ("openapi" in data or "swagger" in data):
         notes.append("looks like OpenAPI/Swagger")
     return notes
+
+def split_link_header(header: str) -> list[str]:
+    parts=[]; buf=[]; in_quote=False
+    for ch in header:
+        if ch == '"': in_quote = not in_quote
+        if ch == "," and not in_quote:
+            part="".join(buf).strip()
+            if part: parts.append(part)
+            buf=[]
+        else:
+            buf.append(ch)
+    part="".join(buf).strip()
+    if part: parts.append(part)
+    return parts
+
+def parse_link_header(header: str | None, base_url: str) -> list[tuple[str,str]]:
+    if not header: return []
+    useful = {
+        "service-desc", "service-doc", "api-catalog", "authorization-server",
+        "oauth-protected-resource", "openid-configuration", "mcp", "agent-card",
+        "canonical", "alternate", "llms", "describedby",
+    }
+    out=[]
+    for part in split_link_header(header):
+        m=re.match(r"\s*<([^>]+)>", part)
+        if not m: continue
+        href=urljoin(base_url, m.group(1).strip())
+        attrs={}
+        for key, value in re.findall(r";\s*([A-Za-z0-9_-]+)=?\"?([^\";]*)\"?", part):
+            attrs[key.lower()] = value.strip()
+        rels={r.strip().lower() for r in attrs.get("rel","").split() if r.strip()}
+        typ=attrs.get("type","").lower()
+        if not rels & useful and not any(t in typ for t in ["json","markdown","openapi","linkset"]):
+            continue
+        if "alternate" in rels and not any(t in typ for t in ["json","markdown","openapi","linkset","text/plain"]):
+            continue
+        rel="/".join(sorted(rels & useful)) or "typed-link"
+        out.append((label_for_rel(rel, href), href))
+    return out
+
+def linkset_values(data: object) -> list[dict]:
+    if isinstance(data, dict):
+        if isinstance(data.get("linkset"), list):
+            return [x for x in data["linkset"] if isinstance(x, dict)]
+        if any(k in data for k in ("anchor", "href", "rel")):
+            return [data]
+    if isinstance(data, list):
+        return [x for x in data if isinstance(x, dict)]
+    return []
+
+def parse_linkset_json(text: str, base_url: str) -> list[tuple[str,str]]:
+    try:
+        data=json.loads(text)
+    except Exception:
+        return []
+    out=[]
+    for item in linkset_values(data):
+        for key, value in item.items():
+            if key == "anchor": continue
+            values=value if isinstance(value, list) else [value]
+            for entry in values:
+                if isinstance(entry, str):
+                    href=entry; rel=key
+                elif isinstance(entry, dict):
+                    href=str(entry.get("href") or entry.get("uri") or "")
+                    rel=str(entry.get("rel") or key)
+                else:
+                    continue
+                if href:
+                    out.append((label_for_rel(rel, href), urljoin(base_url, href)))
+    return out
 
 def analyze_body(label: str, url: str, content_type: str | None, text: str) -> list[str]:
     notes=[]; lower=label.lower(); ct=(content_type or "").lower()
@@ -143,46 +237,73 @@ def candidate_endpoints(url: str) -> list[tuple[str,str,str|None]]:
 def infer_profile(results: list[EndpointResult], bodies: dict[str,str], requested: str) -> tuple[str,str]:
     if requested != "auto": return requested, "explicit"
     corpus="\n".join(bodies.values()).lower()
-    if any("API catalog" in r.label and r.ok for r in results) or re.search(r"\b(openapi|swagger|graphql|sdk|webhook|api key|oauth|developer platform)\b", corpus): return "api", "inferred from API/developer signals"
-    if any(("MCP" in r.label or "A2A" in r.label or "Agent skills" in r.label) and r.ok for r in results) or re.search(r"\b(dashboard|workspace|project|settings|deploy|billing|agent card|mcp|a2a)\b", corpus): return "app", "inferred from app/tool workflow signals"
+    input_doc=any(r.label.startswith("input page") and r.ok and (("html" in (r.content_type or "").lower()) or "markdown-like" in " ".join(r.notes).lower()) for r in results)
+    linked_api=any(r.discovered_from and r.ok and any(k in r.label.lower() for k in ["openapi","api catalog","oauth","openid"]) for r in results)
+    same_origin_api=any(not r.discovered_from and r.ok and any(k in r.label.lower() for k in ["openapi","api catalog"]) for r in results)
+    if same_origin_api: return "api", "inferred from same-origin API discovery"
+    if input_doc and linked_api: return "docs-api", "inferred from docs page with linked API discovery"
+    if re.search(r"\b(openapi|swagger|graphql|sdk|webhook|api key|oauth|developer platform)\b", corpus): return "api", "inferred from API/developer signals"
+    if any(r.ok and any(k in r.label.lower() for k in ["mcp", "a2a", "agent skills"]) for r in results): return "tool", "inferred from tool/agent discovery endpoints"
+    if re.search(r"\b(dashboard|workspace|project|settings|deploy|billing)\b", corpus): return "app", "inferred from app workflow signals"
+    if input_doc: return "docs", "inferred from documentation page signals"
     return "content", "inferred from content/docs signals"
 
 def score(results: list[EndpointResult], bodies: dict[str,str], profile: str) -> tuple[float,list[dict],dict[str,object]]:
-    prof, reason = infer_profile(results,bodies,profile); needs_cap=prof in {"api","app"}; needs_auth=needs_cap and bool(re.search(r"\b(auth|oauth|oidc|token|api key|scope|permission|login)\b", "\n".join(bodies.values()), re.I))
+    prof, reason = infer_profile(results,bodies,profile)
+    needs_cap=prof in {"api","app","tool","docs-api"}
+    needs_auth=needs_cap and bool(re.search(r"\b(auth|oauth|oidc|token|api key|scope|permission|login)\b", "\n".join(bodies.values()), re.I))
+    needs_tool=prof == "tool"
     def ok(sub): return any(sub.lower() in r.label.lower() and r.ok for r in results)
     def note(sub,n): return any(sub.lower() in r.label.lower() and any(n.lower() in x.lower() for x in r.notes) for r in results)
     def header(term): return any(r.link_header and term.lower() in r.link_header.lower() for r in results)
     def dim(name,score,maxs,app=True,why="applicable"):
         return {"name":name,"score":round(min(maxs,score),1) if app else None,"max_score":maxs if app else None,"applicable":app,"reason":why if app else why}
     dims=[]
-    discover=(4 if ok("llms.txt") else 0)+(2 if ok("robots") else 0)+(2 if ok("sitemap") else 0)+(2 if header("llms") or header("canonical") else 0)+(3 if needs_cap and ok("API catalog") else 0)+(2 if needs_cap and (ok("MCP") or ok("A2A") or ok("Agent skills")) else 0)+(2 if needs_cap and (header("service-desc") or header("api-catalog") or header("mcp")) else 0)
+    discover=(4 if ok("llms.txt") else 0)+(2 if ok("robots") else 0)+(2 if ok("sitemap") else 0)+(2 if header("llms") or header("canonical") or ok("linked canonical") else 0)+(3 if needs_cap and ok("API catalog") else 0)+(2 if needs_tool and (ok("MCP") or ok("A2A") or ok("Agent skills")) else 0)+(2 if needs_cap and (header("service-desc") or header("api-catalog") or header("mcp") or any(r.discovered_from and r.ok for r in results)) else 0)
     dims.append(dim("discoverability", discover, 20))
     content=(4 if note("input page","h1") or note("input page","title") else 0)+(4 if note("llms","markdown heading") or note("markdown","markdown-like") else 0)+(3 if note("llms","markdown links") else 0)+(3 if any("freshness/versioning" in " ".join(r.notes).lower() for r in results if r.ok) else 0)+(2 if not any("large page" in " ".join(r.notes).lower() for r in results if r.label=="input page") else 0)+(2 if ok("sitemap") or ok("llms.txt") else 0)
     dims.append(dim("content", content, 20))
-    capabilities=(6 if ok("API catalog") or any("openapi" in b.lower() for b in bodies.values()) else 0)+(4 if note("MCP","capability") else 0)+(4 if note("A2A","agent card") or ok("A2A") else 0)+(3 if ok("Agent skills") else 0)+(3 if header("service-doc") or header("service-desc") else 0)
-    dims.append(dim("capabilities", capabilities, 20, needs_cap, "API/app/tool surfaces need machine capability discovery" if needs_cap else "content-only profile does not require API/MCP/A2A capability endpoints"))
+    capabilities=(6 if ok("API catalog") or ok("OpenAPI") or any("openapi" in b.lower() for b in bodies.values()) else 0)+(4 if needs_tool and note("MCP","capability") else 0)+(4 if needs_tool and (note("A2A","agent card") or ok("A2A")) else 0)+(3 if needs_tool and ok("Agent skills") else 0)+(3 if header("service-doc") or header("service-desc") or any(r.discovered_from and r.ok for r in results) else 0)
+    dims.append(dim("capabilities", capabilities, 20, needs_cap, "API/app/tool/docs-api surfaces need machine capability discovery" if needs_cap else "content/docs profile does not require API/MCP/A2A capability endpoints"))
     access=(5 if needs_auth and (ok("OAuth protected") or ok("OAuth authorization") or ok("OpenID")) else 0)+(3 if needs_auth and (note("OAuth","auth metadata") or note("OpenID","auth metadata")) else 0)+(3 if ok("robots") else 0)+(2 if "allow" in bodies.get("robots.txt","").lower() or "disallow" in bodies.get("robots.txt","").lower() else 0)+(2 if any("terms" in (r.link_header or "").lower() for r in results) else 0)+(2 if not needs_auth else 0)
     dims.append(dim("access and safety", access, 15 if not needs_auth else 20))
     all_text="\n".join(bodies.values()).lower(); maintenance=(5 if re.search(r"changelog|release notes|version|deprecated|deprecation",all_text) else 0)+(3 if re.search(r"last updated|updated|date",all_text) else 0)+(3 if ok("sitemap") else 0)+(3 if ok("API catalog") or ok("llms.txt") else 0)+(2 if not any("json-like endpoint did not parse" in " ".join(r.notes).lower() for r in results if r.ok) else 0)
     dims.append(dim("maintenance", maintenance, 20))
     applicable=[d for d in dims if d["applicable"]]
     overall=round(sum((d["score"] or 0)/(d["max_score"] or 1) for d in applicable)/len(applicable)*100,1) if applicable else 0.0
-    return overall,dims,{"profile":prof,"profile_reason":reason,"needs_capability_endpoints":needs_cap,"needs_auth_metadata":needs_auth}
+    return overall,dims,{"profile":prof,"profile_reason":reason,"needs_capability_endpoints":needs_cap,"needs_auth_metadata":needs_auth,"needs_tool_metadata":needs_tool}
 
 def grade(v: float) -> str:
     return "strong" if v>=80 else "agent-ready foundation" if v>=60 else "partial" if v>=40 else "thin" if v>=20 else "low signal"
 
 def build_report(url: str, timeout: float, max_bytes: int, profile: str) -> dict:
-    results=[]; bodies={}
+    results=[]; bodies={}; seen=set(); queue=[]
     for label, endpoint, accept in candidate_endpoints(url):
-        r,b=fetch(label, endpoint, accept, timeout, max_bytes); results.append(r)
-        if r.ok: bodies[label]=b
+        queue.append((label, endpoint, accept, None, None))
+    while queue:
+        label, endpoint, accept, discovered_from, discovery_rel = queue.pop(0)
+        key=(label, endpoint)
+        if key in seen: continue
+        seen.add(key)
+        r,b=fetch(label, endpoint, accept, timeout, max_bytes)
+        r.discovered_from=discovered_from; r.discovery_rel=discovery_rel
+        results.append(r)
+        if not r.ok: continue
+        bodies[label]=b
+        if not discovered_from:
+            for dlabel, durl in parse_link_header(r.link_header, endpoint):
+                if (dlabel, durl) not in seen:
+                    queue.append((dlabel, durl, accept_for_label(dlabel), endpoint, dlabel.removeprefix("linked ")))
+        if "api catalog" in label.lower() or "linkset+json" in (r.content_type or "").lower():
+            for dlabel, durl in parse_linkset_json(b, endpoint):
+                if (dlabel, durl) not in seen:
+                    queue.append((dlabel, durl, accept_for_label(dlabel), endpoint, dlabel.removeprefix("linked ")))
     overall,dims,app=score(results,bodies,profile)
     recs=[]
     if not any(r.label=="llms.txt" and r.ok for r in results): recs.append("Publish `/llms.txt` with a concise markdown map of canonical docs, APIs, changelogs, and agent-specific guidance.")
     if app["needs_capability_endpoints"] and not any("API catalog" in r.label and r.ok for r in results): recs.append("For API/app profiles, publish `/.well-known/api-catalog` as Linkset JSON or link to a machine-readable API inventory.")
     if app["needs_auth_metadata"] and not any(("OAuth" in r.label or "OpenID" in r.label) and r.ok for r in results): recs.append("Auth appears relevant; publish OAuth/OIDC protected-resource or authorization-server metadata and document scopes.")
-    if app["needs_capability_endpoints"] and not any(("MCP" in r.label or "A2A" in r.label) and r.ok for r in results): recs.append("If the product exposes tools or agent-to-agent tasks, publish an MCP server card at `/.well-known/mcp.json` and/or an A2A agent card.")
+    if app.get("needs_tool_metadata") and not any(("MCP" in r.label or "A2A" in r.label) and r.ok for r in results): recs.append("Tool/agent surfaces should publish an MCP server card at `/.well-known/mcp.json` and/or an A2A agent card.")
     if not any("markdown" in " ".join(r.notes).lower() for r in results if r.ok): recs.append("Provide markdown or markdown-negotiated docs for canonical task pages.")
     return {"scanner_version":VERSION,"target":normalize_url(url),"overall_score":overall,"grade":grade(overall),"applicability":app,"dimensions":dims,"endpoints":[asdict(r) for r in results],"recommendations":recs}
 
@@ -194,6 +315,7 @@ def render_markdown(report: dict) -> str:
     lines += ["","## Endpoint checks","| Endpoint | Status | Notes |","|---|---:|---|"]
     for e in report["endpoints"]:
         status=e["status"] if e["status"] is not None else "n/a"; notes="; ".join(e["notes"][:4]).replace("|","\\|"); ok="ok" if e["ok"] else "missing/blocked"
+        if e.get("discovered_from"): notes=(notes+"; " if notes else "")+f"discovered from {e['discovered_from']}"
         lines.append(f"| [{e['label']}]({e['url']}) ({ok}) | {status} | {notes} |")
     lines += ["","## Recommendations"]
     lines += [f"- {r}" for r in report["recommendations"]] or ["- No broad missing-endpoint recommendations from the heuristic scan. Review content quality, auth flows, and task-level examples manually."]
@@ -201,7 +323,7 @@ def render_markdown(report: dict) -> str:
 
 def parse_args(argv: Sequence[str] | None=None) -> argparse.Namespace:
     p=argparse.ArgumentParser(description="Check web/docs agent-readiness discovery endpoints.")
-    p.add_argument("url"); p.add_argument("--json", action="store_true", help="Emit JSON instead of markdown."); p.add_argument("--markdown", action="store_true", help="Emit markdown. This is the default."); p.add_argument("--output", help="Write output to a file instead of stdout."); p.add_argument("--timeout", type=float, default=5.0); p.add_argument("--max-bytes", type=int, default=400000); p.add_argument("--profile", choices=["auto","content","api","app"], default="auto", help="Applicability profile. Default: auto.")
+    p.add_argument("url"); p.add_argument("--json", action="store_true", help="Emit JSON instead of markdown."); p.add_argument("--markdown", action="store_true", help="Emit markdown. This is the default."); p.add_argument("--output", help="Write output to a file instead of stdout."); p.add_argument("--timeout", type=float, default=5.0); p.add_argument("--max-bytes", type=int, default=400000); p.add_argument("--profile", choices=["auto","content","docs","docs-api","api","app","tool"], default="auto", help="Applicability profile. Default: auto.")
     return p.parse_args(argv)
 
 def main(argv: Sequence[str] | None=None) -> int:

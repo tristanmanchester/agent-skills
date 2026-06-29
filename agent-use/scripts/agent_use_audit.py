@@ -49,9 +49,10 @@ class Evidence:
     path: str
     line: Optional[int] = None
     snippet: Optional[str] = None
+    kind: str = "implementation"
 
     def to_dict(self) -> Dict[str, object]:
-        out: Dict[str, object] = {"signal": self.signal, "path": self.path}
+        out: Dict[str, object] = {"signal": self.signal, "path": self.path, "kind": self.kind}
         if self.line is not None:
             out["line"] = self.line
         if self.snippet:
@@ -147,6 +148,31 @@ class Inventory:
         self._text_cache[path] = text
         return text
 
+    def evidence_kind(self, path: Path) -> str:
+        rel = self.rel(path).lower()
+        name = path.name.lower()
+        if any(h in rel for h in GENERATED_REPORT_HINTS) or "/examples/generated-" in "/" + rel:
+            return "generated"
+        if any(h in "/" + rel for h in TEMPLATE_HINTS):
+            return "template"
+        if name in {
+            "agent_use_audit.py", "audit_agent_use.py", "web_agent_readiness.py",
+            "validate_skill.py", "validate_agent_assets.py", "test_agent_use_scanners.py",
+            "action_parity_inventory.py", "generate_agent_assets.py", "generate_llms_txt.py",
+        }:
+            return "scanner"
+        if rel.startswith((".well-known/", "evals/")) or name in {"agents.md", "llms.txt", "llms-full.txt"}:
+            return "contract"
+        if any(fnmatch.fnmatch(rel, pat) for pat in ["**/openapi.*", "openapi.*", "**/swagger.*", "swagger.*", "**/*schema*.json", "*.graphql", "**/*.proto"]):
+            return "contract"
+        if name in {"license", "notice", "readme", "changelog", "contributing"} or name.startswith(("readme", "changelog", "contributing")):
+            return "docs"
+        if rel.startswith("references/"):
+            return "docs"
+        if rel.startswith(("docs/", "doc/", "website/docs/", "content/docs/")) or path.suffix.lower() in {".md", ".mdx", ".rst"}:
+            return "docs"
+        return "implementation"
+
     def find_paths(self, patterns: Sequence[str], max_hits: int = 8) -> List[Evidence]:
         hits: List[Evidence] = []
         lowered = [(p, p.lower()) for p in patterns]
@@ -156,7 +182,7 @@ class Inventory:
             name_low = path.name.lower()
             for pattern, pattern_low in lowered:
                 if fnmatch.fnmatch(low, pattern_low) or fnmatch.fnmatch(name_low, pattern_low):
-                    hits.append(Evidence(signal=f"file matches {pattern}", path=rel))
+                    hits.append(Evidence(signal=f"file matches {pattern}", path=rel, kind=self.evidence_kind(path)))
                     break
             if len(hits) >= max_hits:
                 break
@@ -182,7 +208,7 @@ class Inventory:
                 for regex in compiled:
                     if regex.search(line):
                         snippet = re.sub(r"\s+", " ", line.strip())
-                        hits.append(Evidence(signal=regex.pattern, path=rel, line=i, snippet=snippet))
+                        hits.append(Evidence(signal=regex.pattern, path=rel, line=i, snippet=snippet, kind=self.evidence_kind(path)))
                         break
                 if len(hits) >= max_hits:
                     return hits
@@ -202,6 +228,13 @@ def unique_evidence(*groups: Sequence[Evidence], limit: int = 10) -> List[Eviden
             if len(out) >= limit:
                 return out
     return out
+
+def evidence_with_kinds(group: Sequence[Evidence], *kinds: str) -> List[Evidence]:
+    allowed=set(kinds)
+    return [ev for ev in group if ev.kind in allowed]
+
+def has_kind(group: Sequence[Evidence], *kinds: str) -> bool:
+    return bool(evidence_with_kinds(group, *kinds))
 
 
 def clamp(score: float) -> float:
@@ -327,6 +360,7 @@ class Audit:
         ]
         applicable_scores = [d.score for d in dimensions if d.applicable and d.score is not None]
         overall = round(sum(applicable_scores) / len(applicable_scores) * 10) if applicable_scores else None
+        score_basis = self._score_basis()
         return {
             "target": str(self.inv.root),
             "generated_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
@@ -334,14 +368,38 @@ class Audit:
             "too_many_files": self.inv.too_many_files,
             "overall_score": overall,
             "grade": grade(overall),
+            "confidence": self._confidence(score_basis),
+            "score_basis": score_basis,
             "dimensions": [d.to_dict() for d in dimensions],
             "top_recommendations": self._top_recommendations(dimensions),
             "surface_signals": {k: len(v) for k, v in sorted(self.signals.items())},
             "notes": [
                 "Heuristic scan only. Confirm findings by walking through real agent tasks.",
                 "Scores omit dimensions marked not applicable.",
+                "Evidence kind separates implemented/contract signals from docs, templates, generated reports, and scanner internals.",
             ],
         }
+
+    def _score_basis(self) -> Dict[str, int]:
+        counts = {"implementation": 0, "contract": 0, "docs": 0, "template": 0, "generated": 0, "scanner": 0}
+        seen=set()
+        for group in self.signals.values():
+            for ev in group:
+                key=(ev.path, ev.line, ev.signal)
+                if key in seen:
+                    continue
+                seen.add(key)
+                counts[ev.kind]=counts.get(ev.kind,0)+1
+        return counts
+
+    def _confidence(self, basis: Dict[str, int]) -> str:
+        solid=basis.get("implementation",0)+basis.get("contract",0)
+        weak=basis.get("docs",0)+basis.get("template",0)+basis.get("generated",0)+basis.get("scanner",0)
+        if solid >= 12 and solid >= weak // 2:
+            return "high"
+        if solid >= 5:
+            return "medium"
+        return "low"
 
     def _discoverability(self) -> DimensionResult:
         s = self.signals
@@ -405,48 +463,57 @@ class Audit:
 
     def _capability_contracts(self) -> DimensionResult:
         s = self.signals
-        applicable = bool(s["api_markers"] or s["cli_markers"] or s["tool_markers"] or s["sdk_markers"] or s["api_specs"] or s["skill_markers"])
+        api_impl=has_kind(s["api_markers"], "implementation")
+        cli_impl=has_kind(s["cli_markers"], "implementation")
+        tool_impl=has_kind(s["tool_markers"], "implementation")
+        sdk_impl=has_kind(s["sdk_markers"], "implementation")
+        applicable = bool(api_impl or cli_impl or tool_impl or sdk_impl or s["api_specs"] or s["skill_markers"])
         if not applicable:
             return DimensionResult("Capability contracts", False, None, notes=["No obvious API/CLI/SDK/tool/skill surface detected."])
         score = 1.0
         score += bool_score(bool(s["api_specs"]), 2.2)
         score += bool_score(bool(s["json_schema"]), 1.0)
-        score += bool_score(bool(s["cli_markers"] and s["json_output"]), 1.2)
-        score += bool_score(bool(s["tool_markers"]), 1.4)
+        score += bool_score(bool(cli_impl and s["json_output"]), 1.2)
+        score += bool_score(bool(tool_impl), 1.4)
         score += bool_score(bool(s["skill_markers"]), 1.0)
         score += bool_score(bool(s["examples"]), 0.9)
         score += bool_score(bool(s["errors"]), 1.0)
         score += bool_score(bool(s["capability_map"]), 1.0)
         gaps: List[str] = []
         recs: List[str] = []
-        if (s["api_markers"] or s["sdk_markers"]) and not s["api_specs"]:
+        if (api_impl or sdk_impl) and not s["api_specs"]:
             gaps.append("API/SDK markers exist but OpenAPI/GraphQL/protobuf/JSON Schema was not found.")
             recs.append("Add or generate a canonical API schema and link it from README/docs/llms.txt.")
-        if s["cli_markers"] and not s["json_output"]:
+        if cli_impl and not s["json_output"]:
             gaps.append("CLI markers exist but JSON/schema output signals are weak.")
             recs.append("Add --output json or --format json to data-producing CLI commands and document the response schema.")
-        if s["tool_markers"] and not s["json_schema"]:
+        if tool_impl and not s["json_schema"]:
             gaps.append("Tool markers exist but explicit schema signals are limited.")
             recs.append("Add precise input schemas, response schemas, and examples for every tool.")
         return DimensionResult("Capability contracts", True, clamp(score), unique_evidence(s["api_specs"], s["json_schema"], s["cli_markers"], s["tool_markers"], s["skill_markers"], s["capability_map"], limit=14), gaps, recs)
 
     def _action_parity(self) -> DimensionResult:
         s = self.signals
-        applicable = bool(s["ui_actions"] or s["api_markers"] or s["cli_markers"] or s["tool_markers"] or s["sdk_markers"])
+        ui_impl=has_kind(s["ui_actions"], "implementation")
+        api_impl=has_kind(s["api_markers"], "implementation")
+        cli_impl=has_kind(s["cli_markers"], "implementation")
+        tool_impl=has_kind(s["tool_markers"], "implementation")
+        sdk_impl=has_kind(s["sdk_markers"], "implementation")
+        applicable = bool(ui_impl or api_impl or cli_impl or tool_impl or sdk_impl)
         if not applicable:
             return DimensionResult("Action parity", False, None, notes=["No obvious user action or automation surface detected."])
-        agent_paths = bool(s["api_markers"] or s["cli_markers"] or s["tool_markers"] or s["sdk_markers"])
+        agent_paths = bool(api_impl or cli_impl or tool_impl or sdk_impl)
         score = 2.0 if agent_paths else 0.5
-        score += bool_score(bool(s["api_markers"]), 1.5)
-        score += bool_score(bool(s["cli_markers"]), 1.2)
-        score += bool_score(bool(s["tool_markers"]), 1.5)
-        score += bool_score(bool(s["sdk_markers"]), 0.8)
+        score += bool_score(api_impl, 1.5)
+        score += bool_score(cli_impl, 1.2)
+        score += bool_score(tool_impl, 1.5)
+        score += bool_score(sdk_impl, 0.8)
         score += bool_score(bool(s["capability_map"]), 1.3)
         score += bool_score(bool(s["safety"]), 0.8)
         score += bool_score(bool(s["recovery"]), 0.7)
         gaps: List[str] = []
         recs: List[str] = []
-        if s["ui_actions"] and not agent_paths:
+        if ui_impl and not agent_paths:
             gaps.append("UI action markers found, but no obvious API/CLI/SDK/tool action path was detected.")
             recs.append("Create an action parity map and expose stable agent paths for important UI workflows.")
         if agent_paths and not s["capability_map"]:
@@ -456,12 +523,15 @@ class Audit:
 
     def _context_parity(self) -> DimensionResult:
         s = self.signals
-        applicable = bool(s["ui_actions"] or s["api_markers"] or s["cli_markers"] or s["tool_markers"] or s["sdk_markers"])
+        api_impl=has_kind(s["api_markers"], "implementation")
+        cli_impl=has_kind(s["cli_markers"], "implementation")
+        tool_impl=has_kind(s["tool_markers"], "implementation")
+        applicable = bool(has_kind(s["ui_actions"], "implementation") or api_impl or cli_impl or tool_impl or has_kind(s["sdk_markers"], "implementation"))
         if not applicable:
             return DimensionResult("Context parity", False, None, notes=["No obvious workflow surface detected."])
         context_signals = unique_evidence(s["api_markers"], s["bounded_output"], s["auth"], s["json_schema"], s["capability_map"], s["docs"], limit=12)
         score = 1.5
-        score += bool_score(bool(s["api_markers"] or s["tool_markers"] or s["cli_markers"]), 1.5)
+        score += bool_score(bool(api_impl or tool_impl or cli_impl), 1.5)
         score += bool_score(bool(s["bounded_output"]), 1.2)
         score += bool_score(bool(s["auth"]), 1.0)
         score += bool_score(bool(s["json_schema"] or s["api_specs"]), 1.2)
@@ -480,14 +550,18 @@ class Audit:
 
     def _composability(self) -> DimensionResult:
         s = self.signals
-        applicable = bool(s["api_markers"] or s["cli_markers"] or s["tool_markers"] or s["sdk_markers"])
+        api_impl=has_kind(s["api_markers"], "implementation")
+        cli_impl=has_kind(s["cli_markers"], "implementation")
+        tool_impl=has_kind(s["tool_markers"], "implementation")
+        sdk_impl=has_kind(s["sdk_markers"], "implementation")
+        applicable = bool(api_impl or cli_impl or tool_impl or sdk_impl)
         if not applicable:
             return DimensionResult("Composability and primitive quality", False, None, notes=["No obvious API/CLI/SDK/tool primitives detected."])
         score = 2.0
         score += bool_score(bool(s["api_specs"]), 1.5)
-        score += bool_score(bool(s["tool_markers"]), 1.5)
-        score += bool_score(bool(s["cli_markers"]), 1.0)
-        score += bool_score(bool(s["sdk_markers"]), 0.8)
+        score += bool_score(tool_impl, 1.5)
+        score += bool_score(cli_impl, 1.0)
+        score += bool_score(sdk_impl, 0.8)
         score += bool_score(bool(s["json_schema"]), 1.0)
         score += bool_score(bool(s["examples"]), 1.0)
         score += bool_score(bool(s["errors"]), 0.7)
@@ -497,14 +571,15 @@ class Audit:
         if not s["examples"]:
             gaps.append("No examples found to show how primitives compose into workflows.")
             recs.append("Add recipes that compose small API/CLI/tool primitives for common tasks.")
-        if s["tool_markers"] and not s["json_schema"]:
+        if tool_impl and not s["json_schema"]:
             gaps.append("Tool markers exist but schema signals are weak; primitives may be underspecified.")
             recs.append("Tighten tool input schemas, required fields, enums, and examples.")
         return DimensionResult("Composability and primitive quality", True, clamp(score), unique_evidence(s["api_specs"], s["tool_markers"], s["cli_markers"], s["sdk_markers"], s["examples"], limit=12), gaps, recs)
 
     def _parseable_outputs(self) -> DimensionResult:
         s = self.signals
-        applicable = bool(s["cli_markers"] or s["api_markers"] or s["tool_markers"] or s["sdk_markers"])
+        cli_impl=has_kind(s["cli_markers"], "implementation")
+        applicable = bool(cli_impl or has_kind(s["api_markers"], "implementation") or has_kind(s["tool_markers"], "implementation") or has_kind(s["sdk_markers"], "implementation"))
         if not applicable:
             return DimensionResult("Parseable, bounded outputs", False, None, notes=["No obvious machine execution surface detected."])
         score = 1.0
@@ -519,7 +594,7 @@ class Audit:
         if not s["json_output"]:
             gaps.append("No strong JSON/structured-output signal found.")
             recs.append("Add stable JSON output for CLIs/tools and response schemas for APIs.")
-        if s["cli_markers"] and not s["stdout_stderr"]:
+        if cli_impl and not s["stdout_stderr"]:
             gaps.append("CLI markers found but stdout/stderr separation signals are weak.")
             recs.append("Ensure machine data goes to stdout and diagnostics/progress/errors go to stderr.")
         if not s["errors"]:
@@ -529,7 +604,7 @@ class Audit:
 
     def _safety_permissions(self) -> DimensionResult:
         s = self.signals
-        applicable = bool(s["api_markers"] or s["cli_markers"] or s["tool_markers"] or s["ui_actions"] or s["sdk_markers"])
+        applicable = bool(has_kind(s["api_markers"], "implementation") or has_kind(s["cli_markers"], "implementation") or has_kind(s["tool_markers"], "implementation") or has_kind(s["ui_actions"], "implementation") or has_kind(s["sdk_markers"], "implementation"))
         if not applicable:
             return DimensionResult("Safety, permissions, and governance", False, None, notes=["No obvious side-effecting surface detected."])
         score = 1.0
@@ -551,7 +626,7 @@ class Audit:
 
     def _recovery_resilience(self) -> DimensionResult:
         s = self.signals
-        applicable = bool(s["api_markers"] or s["cli_markers"] or s["tool_markers"] or s["sdk_markers"])
+        applicable = bool(has_kind(s["api_markers"], "implementation") or has_kind(s["cli_markers"], "implementation") or has_kind(s["tool_markers"], "implementation") or has_kind(s["sdk_markers"], "implementation"))
         if not applicable:
             return DimensionResult("Recovery and resilience", False, None, notes=["No obvious execution surface detected."])
         score = 1.0
@@ -606,6 +681,12 @@ class Audit:
                     severity = "medium"
             for rec in d.recommendations[:3]:
                 items.append({"dimension": d.name, "severity": severity, "recommendation": rec, "score": d.score})
+        if not self.signals["examples"]:
+            items.append({"dimension": "Content readability", "severity": "medium", "recommendation": "Add at least one small runnable example or task recipe.", "score": 7})
+        if not self.signals["web_discovery"] and self.signals["llms"]:
+            items.append({"dimension": "Discoverability", "severity": "low", "recommendation": "llms.txt exists but no local web discovery files were found; add .well-known, robots, or sitemap when this package is published as web docs.", "score": 8})
+        if self.signals["api_specs"] and not self.signals["evals_tests"]:
+            items.append({"dimension": "Evals and observability", "severity": "medium", "recommendation": "API contracts exist but no tests/evals signal was found; add a drift or schema coverage check.", "score": 7})
         rank = {"critical": 0, "high": 1, "medium": 2, "low": 3}
         items.sort(key=lambda x: (rank.get(str(x["severity"]), 9), float(x["score"] if x["score"] is not None else 10)))
         return items[:12]
@@ -632,6 +713,8 @@ def render_markdown(report: Dict[str, object]) -> str:
     overall = report.get("overall_score")
     grade_value = report.get("grade")
     lines.append(f"Overall: **{overall}/100** ({grade_value})" if overall is not None else "Overall: not scored")
+    if report.get("confidence"):
+        lines.append(f"Confidence: **{report['confidence']}**")
     lines.append(f"Files scanned: {report['files_scanned']}")
     if report.get("too_many_files"):
         lines.append("Note: scan stopped at the maximum file limit; results are partial.")
@@ -669,7 +752,7 @@ def render_markdown(report: Dict[str, object]) -> str:
                 if "line" in ev:
                     loc += f":{ev['line']}"
                 snippet = f" — {ev['snippet']}" if ev.get("snippet") else ""
-                lines.append(f"- `{loc}` ({ev['signal']}){snippet}")
+                lines.append(f"- `{loc}` ({ev['kind']}; {ev['signal']}){snippet}")
         else:
             lines.append("No strong evidence found by the scanner.")
         if dim["recommendations"]:
@@ -682,6 +765,13 @@ def render_markdown(report: Dict[str, object]) -> str:
     lines.append("```json")
     lines.append(json.dumps(report.get("surface_signals", {}), indent=2, sort_keys=True))
     lines.append("```")
+    if report.get("score_basis"):
+        lines.append("")
+        lines.append("## Score basis")
+        lines.append("")
+        lines.append("```json")
+        lines.append(json.dumps(report.get("score_basis", {}), indent=2, sort_keys=True))
+        lines.append("```")
     lines.append("")
     lines.append("Heuristic scan only. Confirm findings by walking through real agent tasks and the action/context parity map.")
     return "\n".join(lines) + "\n"

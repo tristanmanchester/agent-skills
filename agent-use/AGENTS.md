@@ -23,6 +23,7 @@ This package is an Agent Skill for auditing and designing systems so AI agents c
 
 ```bash
 python scripts/validate_agent_assets.py --skill-dir . --run-help --py-compile --markdown
+python scripts/test_agent_use_scanners.py
 python scripts/audit_agent_use.py --root . --markdown --output examples/self-audit.md --json-output examples/self-audit.json
 python scripts/action_parity_inventory.py . --output examples/action-parity-inventory.md --csv-output examples/action-parity-inventory.csv
 python scripts/generate_llms_txt.py . --site-url https://example.com/agent-use --title agent-use --output examples/generated-llms.txt
@@ -46,3 +47,9 @@ python scripts/web_agent_readiness.py https://example.com/docs --markdown --prof
 ## Generated examples
 
 Files in `examples/` are illustrative outputs from bundled scripts. Regenerate them after substantial script changes.
+
+## Installed-copy check
+
+```bash
+diff -qr /Users/tristan/Projects/skills/agent-use /Users/tristan/.agents/skills/agent-use -x __pycache__ -x '*.pyc'
+```

@@ -32,7 +32,13 @@ Recommended audit output is in `references/report-template.md`.
 ## Build workflow
 
 1. Define 5-10 real agent tasks before choosing surfaces. Include read-only tasks, mutation tasks, recovery tasks, permission-sensitive tasks, and long-running tasks if relevant.
-2. Publish discovery entry points appropriate to the target: `README`, `AGENTS.md`, `llms.txt`, markdown docs, OpenAPI/GraphQL/JSON Schema, `.well-known/api-catalog`, OAuth/OIDC metadata, `/.well-known/mcp.json`, A2A agent card, CLI `--help`, SDK examples, and an agent skills index.
+2. Publish only the discovery entry points that match the target:
+   - Docs/site: `llms.txt`, robots/sitemap, markdown canonical docs, freshness/changelog.
+   - API: OpenAPI/GraphQL/schema, `/.well-known/api-catalog`, auth metadata, error schema, examples.
+   - CLI/TUI: `--help`, `--version`, JSON mode, exit codes, non-interactive flags, examples.
+   - MCP/A2A/tool server: server/agent card, tool schemas, resource discovery, consent model.
+   - App UI: action/context parity map, durable object links, audit trail, safe agent entry points.
+   - Agent Skill: compact `SKILL.md`, references, scripts, assets, examples, trigger evals.
 3. Expose primitives, not brittle workflows. Tools should give agents capability; prompts/docs/recipes should describe behavior. Use workflow tools only when atomicity, safety, performance, or external orchestration justifies them.
 4. Design context parity. Inject current resources, capabilities, constraints, user-visible state, recent activity, domain vocabulary, permissions, and completion criteria into the agent path.
 5. Design action parity. Core user-visible actions should have agent-accessible paths unless they are intentionally human-only, such as CAPTCHA, biometric prompts, MFA enrollment, or legal consent.
@@ -99,3 +105,5 @@ Do not equate agent-useful with fully autonomous. A high-quality agent path may 
 Do not count prose alone as implementation evidence. Good docs can guide agents, but actual capability needs contracts, scripts, tools, schemas, tests, and working routes.
 
 Do not flag intentionally human-only flows as action-parity failures. Document the boundary and provide a safe agent alternative when one exists.
+
+Do not recommend MCP/A2A/OAuth/OpenAPI merely because the words appear in docs; require an actual product surface or linked external service that agents can use.

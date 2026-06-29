@@ -1,63 +1,84 @@
 {
-  "target": "/mnt/data/agent-use-v2/agent-use",
-  "generated_at": "2026-06-29T08:54:48.856765+00:00",
-  "files_scanned": 58,
+  "target": "/Users/tristan/Projects/skills/agent-use",
+  "generated_at": "2026-06-29T18:37:07.334184+00:00",
+  "files_scanned": 60,
   "too_many_files": false,
-  "overall_score": 90,
+  "overall_score": 91,
   "grade": "A",
+  "confidence": "medium",
+  "score_basis": {
+    "implementation": 1,
+    "contract": 45,
+    "docs": 159,
+    "template": 5,
+    "generated": 0,
+    "scanner": 13
+  },
   "dimensions": [
     {
       "name": "Discoverability",
       "applicable": true,
-      "score": 8.4,
+      "score": 9.4,
       "evidence": [
         {
           "signal": "file matches README*",
-          "path": "README.md"
+          "path": "README.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches AGENTS.md",
-          "path": "AGENTS.md"
+          "path": "AGENTS.md",
+          "kind": "contract"
         },
         {
           "signal": "file matches *.md",
-          "path": "SKILL.md"
+          "path": "CHANGELOG.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "README.md"
+          "path": "README.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "AGENTS.md"
+          "path": "SKILL.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "CHANGELOG.md"
+          "path": "AGENTS.md",
+          "kind": "contract"
         },
         {
           "signal": "file matches *.md",
-          "path": "references/framework.md"
+          "path": "references/audit-playbook.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "references/audit-playbook.md"
+          "path": "references/review-recipes.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "references/build-playbook.md"
+          "path": "references/web-and-docs-readiness.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "references/surface-guides.md"
+          "path": "references/build-playbook.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "references/scoring-rubric.md"
+          "path": "references/files-mobile-and-long-running-work.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "references/evaluation.md"
+          "path": "references/source-map.md",
+          "kind": "docs"
         }
       ],
       "gaps": [],
@@ -67,143 +88,165 @@
     {
       "name": "Content readability",
       "applicable": true,
-      "score": 9.4,
+      "score": 10.0,
       "evidence": [
         {
           "signal": "file matches README*",
-          "path": "README.md"
+          "path": "README.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "SKILL.md"
+          "path": "CHANGELOG.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "README.md"
+          "path": "README.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "AGENTS.md"
+          "path": "SKILL.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "CHANGELOG.md"
+          "path": "AGENTS.md",
+          "kind": "contract"
         },
         {
           "signal": "file matches *.md",
-          "path": "references/framework.md"
+          "path": "references/audit-playbook.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "references/audit-playbook.md"
+          "path": "references/review-recipes.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "references/build-playbook.md"
+          "path": "references/web-and-docs-readiness.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "references/surface-guides.md"
+          "path": "references/build-playbook.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "references/scoring-rubric.md"
+          "path": "references/files-mobile-and-long-running-work.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "references/evaluation.md"
+          "path": "references/source-map.md",
+          "kind": "docs"
         },
         {
           "signal": "file matches *.md",
-          "path": "references/security-recovery.md"
+          "path": "references/research-notes.md",
+          "kind": "docs"
         }
       ],
-      "gaps": [
-        "No examples/samples directory found."
-      ],
-      "recommendations": [
-        "Add small runnable examples with realistic inputs and outputs."
-      ],
+      "gaps": [],
+      "recommendations": [],
       "notes": []
     },
     {
       "name": "Capability contracts",
       "applicable": true,
-      "score": 9.8,
+      "score": 8.1,
       "evidence": [
         {
           "signal": "file matches **/*schema*.json",
-          "path": "assets/templates/tool-result.schema.json"
+          "path": "assets/schemas/tool-definition.schema.json",
+          "kind": "contract"
         },
         {
           "signal": "file matches **/*schema*.json",
-          "path": "assets/templates/task-lifecycle.schema.json"
+          "path": "assets/schemas/cli-error-envelope.schema.json",
+          "kind": "contract"
         },
         {
           "signal": "file matches **/*schema*.json",
-          "path": "assets/schemas/cli-error-envelope.schema.json"
+          "path": "assets/templates/task-lifecycle.schema.json",
+          "kind": "template"
         },
         {
           "signal": "file matches **/*schema*.json",
-          "path": "assets/schemas/tool-definition.schema.json"
+          "path": "assets/templates/tool-result.schema.json",
+          "kind": "template"
         },
         {
           "signal": "JSON Schema",
           "path": "SKILL.md",
-          "line": 35,
-          "snippet": "2. Publish discovery entry points appropriate to the target: `README`, `AGENTS.md`, `llms.txt`, markdown docs, OpenAPI/GraphQL/JSON Schema, `.well-known/api-catalog`, OAuth/OIDC metadata, `/.well-known/mcp.json`, A2A agent card, CLI `--help"
-        },
-        {
-          "signal": "JSON Schema",
-          "path": "SKILL.md",
-          "line": 52,
+          "kind": "docs",
+          "line": 58,
           "snippet": "APIs/SDKs: OpenAPI/GraphQL/JSON Schema/Protobuf contracts, examples, pagination, consistent errors, idempotency, auth scopes, sandbox mode, webhooks/events, rate-limit metadata, SDK parity with API operations, generated docs, versioning, de"
         },
         {
           "signal": "JSON Schema",
-          "path": "references/framework.md",
-          "line": 18,
-          "snippet": "- Stable links to OpenAPI, GraphQL, JSON Schema, SDK docs, CLI docs, MCP server card, API catalog, changelog, examples, and support policy."
-        },
-        {
-          "signal": "JSON Schema",
-          "path": "references/framework.md",
-          "line": 52,
-          "snippet": "- OpenAPI, AsyncAPI, GraphQL schema, JSON Schema, protobuf, Smithy, TypeSpec, or typed SDK docs."
-        },
-        {
-          "signal": "JSON Schema",
           "path": "references/audit-playbook.md",
+          "kind": "docs",
           "line": 42,
           "snippet": "- OpenAPI/GraphQL/protobuf/JSON Schema."
         },
         {
           "signal": "JSON Schema",
+          "path": "references/web-and-docs-readiness.md",
+          "kind": "docs",
+          "line": 37,
+          "snippet": "| API contract | OpenAPI/GraphQL/JSON Schema links from docs and Link headers |"
+        },
+        {
+          "signal": "JSON Schema",
           "path": "references/build-playbook.md",
+          "kind": "docs",
           "line": 31,
           "snippet": "| Reference contract | OpenAPI, GraphQL schema, JSON Schema, CLI help, MCP server card |"
         },
         {
           "signal": "JSON Schema",
-          "path": "references/surface-guides.md",
-          "line": 18,
-          "snippet": "- Machine contracts: OpenAPI, JSON Schema, CLI references, tool schemas."
+          "path": "references/source-map.md",
+          "kind": "docs",
+          "line": 39,
+          "snippet": "- API/SDK contracts: OpenAPI/GraphQL/JSON Schema/Protobuf, auth scopes, pagination, idempotency, rate limits, errors, sandbox, webhooks/events, and versioning."
         },
         {
           "signal": "JSON Schema",
-          "path": "references/scoring-rubric.md",
-          "line": 68,
-          "snippet": "Evidence to cite: OpenAPI, GraphQL, JSON Schema, CLI help, SDK types, MCP/tool schemas, contract tests."
+          "path": "references/research-notes.md",
+          "kind": "docs",
+          "line": 156,
+          "snippet": "- JSON Schema and related schemas help make inputs/outputs/errors inspectable and testable."
+        },
+        {
+          "signal": "JSON Schema",
+          "path": "references/research-notes.md",
+          "kind": "docs",
+          "line": 160,
+          "snippet": "- API guidance recommends OpenAPI/GraphQL/JSON Schema or equivalent, well-known discovery, scoped auth docs, consistent errors, and contract tests."
+        },
+        {
+          "signal": "JSON Schema",
+          "path": "references/original-compound-comparison.md",
+          "kind": "docs",
+          "line": 43,
+          "snippet": "- JSON schemas and templates."
         },
         {
           "signal": "subcommands?",
           "path": "references/surface-guides.md",
+          "kind": "docs",
           "line": 92,
           "snippet": "- `--help` on every command and subcommand."
         },
         {
           "signal": "subcommands?",
           "path": "references/cli-tui-readiness.md",
+          "kind": "docs",
           "line": 11,
           "snippet": "- `--help` and subcommand `--help` are complete and stable."
         }
@@ -214,624 +257,168 @@
     },
     {
       "name": "Action parity",
-      "applicable": true,
-      "score": 9.8,
-      "evidence": [
-        {
-          "signal": "<button\\b",
-          "path": "scripts/agent_use_audit.py",
-          "line": 257,
-          "snippet": "r\"onClick\\s*=\", r\"onSubmit\\s*=\", r\"addEventListener\\(['\\\"]click\", r\"<button\\b\", r\"<Button\\b\","
-        },
-        {
-          "signal": "onTapGesture",
-          "path": "scripts/agent_use_audit.py",
-          "line": 258,
-          "snippet": "r\"onPressed\\s*:\", r\"onTapGesture\", r\"TouchableOpacity\", r\"Pressable\", r\"button_to\", r\"form_with\","
-        },
-        {
-          "signal": "submitButton",
-          "path": "scripts/agent_use_audit.py",
-          "line": 259,
-          "snippet": "r\"submitButton\", r\"MenuItem\", r\"DropdownMenuItem\","
-        },
-        {
-          "signal": "<button\\b",
-          "path": "scripts/action_parity_inventory.py",
-          "line": 16,
-          "snippet": "\"ui_action\":[r\"\\bonClick\\b\",r\"\\bonSubmit\\b\",r\"<button\\b\",r\"Button\\(\",r\"addEventListener\\(['\\\"]click\",r\"onPressed\\b\",r\"onTap\\b\"],"
-        },
-        {
-          "signal": "GraphQL",
-          "path": "SKILL.md",
-          "line": 35,
-          "snippet": "2. Publish discovery entry points appropriate to the target: `README`, `AGENTS.md`, `llms.txt`, markdown docs, OpenAPI/GraphQL/JSON Schema, `.well-known/api-catalog`, OAuth/OIDC metadata, `/.well-known/mcp.json`, A2A agent card, CLI `--help"
-        },
-        {
-          "signal": "GraphQL",
-          "path": "SKILL.md",
-          "line": 52,
-          "snippet": "APIs/SDKs: OpenAPI/GraphQL/JSON Schema/Protobuf contracts, examples, pagination, consistent errors, idempotency, auth scopes, sandbox mode, webhooks/events, rate-limit metadata, SDK parity with API operations, generated docs, versioning, de"
-        },
-        {
-          "signal": "REST",
-          "path": "LICENSE",
-          "line": 7,
-          "snippet": "in the Software without restriction, including without limitation the rights"
-        },
-        {
-          "signal": "REST",
-          "path": "CHANGELOG.md",
-          "line": 5,
-          "snippet": "- Fixed stale script references and restored working v2 command names plus v1 compatibility entry points."
-        },
-        {
-          "signal": "GraphQL",
-          "path": "references/framework.md",
-          "line": 18,
-          "snippet": "- Stable links to OpenAPI, GraphQL, JSON Schema, SDK docs, CLI docs, MCP server card, API catalog, changelog, examples, and support policy."
-        },
-        {
-          "signal": "GraphQL",
-          "path": "references/framework.md",
-          "line": 52,
-          "snippet": "- OpenAPI, AsyncAPI, GraphQL schema, JSON Schema, protobuf, Smithy, TypeSpec, or typed SDK docs."
-        },
-        {
-          "signal": "GraphQL",
-          "path": "references/audit-playbook.md",
-          "line": 42,
-          "snippet": "- OpenAPI/GraphQL/protobuf/JSON Schema."
-        },
-        {
-          "signal": "GraphQL",
-          "path": "references/build-playbook.md",
-          "line": 31,
-          "snippet": "| Reference contract | OpenAPI, GraphQL schema, JSON Schema, CLI help, MCP server card |"
-        },
-        {
-          "signal": "REST",
-          "path": "references/build-playbook.md",
-          "line": 67,
-          "snippet": "Delete environment,Settings > Delete,GET /environments/{id},DELETE /environments/{id},destructive,soft delete + restore,missing,@team"
-        },
-        {
-          "signal": "REST",
-          "path": "references/build-playbook.md",
-          "line": 86,
-          "snippet": "- Good: `project.list`, `project.get`, `project.create`, `project.update`, `project.archive`, `project.restore`."
-        }
-      ],
+      "applicable": false,
+      "score": null,
+      "evidence": [],
       "gaps": [],
       "recommendations": [],
-      "notes": []
+      "notes": [
+        "No obvious user action or automation surface detected."
+      ]
     },
     {
       "name": "Context parity",
-      "applicable": true,
-      "score": 9.5,
-      "evidence": [
-        {
-          "signal": "GraphQL",
-          "path": "SKILL.md",
-          "line": 35,
-          "snippet": "2. Publish discovery entry points appropriate to the target: `README`, `AGENTS.md`, `llms.txt`, markdown docs, OpenAPI/GraphQL/JSON Schema, `.well-known/api-catalog`, OAuth/OIDC metadata, `/.well-known/mcp.json`, A2A agent card, CLI `--help"
-        },
-        {
-          "signal": "GraphQL",
-          "path": "SKILL.md",
-          "line": 52,
-          "snippet": "APIs/SDKs: OpenAPI/GraphQL/JSON Schema/Protobuf contracts, examples, pagination, consistent errors, idempotency, auth scopes, sandbox mode, webhooks/events, rate-limit metadata, SDK parity with API operations, generated docs, versioning, de"
-        },
-        {
-          "signal": "REST",
-          "path": "LICENSE",
-          "line": 7,
-          "snippet": "in the Software without restriction, including without limitation the rights"
-        },
-        {
-          "signal": "REST",
-          "path": "CHANGELOG.md",
-          "line": 5,
-          "snippet": "- Fixed stale script references and restored working v2 command names plus v1 compatibility entry points."
-        },
-        {
-          "signal": "GraphQL",
-          "path": "references/framework.md",
-          "line": 18,
-          "snippet": "- Stable links to OpenAPI, GraphQL, JSON Schema, SDK docs, CLI docs, MCP server card, API catalog, changelog, examples, and support policy."
-        },
-        {
-          "signal": "GraphQL",
-          "path": "references/framework.md",
-          "line": 52,
-          "snippet": "- OpenAPI, AsyncAPI, GraphQL schema, JSON Schema, protobuf, Smithy, TypeSpec, or typed SDK docs."
-        },
-        {
-          "signal": "GraphQL",
-          "path": "references/audit-playbook.md",
-          "line": 42,
-          "snippet": "- OpenAPI/GraphQL/protobuf/JSON Schema."
-        },
-        {
-          "signal": "GraphQL",
-          "path": "references/build-playbook.md",
-          "line": 31,
-          "snippet": "| Reference contract | OpenAPI, GraphQL schema, JSON Schema, CLI help, MCP server card |"
-        },
-        {
-          "signal": "REST",
-          "path": "references/build-playbook.md",
-          "line": 67,
-          "snippet": "Delete environment,Settings > Delete,GET /environments/{id},DELETE /environments/{id},destructive,soft delete + restore,missing,@team"
-        },
-        {
-          "signal": "REST",
-          "path": "references/build-playbook.md",
-          "line": 86,
-          "snippet": "- Good: `project.list`, `project.get`, `project.create`, `project.update`, `project.archive`, `project.restore`."
-        },
-        {
-          "signal": "GraphQL",
-          "path": "references/scoring-rubric.md",
-          "line": 68,
-          "snippet": "Evidence to cite: OpenAPI, GraphQL, JSON Schema, CLI help, SDK types, MCP/tool schemas, contract tests."
-        },
-        {
-          "signal": "GraphQL",
-          "path": "references/evaluation.md",
-          "line": 228,
-          "snippet": "- OpenAPI/GraphQL/JSON schemas validate."
-        }
-      ],
+      "applicable": false,
+      "score": null,
+      "evidence": [],
       "gaps": [],
       "recommendations": [],
-      "notes": []
+      "notes": [
+        "No obvious workflow surface detected."
+      ]
     },
     {
       "name": "Composability and primitive quality",
-      "applicable": true,
-      "score": 9.3,
-      "evidence": [
-        {
-          "signal": "file matches **/*schema*.json",
-          "path": "assets/templates/tool-result.schema.json"
-        },
-        {
-          "signal": "file matches **/*schema*.json",
-          "path": "assets/templates/task-lifecycle.schema.json"
-        },
-        {
-          "signal": "file matches **/*schema*.json",
-          "path": "assets/schemas/cli-error-envelope.schema.json"
-        },
-        {
-          "signal": "file matches **/*schema*.json",
-          "path": "assets/schemas/tool-definition.schema.json"
-        },
-        {
-          "signal": "MCP",
-          "path": "SKILL.md",
-          "line": 3,
-          "snippet": "description: Audit or design websites, docs, apps, CLIs/TUIs, APIs, SDKs, MCP/A2A agents, Agent Skills, and repos so AI agents can discover, understand, safely operate, verify, and recover from real tasks. Use for agent-readiness audits, ac"
-        },
-        {
-          "signal": "MCP",
-          "path": "SKILL.md",
-          "line": 22,
-          "snippet": "1. Classify the target: website/docs, app UI, repository, CLI/TUI, HTTP API, SDK, MCP server, A2A agent, Agent Skill, file/workspace system, mobile app, or mixed product."
-        },
-        {
-          "signal": "MCP",
-          "path": "SKILL.md",
-          "line": 35,
-          "snippet": "2. Publish discovery entry points appropriate to the target: `README`, `AGENTS.md`, `llms.txt`, markdown docs, OpenAPI/GraphQL/JSON Schema, `.well-known/api-catalog`, OAuth/OIDC metadata, `/.well-known/mcp.json`, A2A agent card, CLI `--help"
-        },
-        {
-          "signal": "MCP",
-          "path": "SKILL.md",
-          "line": 48,
-          "snippet": "Web/docs: `llms.txt`, markdown availability, stable URLs, stale-doc avoidance, robots/sitemap, API catalog, OAuth/OIDC metadata, MCP/A2A discovery, examples, small pages, canonical docs, content access policy, and docs that fit context wind"
-        },
-        {
-          "signal": "tools\\s*[:=]",
-          "path": "SKILL.md",
-          "line": 54,
-          "snippet": "MCP/A2A/tools: clear names/descriptions, typed schemas, examples, resource and prompt support, server/agent cards, consent model, safe defaults, high-signal responses, no hidden side effects, task lifecycle for asynchronous work."
-        },
-        {
-          "signal": "MCP",
-          "path": "SKILL.md",
-          "line": 72,
-          "snippet": "- `references/web-and-docs-readiness.md` \u2014 web/docs discovery, llms.txt, API catalog, OAuth/OIDC, MCP/A2A discovery."
-        },
-        {
-          "signal": "MCP",
-          "path": "SKILL.md",
-          "line": 74,
-          "snippet": "- `references/api-sdk-mcp-readiness.md` \u2014 API, SDK, MCP, A2A, and tool design."
-        },
-        {
-          "signal": "MCP",
-          "path": "README.md",
-          "line": 5,
-          "snippet": "Use it for repositories, websites, documentation sets, CLIs, TUIs, APIs, SDKs, MCP/A2A/tool servers, Agent Skills, app UIs, files/workspaces, mobile/offline flows, and other automation surfaces."
-        }
-      ],
-      "gaps": [
-        "No examples found to show how primitives compose into workflows."
-      ],
-      "recommendations": [
-        "Add recipes that compose small API/CLI/tool primitives for common tasks."
-      ],
-      "notes": []
+      "applicable": false,
+      "score": null,
+      "evidence": [],
+      "gaps": [],
+      "recommendations": [],
+      "notes": [
+        "No obvious API/CLI/SDK/tool primitives detected."
+      ]
     },
     {
       "name": "Parseable, bounded outputs",
-      "applicable": true,
-      "score": 8.2,
-      "evidence": [
-        {
-          "signal": "--output",
-          "path": "SKILL.md",
-          "line": 23,
-          "snippet": "2. Gather evidence from applicable surfaces. For repositories, run `scripts/audit_agent_use.py --root <path> --markdown`. For UI/app repos, also run `scripts/action_parity_inventory.py <path> --output action-parity-inventory.md --csv-output"
-        },
-        {
-          "signal": "--output",
-          "path": "SKILL.md",
-          "line": 50,
-          "snippet": "CLIs/TUIs: `--help`, `--version`, non-interactive mode, `--output json`, schema introspection, stdout/stderr separation, stable exit codes, explicit error envelopes, dry-run, idempotency, bounded output, no spinners in machine mode, no prom"
-        },
-        {
-          "signal": "--output",
-          "path": "SKILL.md",
-          "line": 87,
-          "snippet": "- `scripts/action_parity_inventory.py <repo-or-dir> --output action-parity-inventory.md --csv-output capability-map.csv` inventories UI actions and candidate agent paths."
-        },
-        {
-          "signal": "--output",
-          "path": "SKILL.md",
-          "line": 89,
-          "snippet": "- `scripts/generate_llms_txt.py <docs-root> --site-url <url> --output llms.txt` drafts an `llms.txt`."
-        },
-        {
-          "signal": "--output",
-          "path": "README.md",
-          "line": 14,
-          "snippet": "python scripts/audit_agent_use.py --root /path/to/repo --markdown --output agent-use-report.md --json-output agent-use-report.json"
-        },
-        {
-          "signal": "--output",
-          "path": "README.md",
-          "line": 15,
-          "snippet": "python scripts/action_parity_inventory.py /path/to/repo --output action-parity-inventory.md --csv-output capability-map.csv"
-        },
-        {
-          "signal": "--output",
-          "path": "README.md",
-          "line": 16,
-          "snippet": "python scripts/web_agent_readiness.py https://example.com/docs --markdown --profile auto --output web-agent-readiness.md"
-        },
-        {
-          "signal": "--output",
-          "path": "README.md",
-          "line": 17,
-          "snippet": "python scripts/generate_llms_txt.py ./docs --site-url https://example.com/docs --output llms.txt"
-        },
-        {
-          "signal": "--output",
-          "path": "AGENTS.md",
-          "line": 26,
-          "snippet": "python scripts/audit_agent_use.py --root . --markdown --output examples/self-audit.md --json-output examples/self-audit.json"
-        },
-        {
-          "signal": "--output",
-          "path": "AGENTS.md",
-          "line": 27,
-          "snippet": "python scripts/action_parity_inventory.py . --output examples/action-parity-inventory.md --csv-output examples/action-parity-inventory.csv"
-        },
-        {
-          "signal": "--output",
-          "path": "AGENTS.md",
-          "line": 28,
-          "snippet": "python scripts/generate_llms_txt.py . --site-url https://example.com/agent-use --title agent-use --output examples/generated-llms.txt"
-        },
-        {
-          "signal": "--output",
-          "path": "AGENTS.md",
-          "line": 34,
-          "snippet": "python scripts/web_agent_readiness.py https://example.com/docs --markdown --profile auto --output examples/web-agent-readiness.md"
-        },
-        {
-          "signal": "stderr",
-          "path": "SKILL.md",
-          "line": 50,
-          "snippet": "CLIs/TUIs: `--help`, `--version`, non-interactive mode, `--output json`, schema introspection, stdout/stderr separation, stable exit codes, explicit error envelopes, dry-run, idempotency, bounded output, no spinners in machine mode, no prom"
-        },
-        {
-          "signal": "stderr",
-          "path": "llms.txt",
-          "line": 18,
-          "snippet": "- [CLI/TUI readiness](references/cli-tui-readiness.md): Non-interactive JSON mode, stdout/stderr, errors, bounded output."
-        }
-      ],
+      "applicable": false,
+      "score": null,
+      "evidence": [],
       "gaps": [],
       "recommendations": [],
-      "notes": []
+      "notes": [
+        "No obvious machine execution surface detected."
+      ]
     },
     {
       "name": "Safety, permissions, and governance",
-      "applicable": true,
-      "score": 9.0,
-      "evidence": [
-        {
-          "signal": "permission",
-          "path": "SKILL.md",
-          "line": 34,
-          "snippet": "1. Define 5-10 real agent tasks before choosing surfaces. Include read-only tasks, mutation tasks, recovery tasks, permission-sensitive tasks, and long-running tasks if relevant."
-        },
-        {
-          "signal": "OAuth",
-          "path": "SKILL.md",
-          "line": 35,
-          "snippet": "2. Publish discovery entry points appropriate to the target: `README`, `AGENTS.md`, `llms.txt`, markdown docs, OpenAPI/GraphQL/JSON Schema, `.well-known/api-catalog`, OAuth/OIDC metadata, `/.well-known/mcp.json`, A2A agent card, CLI `--help"
-        },
-        {
-          "signal": "permission",
-          "path": "SKILL.md",
-          "line": 37,
-          "snippet": "4. Design context parity. Inject current resources, capabilities, constraints, user-visible state, recent activity, domain vocabulary, permissions, and completion criteria into the agent path."
-        },
-        {
-          "signal": "scope",
-          "path": "SKILL.md",
-          "line": 40,
-          "snippet": "7. Make mutations safe. Add dry-run/preview, idempotency keys, scoped permissions, audit logs, confirmation for high-impact actions, sandbox/test mode, and undo/rollback where practical."
-        },
-        {
-          "signal": "token",
-          "path": "SKILL.md",
-          "line": 41,
-          "snippet": "8. Make work resumable. Long-running jobs need progress, checkpoints, partial results, completion signals, and retry/resume tokens."
-        },
-        {
-          "signal": "permission",
-          "path": "SKILL.md",
-          "line": 42,
-          "snippet": "9. Ship evals. Compare baseline versus improved surfaces and cover discovery, happy paths, permissions, edge cases, recovery, and regression."
-        },
-        {
-          "signal": "OAuth",
-          "path": "SKILL.md",
-          "line": 48,
-          "snippet": "Web/docs: `llms.txt`, markdown availability, stable URLs, stale-doc avoidance, robots/sitemap, API catalog, OAuth/OIDC metadata, MCP/A2A discovery, examples, small pages, canonical docs, content access policy, and docs that fit context wind"
-        },
-        {
-          "signal": "scope",
-          "path": "SKILL.md",
-          "line": 52,
-          "snippet": "APIs/SDKs: OpenAPI/GraphQL/JSON Schema/Protobuf contracts, examples, pagination, consistent errors, idempotency, auth scopes, sandbox mode, webhooks/events, rate-limit metadata, SDK parity with API operations, generated docs, versioning, de"
-        },
-        {
-          "signal": "OAuth",
-          "path": "SKILL.md",
-          "line": 72,
-          "snippet": "- `references/web-and-docs-readiness.md` \u2014 web/docs discovery, llms.txt, API catalog, OAuth/OIDC, MCP/A2A discovery."
-        },
-        {
-          "signal": "permission",
-          "path": "SKILL.md",
-          "line": 78,
-          "snippet": "- `references/security-recovery.md` \u2014 permissions, approval, safety, rollback, privacy, abuse resistance."
-        },
-        {
-          "signal": "permission",
-          "path": "LICENSE",
-          "line": 5,
-          "snippet": "Permission is hereby granted, free of charge, to any person obtaining a copy"
-        },
-        {
-          "signal": "permission",
-          "path": "LICENSE",
-          "line": 12,
-          "snippet": "The above copyright notice and this permission notice shall be included in all"
-        },
-        {
-          "signal": "read[-_ ]?only",
-          "path": "SKILL.md",
-          "line": 34,
-          "snippet": "1. Define 5-10 real agent tasks before choosing surfaces. Include read-only tasks, mutation tasks, recovery tasks, permission-sensitive tasks, and long-running tasks if relevant."
-        },
-        {
-          "signal": "dry[-_ ]?run",
-          "path": "SKILL.md",
-          "line": 40,
-          "snippet": "7. Make mutations safe. Add dry-run/preview, idempotency keys, scoped permissions, audit logs, confirmation for high-impact actions, sandbox/test mode, and undo/rollback where practical."
-        }
-      ],
+      "applicable": false,
+      "score": null,
+      "evidence": [],
       "gaps": [],
       "recommendations": [],
-      "notes": []
+      "notes": [
+        "No obvious side-effecting surface detected."
+      ]
     },
     {
       "name": "Recovery and resilience",
-      "applicable": true,
-      "score": 9.0,
-      "evidence": [
-        {
-          "signal": "idempotenc",
-          "path": "SKILL.md",
-          "line": 40,
-          "snippet": "7. Make mutations safe. Add dry-run/preview, idempotency keys, scoped permissions, audit logs, confirmation for high-impact actions, sandbox/test mode, and undo/rollback where practical."
-        },
-        {
-          "signal": "retry",
-          "path": "SKILL.md",
-          "line": 41,
-          "snippet": "8. Make work resumable. Long-running jobs need progress, checkpoints, partial results, completion signals, and retry/resume tokens."
-        },
-        {
-          "signal": "idempotenc",
-          "path": "SKILL.md",
-          "line": 50,
-          "snippet": "CLIs/TUIs: `--help`, `--version`, non-interactive mode, `--output json`, schema introspection, stdout/stderr separation, stable exit codes, explicit error envelopes, dry-run, idempotency, bounded output, no spinners in machine mode, no prom"
-        },
-        {
-          "signal": "idempotenc",
-          "path": "SKILL.md",
-          "line": 52,
-          "snippet": "APIs/SDKs: OpenAPI/GraphQL/JSON Schema/Protobuf contracts, examples, pagination, consistent errors, idempotency, auth scopes, sandbox mode, webhooks/events, rate-limit metadata, SDK parity with API operations, generated docs, versioning, de"
-        },
-        {
-          "signal": "checkpoint",
-          "path": "SKILL.md",
-          "line": 58,
-          "snippet": "Files/workspaces/mobile: files as a universal interface, explicit working directories, safe self-modification, checkpoints, offline/battery/network constraints, background execution policy, conflict resolution, and inspectable artifacts."
-        },
-        {
-          "signal": "checkpoint",
-          "path": "SKILL.md",
-          "line": 76,
-          "snippet": "- `references/files-mobile-and-long-running-work.md` \u2014 files, mobile/offline, checkpoints, background execution, self-modification."
-        },
-        {
-          "signal": "rollback",
-          "path": "SKILL.md",
-          "line": 78,
-          "snippet": "- `references/security-recovery.md` \u2014 permissions, approval, safety, rollback, privacy, abuse resistance."
-        },
-        {
-          "signal": "checkpoint",
-          "path": "llms.txt",
-          "line": 21,
-          "snippet": "- [Files/mobile/long-running work](references/files-mobile-and-long-running-work.md): Checkpoints, offline constraints, task status."
-        },
-        {
-          "signal": "idempotenc",
-          "path": "llms.txt",
-          "line": 22,
-          "snippet": "- [Security and recovery](references/security-recovery.md): Permissions, dry-run, approval, rollback, idempotency."
-        },
-        {
-          "signal": "pagination",
-          "path": "references/framework.md",
-          "line": 127,
-          "snippet": "- Pagination, filtering, field selection, and maximum result limits."
-        },
-        {
-          "signal": "retry",
-          "path": "references/framework.md",
-          "line": 129,
-          "snippet": "- Error envelopes with codes, messages, retryability, remediation, and correlation IDs."
-        },
-        {
-          "signal": "rollback",
-          "path": "references/framework.md",
-          "line": 148,
-          "snippet": "- Rollback, undo, soft delete, version history, and immutable audit logs where appropriate."
-        },
-        {
-          "signal": "idempotenc",
-          "path": "references/framework.md",
-          "line": 154,
-          "snippet": "- Write endpoints with no preview or idempotency."
-        },
-        {
-          "signal": "idempotenc",
-          "path": "references/framework.md",
-          "line": 164,
-          "snippet": "- Idempotency keys for create/update operations."
-        }
-      ],
+      "applicable": false,
+      "score": null,
+      "evidence": [],
       "gaps": [],
       "recommendations": [],
-      "notes": []
+      "notes": [
+        "No obvious execution surface detected."
+      ]
     },
     {
       "name": "Evals and observability",
       "applicable": true,
-      "score": 7.6,
+      "score": 8.8,
       "evidence": [
         {
           "signal": "file matches evals/**",
-          "path": "evals/evals.json"
+          "path": "evals/trigger_queries.json",
+          "kind": "contract"
         },
         {
           "signal": "file matches evals/**",
-          "path": "evals/trigger_queries.json"
-        },
-        {
-          "signal": "eval",
-          "path": "SKILL.md",
-          "line": 3,
-          "snippet": "description: Audit or design websites, docs, apps, CLIs/TUIs, APIs, SDKs, MCP/A2A agents, Agent Skills, and repos so AI agents can discover, understand, safely operate, verify, and recover from real tasks. Use for agent-readiness audits, ac"
-        },
-        {
-          "signal": "eval",
-          "path": "SKILL.md",
-          "line": 18,
-          "snippet": "The doctrine: **agents need action parity, context parity, safe primitives, structured outputs, durable state, explicit completion signals, and recovery paths.** Prose helps, but agent-useful systems also provide inspectable contracts, exam"
-        },
-        {
-          "signal": "eval",
-          "path": "SKILL.md",
-          "line": 28,
-          "snippet": "7. Prioritize fixes into quick wins, medium work, and structural work. Include evals that prove the improvements help agents complete tasks."
-        },
-        {
-          "signal": "eval",
-          "path": "SKILL.md",
-          "line": 42,
-          "snippet": "9. Ship evals. Compare baseline versus improved surfaces and cover discovery, happy paths, permissions, edge cases, recovery, and regression."
-        },
-        {
-          "signal": "eval",
-          "path": "SKILL.md",
-          "line": 60,
-          "snippet": "Agent Skills: precise trigger description, compact `SKILL.md`, progressive disclosure through references/assets/scripts, runnable helpers, eval seeds, versioning, and backwards-compatible commands."
-        },
-        {
-          "signal": "eval",
-          "path": "SKILL.md",
-          "line": 79,
-          "snippet": "- `references/evaluation.md` \u2014 evals, observability, decay prevention, release checks."
-        },
-        {
-          "signal": "eval",
-          "path": "SKILL.md",
-          "line": 95,
-          "snippet": "A recommendation is good only if an engineer can implement it, a PM can prioritize it, and an evaluator can test whether it worked."
-        },
-        {
-          "signal": "eval",
-          "path": "README.md",
-          "line": 9,
-          "snippet": "Zip the `agent-use/` directory or install it wherever your Agent Skills runtime expects skills. The main entry point is `SKILL.md`. Detailed playbooks are in `references/`; reusable helpers are in `scripts/`; templates and schemas are in `a"
-        },
-        {
-          "signal": "eval",
-          "path": "README.md",
-          "line": 26,
-          "snippet": "A good audit includes an overall agent-use score, applicability notes, dimension-by-dimension evidence, an action/context parity map, safety and recovery findings, a concrete remediation plan, and evals/acceptance criteria."
+          "path": "evals/evals.json",
+          "kind": "contract"
         },
         {
           "signal": "eval",
           "path": "llms.txt",
+          "kind": "contract",
           "line": 23,
           "snippet": "- [Evaluation](references/evaluation.md): Task-level evals and regression checks."
         },
         {
           "signal": "eval",
           "path": "llms.txt",
+          "kind": "contract",
           "line": 32,
           "snippet": "- [Skill validator](scripts/validate_agent_assets.py): Validate Agent Skill structure, JSON, scripts, and evals."
         },
         {
           "signal": "eval",
-          "path": "AGENTS.md",
-          "line": 19,
-          "snippet": "- Evaluation: `references/evaluation.md`"
+          "path": "CHANGELOG.md",
+          "kind": "docs",
+          "line": 14,
+          "snippet": "- Added agent-asset scaffolding for AGENTS.md, llms.txt, web discovery headers, capability maps, API/CLI contracts, permission matrices, API catalog, MCP card, A2A card, skills index, and eval seeds."
+        },
+        {
+          "signal": "eval",
+          "path": "CHANGELOG.md",
+          "kind": "docs",
+          "line": 16,
+          "snippet": "- Expanded guidance across websites/docs, CLIs/TUIs, APIs, SDKs, MCP/A2A/tools, app UIs, files/workspaces, security, evals, and Agent Skill packaging."
+        },
+        {
+          "signal": "eval",
+          "path": "README.md",
+          "kind": "docs",
+          "line": 9,
+          "snippet": "Zip the `agent-use/` directory or install it wherever your Agent Skills runtime expects skills. The main entry point is `SKILL.md`. Detailed playbooks are in `references/`; reusable helpers are in `scripts/`; templates and schemas are in `a"
+        },
+        {
+          "signal": "eval",
+          "path": "README.md",
+          "kind": "docs",
+          "line": 27,
+          "snippet": "A good audit includes an overall agent-use score, applicability notes, dimension-by-dimension evidence, an action/context parity map, safety and recovery findings, a concrete remediation plan, and evals/acceptance criteria."
+        },
+        {
+          "signal": "eval",
+          "path": "SKILL.md",
+          "kind": "docs",
+          "line": 3,
+          "snippet": "description: Audit or design websites, docs, apps, CLIs/TUIs, APIs, SDKs, MCP/A2A agents, Agent Skills, and repos so AI agents can discover, understand, safely operate, verify, and recover from real tasks. Use for agent-readiness audits, ac"
+        },
+        {
+          "signal": "eval",
+          "path": "SKILL.md",
+          "kind": "docs",
+          "line": 18,
+          "snippet": "The doctrine: **agents need action parity, context parity, safe primitives, structured outputs, durable state, explicit completion signals, and recovery paths.** Prose helps, but agent-useful systems also provide inspectable contracts, exam"
+        },
+        {
+          "signal": "eval",
+          "path": "SKILL.md",
+          "kind": "docs",
+          "line": 28,
+          "snippet": "7. Prioritize fixes into quick wins, medium work, and structural work. Include evals that prove the improvements help agents complete tasks."
+        },
+        {
+          "signal": "eval",
+          "path": "SKILL.md",
+          "kind": "docs",
+          "line": 41,
+          "snippet": "- Agent Skill: compact `SKILL.md`, references, scripts, assets, examples, trigger evals."
+        },
+        {
+          "signal": "eval",
+          "path": "SKILL.md",
+          "kind": "docs",
+          "line": 48,
+          "snippet": "9. Ship evals. Compare baseline versus improved surfaces and cover discovery, happy paths, permissions, edge cases, recovery, and regression."
+        },
+        {
+          "signal": "eval",
+          "path": "SKILL.md",
+          "kind": "docs",
+          "line": 66,
+          "snippet": "Agent Skills: precise trigger description, compact `SKILL.md`, progressive disclosure through references/assets/scripts, runnable helpers, eval seeds, versioning, and backwards-compatible commands."
         }
       ],
       "gaps": [],
@@ -841,16 +428,10 @@
   ],
   "top_recommendations": [
     {
-      "dimension": "Composability and primitive quality",
+      "dimension": "Discoverability",
       "severity": "low",
-      "recommendation": "Add recipes that compose small API/CLI/tool primitives for common tasks.",
-      "score": 9.3
-    },
-    {
-      "dimension": "Content readability",
-      "severity": "low",
-      "recommendation": "Add small runnable examples with realistic inputs and outputs.",
-      "score": 9.4
+      "recommendation": "llms.txt exists but no local web discovery files were found; add .well-known, robots, or sitemap when this package is published as web docs.",
+      "score": 8
     }
   ],
   "surface_signals": {
@@ -866,7 +447,7 @@
     "docs": 12,
     "errors": 12,
     "evals_tests": 14,
-    "examples": 0,
+    "examples": 1,
     "json_output": 12,
     "json_schema": 8,
     "llms": 1,
@@ -884,6 +465,7 @@
   },
   "notes": [
     "Heuristic scan only. Confirm findings by walking through real agent tasks.",
-    "Scores omit dimensions marked not applicable."
+    "Scores omit dimensions marked not applicable.",
+    "Evidence kind separates implemented/contract signals from docs, templates, generated reports, and scanner internals."
   ]
 }

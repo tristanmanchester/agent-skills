@@ -2,6 +2,10 @@
 
 ## 2.0.0 — 2026-06-29
 
+- Added web discovery following from `Link` headers and RFC 9727 Linkset JSON so linked OpenAPI/OAuth/API catalog surfaces count even across origins.
+- Added docs/API/tool web profiles and stopped recommending MCP/A2A cards unless the scanned surface is actually a tool/agent surface.
+- Added evidence provenance and confidence to local repo audits so scanner internals, templates, generated reports, and reference prose no longer count as implementation evidence.
+- Added scanner regression tests for linked web discovery, docs/API profile inference, and keyword-only repo false positives.
 - Fixed stale script references and restored working v2 command names plus v1 compatibility entry points.
 - Fixed validation from the current directory by resolving the skill directory before comparing the frontmatter name.
 - Added Python compilation and script `--help` validation, JSON resource validation, trigger-query checks, and output-directory creation.
