@@ -1,0 +1,142 @@
+# rust-anti-slop — merge into the workspace-root Cargo.toml.
+# Each member crate then opts in with:
+#
+#   [lints]
+#   workspace = true
+#
+# (Only if the member has no local lint entries — Cargo rejects a [lints]
+# table that combines `workspace = true` with local overrides. See SKILL.md.)
+#
+# Philosophy: every entry here rejects a pattern that DISCARDS or FABRICATES
+# evidence the type system carries (fallibility, ownership, thread-safety,
+# exhaustiveness, completion). Style and taste are deliberately out of scope —
+# layer `clippy::pedantic` on top separately if your team wants it.
+#
+# Escape hatches: `#[expect(lint, reason = "...")]` for a specific, presently
+# known violation (it self-expires — see unfulfilled_lint_expectations below);
+# a reasoned `#![allow(lint, reason = "...")]` only for an intentional
+# scope-wide policy exception, generated code, or a configuration-dependent
+# false positive.
+#
+# Toolchain floor: the full policy needs Rust 1.82+ (the [lints] table is
+# 1.74+, #[expect]/reasons are 1.81+, unused_result_ok is 1.82+). On older
+# toolchains, drop the unsupported entries and use reasoned #[allow] where
+# #[expect] is unavailable.
+
+[workspace.lints.rust]
+# Fabricated evidence: unsafe asserts invariants the compiler can't check.
+# "deny" (not "forbid") so an FFI/perf crate can opt out at crate level with
+# a reasoned scope-wide allow:
+#   #![allow(unsafe_code, reason = "FFI boundary; SAFETY comments enforced")]
+# (An honest allow, NOT #![expect]: a crate-wide expectation stays fulfilled
+# as long as ONE unsafe site exists, so it never expires and silently admits
+# every future unsafe site. #[expect] is for a specific, finite violation at
+# the narrowest scope that owns it.) The unsafe-hygiene lints below stay
+# denied either way.
+unsafe_code = "deny"
+# Pre-2024-edition safety: each op inside `unsafe fn` needs its own block.
+unsafe_op_in_unsafe_fn = "deny"
+# Makes #[expect] self-expiring IN CI, not just advisory: an expectation the
+# lint no longer fulfills is a hard error, so suppressions cannot outlive
+# their justification. (Warn-by-default otherwise.)
+unfulfilled_lint_expectations = "deny"
+# A #[must_use] value silently ignored is discarded evidence.
+unused_must_use = "deny"
+# `let _ = guard` drops an RAII value on the spot — usually a lock or span
+# held for zero time. Warn: intentional immediate drops exist; write
+# `drop(x)` to make them explicit.
+let_underscore_drop = "warn"
+# `pub` that isn't reachable is a visibility contract nobody holds.
+unreachable_pub = "warn"
+
+[workspace.lints.clippy]
+# ── Panic-as-error-handling ─────────────────────────────────────────────
+# `.unwrap()` discards the fallibility evidence `Result`/`Option` carry and
+# leaves no argument for why failure is impossible. `.expect()` stays LEGAL:
+# a panic accompanied by an invariant argument ("...should..." message) is
+# reviewable evidence — the panic-side analog of a SAFETY comment.
+unwrap_used = "deny"
+panic = "warn"                    # prefer typed errors; expect() covers invariants
+todo = "deny"                     # a stub that compiles is fabricated completion
+unimplemented = "deny"
+dbg_macro = "deny"
+print_stdout = "deny"             # CLI output crates: #[expect] at the one output module
+print_stderr = "deny"
+exit = "warn"
+indexing_slicing = "warn"         # v[i] / &s[a..b] are unargued panics; use .get()
+string_slice = "warn"
+
+# ── Silent swallowing ───────────────────────────────────────────────────
+# The closest Rust relatives of `as any`: actively destroying the failure
+# evidence #[must_use] surfaced. map_err(|_| ...) destroys the source chain;
+# a deliberate redaction boundary carries #[expect] with the reason.
+let_underscore_must_use = "deny"
+unused_result_ok = "deny"
+map_err_ignore = "deny"
+let_underscore_future = "deny"
+
+# ── House bans (clippy.toml disallowed-*) actually enforced ─────────────
+# The disallowed_* lints are warn-by-default; without these the entire
+# architectural-ban mechanism in clippy.toml is advisory.
+disallowed_methods = "deny"
+disallowed_types = "deny"
+disallowed_macros = "deny"
+
+# ── Suppression cheating ────────────────────────────────────────────────
+# Outer #[allow] hides a diagnostic forever; #[expect(..., reason = "...")]
+# states its case and errors the day it stops being needed. Note the known
+# gap: allow_attributes does not see inner #![allow] attributes — reasoned
+# scope-level policy exceptions remain possible, and reviewable, by design.
+allow_attributes = "deny"
+allow_attributes_without_reason = "deny"   # covers inner attributes too
+blanket_clippy_restriction_lints = "deny"
+
+# ── Unsafe hygiene ──────────────────────────────────────────────────────
+# Where unsafe is permitted at all, every block carries its proof.
+undocumented_unsafe_blocks = "deny"
+multiple_unsafe_ops_per_block = "deny"
+missing_safety_doc = "deny"
+unnecessary_safety_comment = "warn"
+mem_forget = "deny"
+fn_to_numeric_cast_any = "deny"
+non_send_fields_in_send_ty = "warn"   # heuristic; audits manual Send impls
+
+# ── Async correctness ───────────────────────────────────────────────────
+await_holding_lock = "deny"
+await_holding_refcell_ref = "deny"
+unused_async = "warn"             # reflexive `async fn` with no .await
+rc_mutex = "warn"
+
+# ── Exhaustiveness ──────────────────────────────────────────────────────
+# `_ =>` on an enum discards the guarantee that a new variant is a compile
+# error at every site that must care.
+wildcard_enum_match_arm = "warn"
+match_wildcard_for_single_variants = "warn"
+
+# ── Tests ───────────────────────────────────────────────────────────────
+tests_outside_test_module = "deny"
+missing_assert_message = "warn"
+# #[should_panic] is legal only for a documented panic contract, and then
+# must pin the expected message.
+should_panic_without_expect = "deny"
+
+# ── Borrow-checker appeasement tells ────────────────────────────────────
+# Nursery lints are conservative and miss cases — they are a tripwire, not
+# the policy. The policy is references/rules.md §1: justify every clone.
+redundant_clone = "warn"
+needless_collect = "warn"
+significant_drop_tightening = "warn"
+implicit_clone = "warn"
+cloned_instead_of_copied = "warn"
+iter_overeager_cloned = "warn"
+inefficient_to_string = "warn"
+needless_pass_by_value = "warn"   # owned params the fn only reads
+unnecessary_wraps = "warn"        # Result-wrapping fns that never fail
+fn_params_excessive_bools = "warn"
+struct_excessive_bools = "warn"
+large_futures = "warn"
+
+# ── Legibility of shared ownership ──────────────────────────────────────
+# `handle.clone()` and a deep clone read identically; `Arc::clone(&handle)`
+# states which one is happening.
+clone_on_ref_ptr = "warn"

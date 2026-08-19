@@ -1,0 +1,39 @@
+# rust-anti-slop — place at the workspace root (merge if one exists).
+
+# Panicking in tests is fine: a test IS the argument that the invariant holds.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-dbg-in-tests = true
+allow-print-in-tests = true
+allow-indexing-slicing-in-tests = true
+
+# House bans. Each entry surfaces its reason in the diagnostic.
+disallowed-methods = [
+    { path = "std::mem::transmute", reason = "fabricates type evidence; redesign ownership, or use bytemuck/zerocopy with a documented invariant" },
+]
+
+disallowed-types = [
+]
+
+# ── Architectural bans (templates) ──────────────────────────────────────
+# The highest-value use of this file: encoding THIS project's architecture,
+# not generic style. Activate an entry only when the repository has a real
+# replacement that owns meaningful policy (context, bounds, injection,
+# supervision) — a wrapper that merely renames the API is abstraction
+# laundering, and banning without a replacement just breeds #[expect]s.
+#
+# In tokio repositories:
+#   { path = "tokio::sync::mpsc::unbounded_channel", reason = "queues need an explicit capacity and a named overload policy", replacement = "tokio::sync::mpsc::channel" }
+#   { path = "tokio::task::spawn", reason = "tasks must be owned by the supervisor", replacement = "crate::runtime::TaskGroup::spawn" }
+#
+# Where the project injects its effects (clock, env, fs, rng) at the
+# composition root:
+#   { path = "std::time::SystemTime::now", reason = "use the injected clock", replacement = "crate::time::Clock::now" }
+#   { path = "std::env::var", reason = "environment is read and validated once, in config", replacement = "crate::config::Config" }
+#   { path = "std::process::exit", reason = "only main decides the exit status" }
+#
+# In closed-world domain crates (NOT plugin systems, typemaps, or framework
+# integrations, where downcasting is the legitimate mechanism) — add under
+# disallowed-types:
+#   { path = "std::any::Any", reason = "runtime downcasting discards static dispatch evidence in domain code; use an enum or add the method to the trait" }
