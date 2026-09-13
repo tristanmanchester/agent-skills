@@ -1,55 +1,37 @@
-# Web and docs readiness
+# Web and discovery contracts
 
-Use this when auditing or designing a website, documentation site, support portal, marketing site with product actions, or public developer docs for agent use.
+Publish only maintained surfaces a real consumer uses. Discovery conventions have
+different status; do not count every absent filename as a defect.
 
-## Documentation websites
-
-Agent-useful docs are discoverable, compact, canonical, and linkable.
-
-Signals to look for:
-
-- `/llms.txt` with concise links to the most important docs.
-- `/llms-full.txt` only if useful and not too large.
-- Markdown page variants or content negotiation with `Accept: text/markdown`.
-- `robots.txt`, sitemap, canonical URLs, and redirects for deprecated docs.
-- Stable anchors, headings, examples, outputs, limits, errors, auth scopes.
-- Clear separation between tutorials, how-to guides, references, and explanations.
-
-Common fixes:
-
-- Create `llms.txt` with a top-level summary and curated links.
-- Add a “For agents and automation” page that links specs, examples, schemas, and policies.
-- Add markdown fallbacks for docs pages.
-- Split giant pages into smaller pages with stable anchors.
-- Redirect stale docs and mark archived content clearly.
-- Add examples that include command/API output and error handling.
-
-## Discovery endpoints
-
-Publish only what is real and maintained.
-
-| Surface | Recommended signal |
+| Surface | Status and appropriate use |
 | --- | --- |
-| Canonical docs index | `/llms.txt` |
-| Larger docs dump | `/llms-full.txt` when bounded and current |
-| Crawl policy | `/robots.txt`, `/sitemap.xml` |
-| API discovery | `/.well-known/api-catalog` as `application/linkset+json` |
-| API contract | OpenAPI/GraphQL/JSON Schema links from docs and Link headers |
-| OAuth protected API | `/.well-known/oauth-protected-resource` and authorization-server/OpenID metadata |
-| MCP server | `/.well-known/mcp.json`; keep legacy alternates redirected or linked |
-| A2A/delegated agent | `/.well-known/agent-card.json` or equivalent card |
-| Agent Skills | `/.well-known/agent-skills/index.json` |
+| `llms.txt`, bounded Markdown documentation | Optional documentation convention; neither permission to crawl nor a protocol requirement |
+| robots/sitemap/canonical links | Crawl/discovery signals; not authentication or proof of content completeness |
+| `/.well-known/api-catalog` | RFC 9727 API catalog using the specified Linkset representation; link to actual APIs |
+| OAuth/OIDC metadata | Use the exact current discovery/authorization contract for the protected resource and issuer |
+| A2A `/.well-known/agent-card.json` | A2A discovery card; its supported interface URL is the service, not the card itself |
+| `/.well-known/mcp.json` | A local example in this package, not a universal MCP discovery requirement |
+| `/.well-known/agent-skills/index.json` | A local index proposal, not required by the Agent Skills file format |
 
-Example headers are in `assets/templates/WEB_DISCOVERY_HEADERS.txt`.
+For MCP, verify the selected specification/client/transport's actual discovery,
+initialisation, and authorization behaviour. Do not substitute a fabricated server
+card for protocol negotiation. Auth metadata is not authorization to obtain or use
+credentials. Validate issuer/resource relationships and redirect destinations
+before sending tokens; do not trust arbitrary links inside discovery documents.
 
-## Auth and onboarding
+Useful documentation exposes stable object IDs, bounded examples, field semantics,
+side effects, scopes, error/retry handling, dates/versioning, and result verification.
+Provide compact task-focused pages and a canonical source instead of copying an
+entire SDK catalogue into each skill. Keep dates and maintenance ownership visible.
 
-Agents often fail before using the product because auth is unclear. Good docs include token creation, least-privilege scopes, service accounts or bot users, OAuth/OIDC metadata where applicable, expiration/rotation policy, sandbox credentials, permission error examples, and a way to identify read-only credentials.
+Evaluate with real tasks: can the agent find the correct page, authenticate within
+its existing permission, choose the right operation, and verify the outcome?
+Measure failures, retries, corrections, and time/context cost. A heuristic discovery
+score is a lead for inspection, not that evaluation's result.
 
-## Content quality
-
-Agents overfit stale snippets quickly. Every task page should include prerequisites, the current version, a minimal safe path, example input, example output, common errors, permission requirements, side effects, and verification steps.
-
-## Observability
-
-Track invalid tool/API/CLI calls, repeated docs retrieval before failure, docs search misses, error codes encountered by agents, retry and recovery success, approval requests/denials, latency, token use, and human corrections after agent actions.
+Sources reviewed 2026-09-13:
+[Agent Skills specification](https://agentskills.io/specification),
+[A2A discovery](https://a2a-protocol.org/latest/specification/),
+[RFC 9727](https://www.rfc-editor.org/rfc/rfc9727.html).
+For MCP, read the applicable current official transport/authorization specification
+at implementation time; no single static well-known filename is assumed here.

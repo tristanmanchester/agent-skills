@@ -1,11 +1,12 @@
 {
-  "name": "example-agent",
-  "description": "Accepts delegated tasks for Example workflows.",
+  "name": "<Project name>",
+  "description": "Example read-only question-answering agent. Replace with an implemented capability before publication.",
   "version": "1.0.0",
-  "url": "https://example.com/.well-known/agent-card.json",
-  "capabilities": ["tasks", "artifacts", "status", "cancel", "resume"],
-  "auth": {
-    "type": "oauth2",
-    "scopes_supported": ["example.tasks"]
-  }
+  "supportedInterfaces": [{"url": "https://example.com/a2a", "protocolBinding": "HTTP+JSON", "protocolVersion": "1.0"}],
+  "capabilities": {"streaming": false, "pushNotifications": false, "extendedAgentCard": false},
+  "securitySchemes": {"bearerAuth": {"httpAuthSecurityScheme": {"scheme": "Bearer"}}},
+  "securityRequirements": [{"schemes": {"bearerAuth": {"list": []}}}],
+  "defaultInputModes": ["text/plain"],
+  "defaultOutputModes": ["text/plain"],
+  "skills": [{"id": "answer-question", "name": "Answer a question", "description": "Answer a question without changing external state.", "tags": ["question-answering"]}]
 }

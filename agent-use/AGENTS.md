@@ -1,55 +1,29 @@
-# AGENTS.md
+# Maintaining agent-use
 
-This package is an Agent Skill for auditing and designing systems so AI agents can use them reliably and safely.
+Read SKILL.md and the reference for the surface being changed. Preserve the
+capability/parity audit method and existing MIT licence. Prefer a focused fix to
+a new general framework or another copy of an upstream protocol catalogue.
 
-## Canonical entry points
-
-- Skill workflow: `SKILL.md`
-- Framework: `references/framework.md`
-- Scoring: `references/scoring-rubric.md`
-- Audit process: `references/audit-playbook.md`
-- Build process: `references/build-playbook.md`
-- Original Compound synthesis: `references/agent-native-architecture.md`
-- Web/docs: `references/web-and-docs-readiness.md`
-- CLI/TUI: `references/cli-tui-readiness.md`
-- API/SDK/MCP/A2A/tools: `references/api-sdk-mcp-readiness.md`
-- App/workspace: `references/app-ui-and-workspace-readiness.md`
-- Files/mobile/long-running work: `references/files-mobile-and-long-running-work.md`
-- Security and recovery: `references/security-recovery.md`
-- Evaluation: `references/evaluation.md`
-- Source synthesis: `references/source-map.md`
-
-## Safe commands
+Run from this skill directory with Python 3.10+ and PyYAML >=6.0.3,<7:
 
 ```bash
-python scripts/validate_agent_assets.py --skill-dir . --run-help --py-compile --markdown
+python scripts/validate_agent_assets.py --skill-dir .
+python -m unittest discover -s tests -v
 python scripts/test_agent_use_scanners.py
-python scripts/audit_agent_use.py --root . --markdown --output examples/self-audit.md --json-output examples/self-audit.json
-python scripts/action_parity_inventory.py . --output examples/action-parity-inventory.md --csv-output examples/action-parity-inventory.csv
-python scripts/generate_llms_txt.py . --site-url https://example.com/agent-use --title agent-use --output examples/generated-llms.txt
 ```
 
-The web probe performs network requests; only run it when the target URL is meant to be checked:
+The validator reads YAML/JSON/Python/Markdown; it never runs inspected scripts or
+writes bytecode. Test execution is separate and must be authorised for the code
+under review. Network probes, generated files, installations, and output writes
+are not passive reads. Use explicit target/output paths and do not replace an
+existing project's instructions as an audit side effect.
 
-```bash
-python scripts/web_agent_readiness.py https://example.com/docs --markdown --profile auto --output examples/web-agent-readiness.md
-```
+The generator previews selected surfaces and writes only to a new draft directory
+with --write. Do not restore universal .well-known claims or broad --force/default-all
+behaviour. Validate the actual current A2A/MCP/API schema and runtime when making
+protocol claims; local fixture checks establish only their stated subset.
 
-## Editing rules
-
-- Keep `SKILL.md` concise and route detail into `references/`.
-- Keep scripts non-interactive and safe by default.
-- Preserve markdown references when moving files.
-- Do not include secrets, credentials, private URLs, or user-specific data.
-- Update templates and eval seeds when new audit dimensions are added.
-- Run validation before packaging.
-
-## Generated examples
-
-Files in `examples/` are illustrative outputs from bundled scripts. Regenerate them after substantial script changes.
-
-## Installed-copy check
-
-```bash
-diff -qr /Users/tristan/Projects/skills/agent-use /Users/tristan/.agents/skills/agent-use -x __pycache__ -x '*.pyc'
-```
+Files in examples are historical heuristic scanner outputs unless explicitly
+regenerated. Their scores are not present-day release evidence. Keep new regression
+tests, supported command examples, source links/review dates, and runtime limitations
+aligned. Use caller-provided installation paths; never embed a user's home path.

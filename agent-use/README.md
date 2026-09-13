@@ -1,31 +1,35 @@
-# agent-use skill v2
+# agent-use
 
-A comprehensive Agent Skill for auditing and designing systems that AI agents can use well.
+Audit and design products around tasks an agent can actually discover, perform,
+verify, and recover. Start at [SKILL.md](SKILL.md); load the domain references only
+when they match the product surface.
 
-Use it for repositories, websites, documentation sets, CLIs, TUIs, APIs, SDKs, MCP/A2A/tool servers, Agent Skills, app UIs, files/workspaces, mobile/offline flows, and other automation surfaces.
+The collection retains its action/context parity methods, capability maps,
+heuristic scanners, templates, and evaluation seeds. Heuristic scores and old
+outputs in `examples/` are not protocol conformance or agent-success evidence.
 
-## Install/use
+## Current helper interfaces
 
-Zip the `agent-use/` directory or install it wherever your Agent Skills runtime expects skills. The main entry point is `SKILL.md`. Detailed playbooks are in `references/`; reusable helpers are in `scripts/`; templates and schemas are in `assets/`; eval seeds are in `evals/`.
-
-## Quick commands
+Run from this installed skill directory, with Python 3.10+ and PyYAML >=6.0.3,<7
+available for validation:
 
 ```bash
-python scripts/audit_agent_use.py --root /path/to/repo --markdown --output agent-use-report.md --json-output agent-use-report.json
-python scripts/action_parity_inventory.py /path/to/repo --output action-parity-inventory.md --csv-output capability-map.csv
-python scripts/web_agent_readiness.py https://example.com/docs --markdown --profile auto --output web-agent-readiness.md
-python scripts/generate_llms_txt.py ./docs --site-url https://example.com/docs --output llms.txt
-python scripts/generate_agent_assets.py --root ./project --project-name "Example" --surface all --dry-run
-python scripts/validate_agent_assets.py --skill-dir ./agent-use --run-help --py-compile --markdown
-python scripts/test_agent_use_scanners.py
+python scripts/validate_agent_assets.py --skill-dir .
+python -m unittest discover -s tests -v
+python scripts/generate_agent_assets.py --output /private/existing-parent/new-drafts \
+  --project-name "Example" --base-url https://example.com --surface a2a
 ```
 
-V1-compatible entry points remain available: `scripts/agent_use_audit.py` and `scripts/validate_skill.py`.
+Validation is static and does not execute inspected scripts or produce bytecode.
+Scaffolding previews by default. Add `--write` to create only the selected drafts
+in a new private directory; review and separately publish them when appropriate.
+No old `--run-help`, `--py-compile`, `--surface all`, `--root`, `--force`, or
+`--dry-run` alias is supported by these updated helpers.
 
-## What it produces
+The current A2A card targets 1.0. Local MCP/skills-index templates remain proposals,
+not universal discovery standards. The example's security declaration must match
+real server enforcement before publication. Full protocol/client runtime tests
+are separate from the bundled structural/scaffold regressions.
 
-A good audit includes an overall agent-use score, applicability notes, dimension-by-dimension evidence, an action/context parity map, safety and recovery findings, a concrete remediation plan, and evals/acceptance criteria.
-
-## Design philosophy
-
-Agent-usefulness comes from reducing ambiguity: agents need to discover the right surface, read compact current context, execute typed primitive actions, parse bounded outputs, verify final state, and recover safely when something fails.
+The existing scanner test entrypoint remains `python scripts/test_agent_use_scanners.py`.
+It tests heuristic signals with synthetic inputs, not live interoperability.

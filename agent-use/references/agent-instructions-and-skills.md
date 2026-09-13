@@ -1,30 +1,25 @@
 # Agent instructions and skills
 
-## AGENTS.md
+Keep project instructions grounded in actual setup, architecture, checks, generated
+files, data handling, and release boundaries. A generated AGENTS.md is a draft to
+review, not permission to replace a project's established instructions.
 
-A root `AGENTS.md` should tell coding agents how to work safely and effectively. Include project purpose, setup, tests, lint/build commands, architecture map, generated-file policy, secrets policy, style conventions, safe destructive boundaries, deployment rules, and escalation paths.
+For a skill, make the trigger precise, the default workflow short, and references
+conditional on the task. Preserve useful tested helpers and examples; remove
+unsupported flags and obsolete compatibility layers rather than teaching every
+historical interface. Optional scripts/references/assets need not exist when the
+skill does not require them.
 
-## llms.txt
+Validate YAML with a real parser, including folded/literal descriptions, duplicate
+keys, field limits, and string-valued metadata. Then inspect links and script syntax
+without running project code. `--help` is executable code, not a trusted metadata
+read. The structural validator does not prove provider compatibility or task success.
 
-For docs-heavy sites, `llms.txt` should be a concise markdown index of canonical current docs, not a giant dump. Include overview, quickstart, automation/agent guide, API/CLI/SDK references, auth/scopes, errors/retries, changelog, and examples.
+Evaluate positive and negative triggers and inspect complete agent traces on real
+tasks. A JSON file containing evaluation prompts is a fixture, not a passing eval.
+Measure the improvement relative to using no skill; tighten instructions around
+observed failure modes rather than adding generic admonitions indefinitely.
 
-## Agent Skills
-
-A good Agent Skill has:
-
-- Precise `description` trigger language.
-- Compact `SKILL.md` with routing and workflow.
-- Progressive disclosure through `references/`, `assets/`, and `scripts/`.
-- Scripts with `--help`, non-interactive behavior, clear errors, and bounded output.
-- Templates/schemas/evals that help agents act, not only prose.
-- Versioning and backwards-compatible command names where practical.
-
-## Skill audit checklist
-
-- Does `SKILL.md` start with valid frontmatter?
-- Does `name` match the directory and use lowercase hyphenated form?
-- Is `description` specific enough for automatic invocation?
-- Are referenced files present?
-- Do scripts run with `--help`?
-- Are evals present for trigger and output quality?
-- Does the skill avoid hiding essential behavior in huge top-level prose?
+Sources reviewed 2026-09-13:
+[format](https://agentskills.io/specification) and
+[authoring practice](https://agentskills.io/skill-creation/best-practices).
