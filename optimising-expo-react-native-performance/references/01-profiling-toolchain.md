@@ -1,93 +1,38 @@
-# Profiling toolchain for Expo + React Native
+# Profiling without confusing diagnosis and measurement
 
-## Golden rule
+## Two different jobs
 
-Always profile performance in **production-like builds**:
-- Release builds for final numbers.
-- “Profileable” / “debugOptimized” / profiling builds when you need tooling.
+**Diagnosis:** React Native DevTools in a compatible Hermes diagnostic build can locate long JS tasks, expensive React commits, retained JS objects, and supported network events. Use it to form and falsify hypotheses. A profiler, development checks, debugger attachment, and network inspection add overhead.
 
-Dev mode can massively distort JS thread timing.
+**Performance acceptance:** measure the shipping configuration on representative physical devices, with developer tools disconnected. Use native profilers or an explicitly configured release/profileable build when a trace is required, and record the instrumentation. Do not compare an instrumented development baseline with an uninstrumented release candidate.
 
-## What to use for what
+`debugOptimized` can be useful for debugging with more native optimisation; it is not a store-equivalent release build. Simulator results do not establish performance on a low-end phone.
 
-### React Native DevTools (JS + React)
-Use for:
-- JS execution timelines and React commit timings.
-- Identifying long tasks on the JS thread.
-- Heap snapshots and JS memory growth (JS heap only).
+## Choose evidence for the suspected cost
 
-Key panels:
-- **Performance**: record a trace, inspect JS execution + React tracks + network events.
-- **Memory**: take heap snapshots and allocation timelines.
-- **React Profiler**: find components with expensive commits.
+| Suspected cost | Evidence |
+|---|---|
+| JS work or React commits | RN DevTools Performance/Profiler panels; supported runtime traces |
+| Retained JS objects | Before/after heap snapshots after the same stress loop |
+| Main thread, RenderThread, scheduling, I/O | Android system trace / Perfetto on a suitable profileable build |
+| Native CPU/layout/allocations | Xcode Instruments Time Profiler, Allocations, and appropriate platform instruments |
+| Native media/image memory | Native allocations and footprint, not only JS heap |
+| Network waiting | Application spans plus provider/server timings; account for gaps in DevTools network coverage |
 
-Expo tip:
-- In Expo projects, DevTools can be opened from the Expo CLI terminal (commonly by pressing `j`).
+Availability depends on the installed RN version. The modern Performance and Network panels arrived in RN 0.83; older runtime documentation or a web-browser DevTools screenshot does not establish support. Expo-specific networking can have a different inspection path. A quiet network panel does not prove that no requests occurred.
 
-Notes:
-- DevTools features depend on your runtime/engine (Hermes is the assumed default).
-- Some debugging is not available or is limited in true Release builds.
+## Repeatable protocol
 
-### Android: Android Studio Profiler + System Trace
-Use for:
-- UI jank attribution across threads.
-- CPU, memory allocations, leaks, and system tracing.
+Record the exact commit, lockfile, device/OS, native and JS build flags, profiler version, thermal/battery conditions, cache state, dataset, and scenario. Define start/end events before measuring startup or navigation. Repeat enough times to see variability; interleave baseline and candidate runs and report sample count. Use the same warm-up policy for both.
 
-Practical workflow:
-1) Open the `android/` project in Android Studio (requires prebuild/CNG if you don’t have native folders).
-2) Run as **profileable**.
-3) Use the System Trace / “Capture System Activities” workflow.
-4) Look at frame boundaries, main thread work, RenderThread, and JS thread.
+For memory, repeat navigation or scrolling, allow a consistent settling interval, and inspect retained objects or resource ownership. A cache growing then plateauing is different from a leak; garbage collection timing can distort single snapshots.
 
-Export traces to Perfetto if useful for sharing.
+Save raw traces and a small before/after table. Redact private URLs, request bodies, tokens, and user data before sharing. When instrumentation is unavailable, report that limitation and supply reproduction steps instead of inventing a trace or benchmark.
 
-### iOS: Xcode Instruments
-Use for:
-- Time Profiler (CPU hot spots).
-- Allocations and Leaks.
-- Networking templates.
+## Primary sources
 
-Workflow:
-1) Build and run a production-like build.
-2) Record a Time Profiler trace around the problematic interaction.
-3) For memory: use Allocations/Leaks while repeating the suspect flow.
+Reviewed 2026-09-13:
 
-## Measuring in Release builds (real-world constraints)
-
-- Many “debug conveniences” are missing in Release builds.
-- Native profilers still work in Release builds.
-- Expo offers intermediate build modes (for example “debugOptimized” in some workflows) that can be closer to production performance while retaining some debugging; use these when you need a middle ground.
-- If you *must* capture JS/Hermes profiles in Release builds, consider an approach like:
-  - Recording traces with platform profilers.
-  - Using a release profiling helper library.
-
-### Optional: react-native-release-profiler
-
-If you need JS performance tooling closer to release builds, evaluate `react-native-release-profiler` (Margelo).
-
-Caveats:
-- It involves native integration (check installation steps and compatibility).
-- In Expo managed projects you may need prebuild/CNG and the additional CLI dependency it mentions.
-
-## Memory debugging workflow (practical)
-
-1) Reproduce with a **stress loop**:
-   - Navigate A → B → A, repeat 10×.
-   - Or scroll an image grid 10×.
-2) Watch if memory returns to baseline.
-3) If JS heap grows:
-   - Use RN DevTools Memory panel, take heap snapshots before/after.
-4) If JS heap is stable but RSS keeps rising:
-   - Use Instruments / Android Studio memory tooling to find native allocations.
-
-## What to save in your perf report
-
-Always attach:
-- Build type (Release/Profile/debugOptimized) and exact commit hash.
-- Device model + OS version.
-- Raw trace artefacts where possible.
-- A before/after KPI table.
-
-## Links
-
-See `references/resources.md` for the official React Native profiling guide, DevTools docs, and Expo debugging docs.
+- [React Native DevTools](https://reactnative.dev/docs/react-native-devtools)
+- [React Native performance](https://reactnative.dev/docs/performance)
+- [Expo debugging tools](https://docs.expo.dev/debugging/tools/)
