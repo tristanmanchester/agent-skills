@@ -1,91 +1,27 @@
-import { useEffect } from "react";
-import { Platform } from "react-native";
-import Purchases, {
-  LOG_LEVEL,
-  PURCHASES_ARE_COMPLETED_BY_TYPE,
-  STOREKIT_VERSION,
-} from "react-native-purchases";
+import { Platform } from 'react-native';
+import Purchases, { PURCHASES_ARE_COMPLETED_BY_TYPE, STOREKIT_VERSION } from 'react-native-purchases';
 
-const revenueCatApiKeys = {
-  ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? "",
-  android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ?? "",
-} as const;
-
-let purchasesConfigured = false;
-
-function getPlatformKey(keys: { ios: string; android: string }) {
-  return Platform.OS === "ios" ? keys.ios : keys.android;
+/** Call exactly once from the application's existing bootstrap owner. */
+export function configureRevenueCatObserver(apiKey: string, appUserID: string,
+  storeKitVersion: STOREKIT_VERSION) {
+  if (!apiKey || !appUserID) throw new Error('Public SDK key and resolved billing identity are required');
+  if (Platform.OS !== 'ios' && Platform.OS !== 'android') throw new Error('Native example only');
+  Purchases.configure({
+    apiKey, appUserID,
+    purchasesAreCompletedBy: {
+      type: PURCHASES_ARE_COMPLETED_BY_TYPE.MY_APP,
+      storeKitVersion, // Required by the shared type; ignored by native Android.
+    },
+  });
 }
 
-type RevenueCatObserverModeBootstrapProps = {
-  appUserId: string | null;
-  shouldSyncHistoricalPurchases: boolean;
-};
-
-export function RevenueCatObserverModeBootstrap({
-  appUserId,
-  shouldSyncHistoricalPurchases,
-}: RevenueCatObserverModeBootstrapProps) {
-  useEffect(() => {
-    const apiKey = getPlatformKey(revenueCatApiKeys);
-
-    if (!apiKey || purchasesConfigured) {
-      return;
-    }
-
-    if (__DEV__) {
-      Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-    }
-
-    /**
-     * Use this only when the app already owns purchase completion.
-     * Older docs may still call this observer mode.
-     */
-    Purchases.configure({
-      apiKey,
-      purchasesAreCompletedBy: {
-        type: PURCHASES_ARE_COMPLETED_BY_TYPE.MY_APP,
-        ...(Platform.OS === "ios"
-          ? { storeKitVersion: STOREKIT_VERSION.STOREKIT_2 }
-          : null),
-      },
-      ...(appUserId ? { appUserID: appUserId } : null),
-    });
-
-    purchasesConfigured = true;
-  }, [appUserId]);
-
-  useEffect(() => {
-    if (!purchasesConfigured || !appUserId) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const run = async () => {
-      try {
-        await Purchases.logIn(appUserId);
-
-        /**
-         * Sync historical purchases only at deliberate checkpoints,
-         * usually after login or as part of a migration step.
-         */
-        if (shouldSyncHistoricalPurchases) {
-          await Purchases.syncPurchases();
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.warn("RevenueCat observer-mode login or historical sync failed:", error);
-        }
-      }
-    };
-
-    void run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [appUserId, shouldSyncHistoricalPurchases]);
-
-  return null;
+/**
+ * Explicit recovery/import checkpoint, not an effect or every-launch operation.
+ * Inspect the project's restore/transfer policy before importing store purchases.
+ * The external purchase owner still finishes/acknowledges its own transactions.
+ * Requires the modern RevenueCat API (syncPurchasesForResult, available since 9.7).
+ */
+export async function syncHistoricalPurchasesAtApprovedCheckpoint() {
+  const { customerInfo } = await Purchases.syncPurchasesForResult();
+  return customerInfo;
 }

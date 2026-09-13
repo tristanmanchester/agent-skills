@@ -1,242 +1,60 @@
 ---
 name: expo-revenuecat-superwall-integration
-description: Adds, repairs, or migrates a production-grade RevenueCat plus Superwall integration in a React Native Expo app for iOS and Android. Chooses between CustomPurchaseControllerProvider and purchasesAreCompletedBy or observer-mode migration, wires Expo config and development builds, syncs identities and entitlements, handles Android base plans and offers, iOS UUID appAccountToken quirks, restore behaviour, analytics, testing, and troubleshooting. Use when the user asks to add subscriptions, paywalls, RevenueCat, Superwall, entitlements, restore flows, account switching, or monetisation migration in an Expo app. Do not use for bare React Native, RevenueCat-only UI work, or web-only billing.
+description: Integrate or repair RevenueCat and Superwall together in an Expo React Native app. Use for their shared purchase ownership, Android offer selection, billing identity, entitlement sync, restore, or migration flows; not for web billing or unrelated paywall providers.
 license: MIT
-compatibility: Designed for coding agents editing a React Native Expo repository. Best for Expo SDK 53 or newer apps using development builds, iOS deployment target 15.1 or higher, and Android min SDK 23 or higher.
+compatibility: Expo development builds on iOS/Android, expo-superwall's current provider API, and react-native-purchases 9.7 or newer. Resolve native platform requirements from the installed Expo and SDK versions. Offline checks need Python 3.10+, Node.js, and TypeScript.
 metadata:
-  author: OpenAI
-  version: "2.0.0"
-  category: mobile-monetization
-  stack: react-native-expo
-  platforms:
-    - ios
-    - android
-  integrations:
-    - revenuecat
-    - superwall
+  version: "3.0.0"
+  reviewed: "2026-09-13"
 ---
-# Expo RevenueCat plus Superwall Integration
 
-Use this skill to add or repair a modern RevenueCat plus Superwall stack in a React Native Expo app.
+# RevenueCat and Superwall in Expo
 
-## What this skill should do
+Choose one owner for purchase completion before writing code. Preserve the application's account and restore policy; a paywall integration is not permission to change who owns purchases.
 
-- Choose the correct monetisation architecture before editing code.
-- Integrate with the repository's existing app shell, auth layer, and state management.
-- Prefer safe, production-ready defaults over the shortest possible demo.
-- Leave the user with code changes plus a clear list of remaining dashboard, store, and testing steps.
+## Inspect and choose
 
-## Critical rules
+Read the lockfile, Expo configuration, actual application root, auth coordinator, existing billing calls, product catalogue, and entitlement checks. Resolve public SDK keys through the project's environment handling; never embed secret API keys or webhook credentials in client code.
 
-- Treat this as an Expo development-build integration, not an Expo Go integration.
-- Target Expo SDK 53 or newer.
-- Target iOS deployment target 15.1 or newer and Android min SDK 23 or newer.
-- Use public SDK keys only in the client.
-- Configure RevenueCat exactly once.
-- Mount Superwall near the app root exactly once.
-- Use the same stable, non-guessable, non-PII user identifier in RevenueCat and Superwall when the product has authentication.
-- Never use email addresses as RevenueCat or Superwall user IDs.
-- Do not call `syncPurchases()` on every launch. Use it only for deliberate migration or account-recovery scenarios.
-- `restorePurchases()` is user-triggered. Do not hide it inside startup code.
-- On Android, ensure the launch mode is `standard` or `singleTop`.
-- Prefer a full app restart after Superwall dashboard changes during Expo development.
+Use `references/architecture-decision-tree.md` to choose:
 
-## First actions
+- **RevenueCat owns purchase execution and entitlements:** use Superwall's `CustomPurchaseControllerProvider`, exact RevenueCat purchase APIs, and a single full-entitlement sync into Superwall. The bundled integration examples cover this path.
+- **Superwall or an existing billing implementation owns completion:** RevenueCat can observe through `purchasesAreCompletedBy`. This is a current architecture, not merely a deprecated migration workaround. Set the actual StoreKit version and prove receipt/entitlement propagation. Never let both SDKs finish a transaction.
 
-1. Inspect the repository before editing:
-   - `package.json`
-   - `app.json`, `app.config.js`, or `app.config.ts`
-   - `App.tsx` or `app/_layout.tsx`
-   - any existing auth provider
-   - any existing purchase, paywall, or entitlement code
+Expo Go is not the native store-test environment. Install only required packages with the project's package manager and `npx expo install`; add `expo-build-properties` only when an actual override is needed. Do not lower platform minima to an old example's Android 23/iOS 15.1 values.
 
-2. Run the validator if Python is available:
-   - `python3 scripts/validate_expo_setup.py`
-   - or `python3 scripts/validate_expo_setup.py --project-root /path/to/app`
+## Implement the contracts
 
-3. Answer these six preflight questions before choosing code:
-   - Is the app login-first, login-optional, or guest-first
-   - Is there existing purchase completion logic already in the repo
-   - Does Google Play use multiple base plans or offers
-   - Are App Store Server Notifications, Google server notifications, webhooks, or backend attribution in scope
-   - Is the entitlement model single-tier or multi-tier
-   - Does the product need strict account ownership, or easy restore across account confusion
+1. **Bootstrap once.** Wait for RevenueCat configuration before mounting code that calls it. Reuse an existing configuration owner instead of adding another. Handle Superwall configuration failures visibly.
+2. **Match the presented product.** Resolve Android subscriptions by product, base plan, and optional offer. An explicit unavailable offer fails closed: refresh the paywall, never substitute `defaultOption`, the first option, or a generic purchase API. See `references/android-base-plans-offers-and-pending.md`.
+3. **Return the actual store outcome.** Distinguish purchased, cancelled, pending, and failed. A completed charge with an inactive entitlement is a fulfilment problem, not evidence that payment failed. Gate the feature and reconcile; never charge again to repair fulfilment. A successful restore may legitimately find no active access.
+4. **Subscribe and clean up correctly.** `addCustomerInfoUpdateListener` returns void. Remove the same callback with `removeCustomerInfoUpdateListener`. Register before the initial fetch and prevent a stale initial result from replacing a newer event. Map the full active entitlement set; network failure is not an inactive subscription.
+5. **Gate account transitions.** Use the same opaque billing ID in both systems. Serialise native identity calls; effect cleanup cannot cancel them. Increment an identity revision when auth changes and block purchase/restore/feature actions until that revision is synchronised. Defer account switching while a store operation is in flight. Known-to-known changes use `logIn(newId)` directly; create anonymous state only when the product permits it.
+6. **Restore deliberately.** Restore is user-triggered. Historical import/recovery uses an approved checkpoint and `syncPurchasesForResult`, not a mount effect or every-launch sync. Review transfer/alias behaviour before invoking it.
 
-4. Open only the references you need:
-   - Core workflow: `references/implementation-playbook.md`
-   - Architecture choice: `references/architecture-decision-tree.md`
-   - Identity and restores: `references/identity-and-restore-behaviour.md`
-   - Android offers: `references/android-base-plans-offers-and-pending.md`
-   - iOS UUID and server notifications: `references/ios-uuid-appaccounttoken-and-server-notifications.md`
-   - Observability and verification: `references/observability-and-entitlement-verification.md`
-   - Test planning: `references/testing-matrix.md`
-   - Dashboard alignment: `references/dashboard-checklist.md`
-   - Failure modes: `references/troubleshooting.md`
+`references/implementation-playbook.md` connects the examples to the app shell. They are integration patterns, not a replacement auth system. `references/examples/app.example.tsx` and the simple Router shell demonstrate guest-only mounting; authenticated apps must supply the identity gate.
 
-## Architecture choice
+## Verify
 
-### Default for most new Expo apps
+Resolve `SKILL_DIR` to this skill's installation directory and pass the app separately:
 
-Choose **Architecture A: CustomPurchaseControllerProvider** when:
+```bash
+python3 "$SKILL_DIR/scripts/validate_expo_setup.py" --project-root /path/to/app
+python3 -m unittest discover -s "$SKILL_DIR/tests" -v
+node --test "$SKILL_DIR/tests/billing-contracts.test.cjs"
+```
 
-- Superwall is the paywall surface.
-- RevenueCat is the purchase and entitlement source of truth.
-- The app does not already have its own mature purchase completion pipeline.
-- You want the cleanest modern Expo integration.
+The scanner returns a **static inventory**, not submission or billing readiness. It never executes dynamic Expo config or exports environment values. Zero exit status means the inventory completed without missing core dependencies; regex occurrences do not prove a provider is mounted or a callback runs.
 
-Use:
-- `references/architecture-decision-tree.md`
-- `references/examples/monetization.shared.tsx`
-- `references/examples/app.example.tsx`
-- `references/examples/expo-router-layout.example.tsx`
-- `references/examples/custom-purchase-controller.android-offers.tsx`
+Typecheck the adapted examples against the app's installed SDKs, inspect the resolved config and merged native manifests, then test real development/store-sandbox builds. Cover unavailable explicit offers, repeated mount/unmount, initial-fetch/listener races, A→B→A account changes, sign-out, purchase cancellation/pending/success, restore with no access, purchase-with-delayed-entitlement, reinstall, and backend identity. Use `references/testing-matrix.md` and `references/dashboard-checklist.md` for the broader checklist.
 
-### Use the migration path when the repo already owns purchase completion
+Report the chosen owner, changed files, exact package versions, tests actually run, manual dashboard/store steps, and unresolved ownership or fulfilment failures. Client-side UI gating does not replace server-side authorisation.
 
-Choose **Architecture B: purchasesAreCompletedBy / observer-mode migration** when:
+## Focused references
 
-- The app already finishes transactions itself.
-- The user explicitly wants to keep existing IAP code.
-- You are layering RevenueCat analytics, entitlements, or dashboards onto an existing billing implementation.
-- You must import historical purchases carefully.
+- `references/identity-and-restore-behaviour.md`: account/restore policy investigation.
+- `references/ios-uuid-appaccounttoken-and-server-notifications.md`: server-notification identity questions; verify against installed SDK behaviour.
+- `references/observability-and-entitlement-verification.md`: telemetry and verification.
+- `references/troubleshooting.md`: failure investigation.
 
-Use:
-- `references/architecture-decision-tree.md`
-- `references/examples/observer-mode-migration.tsx`
-- `references/identity-and-restore-behaviour.md`
-
-## Shared implementation workflow
-
-### 1. Audit the repo
-
-Collect these facts before changing code:
-
-- Expo SDK version
-- package manager
-- router style: Expo Router or plain `App.tsx`
-- whether `expo-superwall`, `react-native-purchases`, and `expo-build-properties` are already installed
-- current iOS deployment target and Android min SDK
-- whether the app has auth
-- whether the repo already has RevenueCat, Superwall, StoreKit, Google Play Billing, or `react-native-iap` code
-- whether the project already ships one-time products in addition to subscriptions
-
-### 2. Align dashboards before deep code edits
-
-Confirm the conceptual setup first:
-
-- RevenueCat project exists for iOS and Android
-- store products exist
-- entitlements exist
-- offerings exist where needed
-- Superwall project exists
-- Superwall public keys exist for both platforms
-- placements and campaigns exist
-- product IDs and entitlement IDs match the intended runtime mapping
-
-Use `references/dashboard-checklist.md`.
-
-### 3. Install only the packages you actually need
-
-Base stack:
-
-- `npx expo install expo-superwall react-native-purchases expo-build-properties`
-
-Optional only if the user explicitly wants RevenueCat UI screens such as a customer center:
-
-- `npx expo install react-native-purchases-ui`
-
-Do not add `react-native-purchases-ui` just because RevenueCat is installed.
-
-### 4. Update Expo config
-
-Add or repair `expo-build-properties` and set platform minimums. Preserve the repository's config style and existing plugins.
-
-### 5. Configure RevenueCat once
-
-- Use the correct public key for the current platform.
-- Configure once on startup.
-- If the app always requires a known user ID, prefer configuring with that ID instead of creating an anonymous state first.
-- If the app allows guests, configure without an App User ID and later call `logIn()` when auth resolves.
-
-### 6. Mount providers once near the root
-
-For Architecture A, the normal order is:
-
-1. configure RevenueCat
-2. mount `CustomPurchaseControllerProvider`
-3. mount `SuperwallProvider`
-4. show `SuperwallLoading`
-5. render the app inside `SuperwallLoaded`
-6. mount one subscription sync component inside the loaded tree
-
-### 7. Sync RevenueCat entitlements into Superwall
-
-When Superwall is not directly owning purchase state, map RevenueCat entitlements into `setSubscriptionStatus`.
-
-- Fetch `CustomerInfo` on launch or when premium UI opens.
-- Subscribe to `addCustomerInfoUpdateListener`.
-- Map active entitlement IDs into Superwall entitlements.
-- Prefer syncing the full entitlement set, not just a boolean.
-
-### 8. Sync identities deliberately
-
-- Reuse the app's real auth state.
-- For login-first apps, prefer configuring RevenueCat with a custom App User ID from the start.
-- For guest-first apps, configure anonymously, then on login call `Purchases.logIn(userId)` and `identify(userId)`.
-- If switching from one known account to another, call `logIn(newUserId)` directly. Do not force a pointless logout first.
-- Only call `logOut()` if the product truly supports an anonymous post-logout state.
-
-See `references/identity-and-restore-behaviour.md` and `references/examples/auth-sync.example.tsx`.
-
-### 9. Register placements from premium entry points
-
-- Use business-action placement names such as `upgrade_pro`, `remove_limits`, or `export_pdf`.
-- Prefer placement-driven gating and dashboard audiences over hard-coded paywall branching.
-- Use `getPresentationResult()` only when you need to inspect what Superwall would do before presenting.
-
-### 10. Add observability
-
-- Forward Superwall events into the app's analytics pipeline.
-- Keep debug logs enabled in development only.
-- Consider checking RevenueCat trusted entitlement verification in high-risk apps.
-
-See `references/observability-and-entitlement-verification.md`.
-
-### 11. Test with a matrix, not one happy path
-
-Always verify:
-
-- cold start on iOS and Android
-- purchase success
-- cancel flow
-- pending flow where relevant
-- restore
-- guest to logged-in transition
-- account switch
-- reinstall
-- dashboard changes after a full restart
-- entitlement unlock in UI
-- webhook or server-notification identity consistency when relevant
-
-Use `references/testing-matrix.md`.
-
-## What to avoid
-
-- Do not use `expo-superwall/compat` for new work.
-- Do not promise real Superwall support inside Expo Go.
-- Do not call `restorePurchases()` automatically during startup.
-- Do not call `syncPurchases()` on every launch.
-- Do not use emails, IDFA, device IDs, or hardcoded strings as billing IDs.
-- Do not leave duplicate purchase flows in place.
-- Do not ship Android API 21 just because Superwall alone supports it; the combined stack needs Android 23 or newer.
-
-## Final answer expectations
-
-When you finish editing a repo, your response should include:
-
-- the files changed
-- the chosen architecture and why
-- any manual RevenueCat, Superwall, App Store Connect, or Play Console steps still required
-- any assumptions about entitlements, product IDs, placements, restore behaviour, or account model
-- any migration debt intentionally left in place
-- how to run and test the development build
+Primary contracts reviewed 2026-09-13: [RevenueCat React Native API](https://revenuecat.github.io/react-native-purchases-docs/9.7.5/classes/default.html), [Superwall purchase controller](https://superwall.com/docs/expo/sdk-reference/components/CustomPurchaseControllerProvider), [Superwall RevenueCat integration](https://superwall.com/docs/expo/guides/using-revenuecat), and [RevenueCat Expo setup](https://www.revenuecat.com/docs/getting-started/installation/expo).

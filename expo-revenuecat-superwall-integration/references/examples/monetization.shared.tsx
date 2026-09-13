@@ -1,347 +1,140 @@
-import { ReactNode, useEffect, useMemo } from "react";
-import { ActivityIndicator, Platform, Text, View } from "react-native";
-import Purchases, {
-  LOG_LEVEL,
-  PURCHASES_ERROR_CODE,
-  type CustomerInfo,
-} from "react-native-purchases";
-import {
-  CustomPurchaseControllerProvider,
-  SuperwallLoaded,
-  SuperwallLoading,
-  SuperwallProvider,
-  useSuperwallEvents,
-  useUser,
-} from "expo-superwall";
+import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { ActivityIndicator, Platform, Text } from 'react-native';
+import Purchases, { PRODUCT_CATEGORY, PURCHASES_ERROR_CODE, type CustomerInfo } from 'react-native-purchases';
+import { CustomPurchaseControllerProvider, SuperwallLoaded, SuperwallLoading, SuperwallProvider, useUser } from 'expo-superwall';
+import { subscribeCustomerInfo } from './billing-contracts';
+import { purchaseFromSuperwallParams } from './custom-purchase-controller.android-offers';
 
 const revenueCatApiKeys = {
-  ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? "",
-  android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ?? "",
-} as const;
-
+  ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? '',
+  android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ?? '',
+};
 const superwallApiKeys = {
-  ios: process.env.EXPO_PUBLIC_SUPERWALL_IOS_API_KEY ?? "",
-  android: process.env.EXPO_PUBLIC_SUPERWALL_ANDROID_API_KEY ?? "",
-} as const;
+  ios: process.env.EXPO_PUBLIC_SUPERWALL_IOS_API_KEY ?? '',
+  android: process.env.EXPO_PUBLIC_SUPERWALL_ANDROID_API_KEY ?? '',
+};
+let configuration: Promise<void> | undefined;
 
-const expectedEntitlementIds = ["pro", "premium"];
-
-let purchasesConfigured = false;
-
-function getPlatformKey(keys: { ios: string; android: string }) {
-  return Platform.OS === "ios" ? keys.ios : keys.android;
-}
-
-function extractCustomerInfo(result: any): CustomerInfo {
-  return result?.customerInfo ?? result;
-}
-
-function hasExpectedEntitlement(
-  customerInfo: CustomerInfo,
-  entitlementIds = expectedEntitlementIds,
-) {
-  return entitlementIds.some(
-    (entitlementId) => customerInfo.entitlements.active[entitlementId],
-  );
-}
-
-function isCancelledError(error: unknown) {
-  const code = (error as any)?.code;
-  return code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR;
-}
-
-function isPendingError(error: unknown) {
-  const code = (error as any)?.code;
-  return (
-    code === (PURCHASES_ERROR_CODE as any).PAYMENT_PENDING_ERROR ||
-    code === "PAYMENT_PENDING_ERROR" ||
-    code === "paymentPendingError" ||
-    /pending/i.test(String((error as any)?.message ?? ""))
-  );
-}
-
-async function getStoreProduct(productId: string) {
-  const products = await Purchases.getProducts([productId]);
-  const product = products[0];
-
-  if (!product) {
-    throw new Error(`RevenueCat product not found for ${productId}`);
+function configureOnce(initialAppUserId?: string) {
+  if (!configuration) {
+    configuration = (async () => {
+      if (Platform.OS !== 'ios' && Platform.OS !== 'android') throw new Error('Native billing requires iOS or Android');
+      const apiKey = revenueCatApiKeys[Platform.OS];
+      if (!apiKey || !superwallApiKeys[Platform.OS]) throw new Error('Missing platform public SDK keys');
+      // This example owns configuration. In an existing app, reuse its single owner.
+      if (!(await Purchases.isConfigured())) {
+        Purchases.configure({ apiKey, ...(initialAppUserId ? { appUserID: initialAppUserId } : {}) });
+      }
+      if (!(await Purchases.isConfigured())) throw new Error('RevenueCat configuration did not complete');
+    })();
   }
-
-  return product;
+  return configuration;
 }
 
-function getAndroidOptionId(basePlanId?: string, offerId?: string) {
-  return [basePlanId, offerId].filter(Boolean).join(":");
-}
-
-function resolveAndroidSubscriptionOption(
-  storeProduct: any,
-  basePlanId?: string,
-  offerId?: string,
-) {
-  const explicitOptionId = getAndroidOptionId(basePlanId, offerId);
-  const subscriptionOptions: any[] = Array.isArray(storeProduct?.subscriptionOptions)
-    ? storeProduct.subscriptionOptions
-    : [];
-
-  if (explicitOptionId) {
-    const matchedOption = subscriptionOptions.find(
-      (option) => option?.id === explicitOptionId,
-    );
-
-    if (matchedOption) {
-      return matchedOption;
-    }
-  }
-
-  return storeProduct?.defaultOption ?? subscriptionOptions[0] ?? null;
-}
-
-/**
- * RevenueCat's exact purchase API for subscription options can vary a little
- * across SDK generations. This helper keeps the example adaptable:
- * - prefer an explicit subscription-option purchase method when present
- * - otherwise try a generic purchase call
- * - fall back to `purchaseStoreProduct` as a last resort
- *
- * Adapt this helper to the exact API surface exposed by the installed
- * `react-native-purchases` version in the user's repository.
- */
-async function purchaseAndroidSubscriptionOption(
-  storeProduct: any,
-  basePlanId?: string,
-  offerId?: string,
-): Promise<CustomerInfo> {
-  const option = resolveAndroidSubscriptionOption(storeProduct, basePlanId, offerId);
-
-  if (!option) {
-    throw new Error(
-      `Could not resolve a Google Play subscription option for product ${storeProduct?.identifier ?? "unknown"}.`,
-    );
-  }
-
-  const purchasesModule: any = Purchases as any;
-
-  if (typeof purchasesModule.purchaseSubscriptionOption === "function") {
-    const result = await purchasesModule.purchaseSubscriptionOption(option);
-    return result?.customerInfo ?? result;
-  }
-
-  if (typeof purchasesModule.purchase === "function") {
-    const result = await purchasesModule.purchase({
-      storeProduct,
-      subscriptionOption: option,
-    });
-    return result?.customerInfo ?? result;
-  }
-
-  const result = await purchasesModule.purchaseStoreProduct(storeProduct);
-  return extractCustomerInfo(result);
-}
-
-function MonetizationBootstrap() {
-  useEffect(() => {
-    if (purchasesConfigured) {
-      return;
-    }
-
-    const apiKey = getPlatformKey(revenueCatApiKeys);
-
-    if (!apiKey) {
-      console.warn("Missing RevenueCat public API key for this platform.");
-      return;
-    }
-
-    if (__DEV__) {
-      Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
-    }
-
-    Purchases.configure({ apiKey });
-    purchasesConfigured = true;
-  }, []);
-
-  return null;
+function errorCode(error: unknown): unknown {
+  return error !== null && typeof error === 'object' && 'code' in error ? error.code : undefined;
 }
 
 function SubscriptionSync() {
   const { setSubscriptionStatus } = useUser();
-
   useEffect(() => {
-    let mounted = true;
-
-    const applyCustomerInfo = async (customerInfo: CustomerInfo) => {
-      if (!mounted) {
-        return;
-      }
-
-      const entitlementIds = Object.keys(customerInfo.entitlements.active);
-
-      await setSubscriptionStatus({
-        status: entitlementIds.length > 0 ? "ACTIVE" : "INACTIVE",
-        entitlements: entitlementIds.map((id) => ({
-          id,
-          type: "SERVICE_LEVEL",
-        })),
-      });
+    let active = true;
+    let queue = Promise.resolve();
+    const onInfo = (info: CustomerInfo) => {
+      queue = queue.then(async () => {
+        if (!active) return;
+        const ids = Object.keys(info.entitlements.active);
+        await setSubscriptionStatus({
+          status: ids.length ? 'ACTIVE' : 'INACTIVE',
+          entitlements: ids.map((id) => ({ id, type: 'SERVICE_LEVEL' as const })),
+        });
+      }).catch(() => { if (active) console.warn('Subscription status could not be synchronised'); });
     };
-
-    const listener = Purchases.addCustomerInfoUpdateListener((customerInfo) => {
-      void applyCustomerInfo(customerInfo);
-    });
-
-    void Purchases.getCustomerInfo()
-      .then((customerInfo) => applyCustomerInfo(customerInfo))
-      .catch((error) => {
-        console.warn("Initial RevenueCat subscription sync failed:", error);
-      });
-
-    return () => {
-      mounted = false;
-      listener?.remove();
-    };
+    const stop = subscribeCustomerInfo<CustomerInfo>(Purchases, onInfo,
+      () => console.warn('Customer info unavailable; do not infer an inactive subscription'));
+    return () => { active = false; stop(); };
   }, [setSubscriptionStatus]);
-
   return null;
 }
 
-function AnalyticsBridge() {
-  useSuperwallEvents({
-    onPaywallPresent: (paywallInfo) => {
-      console.log("Superwall paywall presented", paywallInfo);
-    },
-    onPaywallDismiss: (paywallInfo, result) => {
-      console.log("Superwall paywall dismissed", { paywallInfo, result });
-    },
-    onSubscriptionStatusChange: (status) => {
-      console.log("Superwall subscription status changed", status);
-    },
-    onPurchase: (params) => {
-      console.log("Superwall purchase started", params);
-    },
-    onPurchaseRestore: () => {
-      console.log("Superwall restore started");
-    },
-    onPaywallError: (error) => {
-      console.warn("Superwall paywall error", error);
-    },
-  });
-
-  return null;
-}
-
-function LoadingState() {
-  return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
-      }}
-    >
-      <ActivityIndicator />
-      <Text style={{ marginTop: 12 }}>Loading subscriptions…</Text>
-    </View>
-  );
-}
-
-type MonetizationProvidersProps = {
+type Props = {
   children: ReactNode;
+  /** For login-first apps, resolve auth before mounting and provide the stable ID. */
+  initialAppUserId?: string;
+  /** False during auth resolution/account changes. Also gate premium actions in the app. */
+  billingIdentityReady?: boolean;
 };
 
-export function MonetizationProviders({
-  children,
-}: MonetizationProvidersProps) {
-  const controller = useMemo(
-    () => ({
-      onPurchase: async ({
-        productId,
-        basePlanId,
-        offerId,
-      }: {
-        productId: string;
-        basePlanId?: string;
-        offerId?: string;
-      }) => {
-        try {
-          const storeProduct = await getStoreProduct(productId);
+export function MonetizationProviders({ children, initialAppUserId, billingIdentityReady = true }: Props) {
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState(false);
+  const identityReady = useRef(billingIdentityReady);
+  identityReady.current = billingIdentityReady;
 
-          const customerInfo =
-            Platform.OS === "android" && (basePlanId || offerId)
-              ? await purchaseAndroidSubscriptionOption(
-                  storeProduct,
-                  basePlanId,
-                  offerId,
-                )
-              : extractCustomerInfo(await Purchases.purchaseStoreProduct(storeProduct));
+  useEffect(() => {
+    let active = true;
+    void configureOnce(initialAppUserId).then(() => { if (active) setReady(true); })
+      .catch(() => { if (active) setError(true); });
+    return () => { active = false; };
+  }, [initialAppUserId]);
 
-          if (!hasExpectedEntitlement(customerInfo)) {
-            return {
-              type: "failed",
-              error:
-                "Purchase completed, but the expected entitlement is still inactive. Check RevenueCat and Superwall product and entitlement mappings.",
-            } as const;
-          }
-
-          return { type: "purchased" } as const;
-        } catch (error) {
-          if (isCancelledError(error)) {
-            return { type: "cancelled" } as const;
-          }
-
-          if (isPendingError(error)) {
-            return { type: "pending" } as const;
-          }
-
-          return {
-            type: "failed",
-            error: (error as any)?.message ?? "Purchase failed",
-          } as const;
+  const controller = useMemo<ComponentProps<typeof CustomPurchaseControllerProvider>['controller']>(() => ({
+    onPurchase: async (params) => {
+      if (!identityReady.current) return { type: 'failed', error: 'Billing identity is not ready' };
+      try {
+        if (params.platform === 'ios' && params.store && params.store !== 'APP_STORE') {
+          throw new Error('This example handles native App Store products only');
         }
-      },
-
-      onPurchaseRestore: async () => {
-        try {
-          const customerInfo = extractCustomerInfo(await Purchases.restorePurchases());
-
-          if (!hasExpectedEntitlement(customerInfo)) {
-            return {
-              type: "failed",
-              error:
-                "Restore completed, but no expected entitlement became active.",
-            } as const;
+        if (params.platform === 'android' && params.basePlanId) {
+          await purchaseFromSuperwallParams({ productId: params.productId, basePlanId: params.basePlanId, offerId: params.offerId ?? undefined });
+        } else {
+          if (params.platform === 'android' && params.offerId) throw new Error('Offer requires a base plan');
+          const [subscriptions, oneTimeProducts] = await Promise.all([
+            Purchases.getProducts([params.productId], PRODUCT_CATEGORY.SUBSCRIPTION),
+            params.platform === 'android'
+              ? Purchases.getProducts([params.productId], PRODUCT_CATEGORY.NON_SUBSCRIPTION)
+              : Promise.resolve([]),
+          ]);
+          if (params.platform === 'android' && subscriptions.length) {
+            throw new Error('Android subscription purchase requires an explicit base plan');
           }
-
-          return { type: "restored" } as const;
-        } catch (error) {
-          return {
-            type: "failed",
-            error: (error as any)?.message ?? "Restore failed",
-          } as const;
+          const matches = [...subscriptions, ...oneTimeProducts].filter((product) => product.identifier === params.productId);
+          if (matches.length !== 1) throw new Error('Requested store product is unavailable or ambiguous');
+          await Purchases.purchaseStoreProduct(matches[0]);
         }
-      },
-    }),
-    [],
-  );
+        // A completed payment and feature entitlement are separate outcomes.
+        // The premium gate checks the specific entitlement; never repurchase to fix fulfilment.
+        return { type: 'purchased' };
+      } catch (error) {
+        const code = errorCode(error);
+        if (code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR) return { type: 'cancelled' };
+        if (code === PURCHASES_ERROR_CODE.PAYMENT_PENDING_ERROR) return { type: 'pending' };
+        return { type: 'failed', error: 'Purchase could not be completed. Refresh the product or check store status before retrying.' };
+      }
+    },
+    onPurchaseRestore: async () => {
+      if (!identityReady.current) return { type: 'failed', error: 'Billing identity is not ready' };
+      try {
+        await Purchases.restorePurchases();
+        // A successful restore can legitimately return no active entitlements.
+        return { type: 'restored' };
+      } catch {
+        return { type: 'failed', error: 'Restore could not be completed' };
+      }
+    },
+  }), []);
 
+  if (error) return <Text>Billing could not be initialised. Check configuration and restart.</Text>;
+  if (!ready) return <ActivityIndicator accessibilityLabel="Initialising billing" />;
   return (
-    <>
-      <MonetizationBootstrap />
-
-      <CustomPurchaseControllerProvider controller={controller}>
-        <SuperwallProvider apiKeys={superwallApiKeys}>
-          <SuperwallLoading>
-            <LoadingState />
-          </SuperwallLoading>
-
-          <SuperwallLoaded>
-            <SubscriptionSync />
-            <AnalyticsBridge />
-            {children}
-          </SuperwallLoaded>
-        </SuperwallProvider>
-      </CustomPurchaseControllerProvider>
-    </>
+    <CustomPurchaseControllerProvider controller={controller}>
+      <SuperwallProvider apiKeys={superwallApiKeys} onConfigurationError={() => setError(true)}>
+        <SuperwallLoading><ActivityIndicator accessibilityLabel="Loading paywalls" /></SuperwallLoading>
+        <SuperwallLoaded>
+          {billingIdentityReady ? <SubscriptionSync /> : null}
+          {children}
+        </SuperwallLoaded>
+      </SuperwallProvider>
+    </CustomPurchaseControllerProvider>
   );
 }

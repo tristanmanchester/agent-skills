@@ -1,48 +1,40 @@
-import { Button, Text, View } from "react-native";
-import { usePlacement, useUser } from "expo-superwall";
+import { useRef, useState } from 'react';
+import { Button, Text, View } from 'react-native';
+import Purchases from 'react-native-purchases';
+import { usePlacement } from 'expo-superwall';
 
-function hasEntitlement(
-  subscriptionStatus: ReturnType<typeof useUser>["subscriptionStatus"],
-  entitlementId: string,
-) {
-  return (
-    subscriptionStatus?.entitlements?.some(
-      (entitlement) => entitlement.id === entitlementId,
-    ) ?? false
-  );
-}
-
-export function ExportPdfUpsell() {
-  const { registerPlacement, state } = usePlacement({
-    onPresent: (info) => console.log("Paywall presented", info),
-    onDismiss: (info, result) => console.log("Paywall dismissed", { info, result }),
-    onError: (error) => console.warn("Paywall placement error", error),
+/** UI gating is not server authorisation. Protect server resources on the server. */
+export function ExportPdfUpsell({ billingIdentityReady, identityRevision, onExport }: {
+  billingIdentityReady: boolean; identityRevision: number; onExport: () => Promise<void>;
+}) {
+  const [message, setMessage] = useState('');
+  const current = useRef({ ready: billingIdentityReady, revision: identityRevision });
+  current.current = { ready: billingIdentityReady, revision: identityRevision };
+  const { registerPlacement } = usePlacement({
+    onError: () => setMessage('The paywall is unavailable. Please try again later.'),
   });
-
-  const { subscriptionStatus } = useUser();
-  const isPro = hasEntitlement(subscriptionStatus, "pro");
-
+  const exportWhenEntitled = async (revision: number) => {
+    try {
+      if (!current.current.ready || current.current.revision !== revision) return;
+      const info = await Purchases.getCustomerInfo();
+      if (!current.current.ready || current.current.revision !== revision) return;
+      if (!info.entitlements.active.pro) {
+        setMessage('Pro access is not active yet. A completed purchase should be checked, not purchased again.');
+        return;
+      }
+      await onExport();
+    } catch {
+      setMessage('Access or export could not be verified. No further purchase was attempted.');
+    }
+  };
   return (
-    <View style={{ gap: 12 }}>
-      <Text style={{ lineHeight: 22 }}>
-        Prefer registering the placement and letting Superwall's dashboard logic
-        decide whether the user should actually see a paywall.
-      </Text>
-
-      <Button
-        title={isPro ? "Export PDF" : "Unlock PDF export"}
-        onPress={() => {
-          void registerPlacement({
-            placement: "export_pdf",
-            params: {
-              source: "editor_toolbar",
-              entitlementHint: isPro ? "already_pro" : "not_pro",
-            },
-          });
-        }}
-      />
-
-      {state ? <Text selectable>{JSON.stringify(state, null, 2)}</Text> : null}
+    <View>
+      <Button title="Export PDF" disabled={!billingIdentityReady} onPress={() => {
+        const revision = current.current.revision;
+        void registerPlacement({ placement: 'export_pdf', feature: () => { void exportWhenEntitled(revision); } })
+          .catch(() => setMessage('The paywall could not be opened.'));
+      }} />
+      {message ? <Text accessibilityLiveRegion="polite">{message}</Text> : null}
     </View>
   );
 }
