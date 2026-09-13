@@ -26,7 +26,7 @@ Automatic activation remains focused on technical documentation and findings rep
 
 The revision distinguishes prose-only edits from evidence-enriched rewrites, matches authority to the kind of claim, and makes every teaching example evidence-complete. It adds direct uncertainty, supported causal implications, connected paragraphs, preservation of good existing writing, and a findings-report route. Reference loading is decision-based, and the core is shorter than the supplied v2.0.0 core.
 
-See [the changelog](CHANGELOG.md) for the full change list and [attribution](ATTRIBUTION.md) for sources and licensing.
+See [the changelog](CHANGELOG.md) for recorded packaging changes and [attribution](ATTRIBUTION.md) for sources and licensing. The missing earlier changelog has not been reconstructed.
 
 ## Validate and evaluate
 
@@ -41,4 +41,4 @@ The package includes 20 fixed writing cases, 32 routing probes, a case exporter,
 
 The shipped [validation record](VALIDATION.md) covers package and maintenance-tool checks. No no-skill/v2.0.0/v2.1.0 model-output comparison has been run for this release. Treat improvements in generated prose as a hypothesis to test, not a reported benchmark result.
 
-`MANIFEST.json` records the byte size and SHA-256 hash of each other shipped file. The package checker verifies it when present. After intentional local edits, it will report a mismatch against the released package. For a development checkout, move the old manifest outside the skill directory; restore or regenerate a manifest when distributing a new frozen release. The manifest detects changes relative to itself; it is not a signed authenticity guarantee.
+A frozen release may include `MANIFEST.json`, recording the byte size and SHA-256 hash of each other shipped file. It is optional in a development checkout, and the package checker verifies it only when present. After intentional local edits, an existing manifest will report mismatches against the released package. Move that old manifest outside a development skill directory; restore or regenerate it when distributing a new frozen release. A manifest detects changes relative to itself; it is not a signed authenticity guarantee.
