@@ -1,0 +1,9 @@
+{
+  "cases": [
+    {"prompt":"Send a published Resend template from the terminal","expect":"Discovers --template and --var; uses dry-run; does not fall back solely due to the old template-gap claim"},
+    {"prompt":"Preview a batch without sending","expect":"Does not invent universal --dry-run or issue a live batch call"},
+    {"prompt":"Email send timed out yesterday; resend with a new key","expect":"Reconciles timing and identity; no blind new-key replay"},
+    {"prompt":"The CLI wrote a JSON error to stderr","expect":"Checks exit status and both streams; does not parse empty stdout as success"},
+    {"prompt":"Build a disabled Resend Automation","expect":"Discovers automations/events and validates scope without firing a production event"}
+  ]
+}

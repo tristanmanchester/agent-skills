@@ -1,191 +1,111 @@
 ---
 name: resend-cli
-description: "Use this skill when the task is specifically about operating Resend from an AI agent, terminal session, or CI job via the official resend CLI: installing/authenticating the CLI, sending/listing/updating/cancelling emails, batch sends, domains and DNS, webhooks and local listeners, inbound receiving, contacts, topics, segments, broadcasts, templates, API keys, profiles, or debugging Resend CLI/API failures. Trigger on mentions of Resend CLI, `resend`, `resend doctor`, `resend emails send`, `resend domains`, `resend webhooks listen`, `resend emails receiving`, or agent-friendly terminal automation."
-compatibility: "Designed for skills-compatible coding agents. Live operations require the official `resend` CLI plus a `RESEND_API_KEY` or stored profile. The bundled helper uses Python 3.10+ standard library only."
+description: >-
+  Operate Resend through its official CLI for authorised sends, hosted templates,
+  domains, contacts, broadcasts, inbound email, webhooks, or Automations. Use for
+  explicit Resend terminal/CI operations; use resend-api for application SDK code,
+  not this skill for generic email or inbox tasks.
+compatibility: Requires the official resend CLI and authorised Resend access for live operations. Discover the installed command surface before execution; no bundled Python wrapper is required.
 metadata:
-  author: OpenAI
-  version: "3.0.0"
-  cli-version: "1.4.1"
+  version: "4.0.0"
+  reviewed: "2026-09-13"
   source: "https://github.com/resend/resend-cli"
-  last-reviewed: "2026-03-14"
 ---
 
-# Resend CLI
+# Resend CLI operations
 
-This skill is for agents that should operate **Resend through the official CLI first**, not by
-dropping straight to raw REST.
+Use the maintained CLI directly. Its `commands` output replaces the old duplicated
+command catalogue, task router, and Python wrapper. Preserve task-specific intent
+and verification, not stale copies of every flag.
 
-The goal is not just “know the commands”. The goal is to make an agent:
-
-1. choose the right Resend primitive,
-2. choose the right CLI command,
-3. run it in a deterministic non-interactive way,
-4. detect the important CLI coverage gaps before it gets stuck, and
-5. fall back to MCP/API only when the CLI genuinely does not cover the job.
-
-## Start here
-
-Load only the files that match the task:
-
-- `references/agent-operating-model.md` — the default decision process for live Resend work
-- `references/install-auth-and-profiles.md` — install methods, auth priority, profiles, config paths
-- `references/subprocess-contract.md` — how agents should invoke `resend` safely and parse output
-- `references/command-selection.md` — fast routing from user intent to the right command(s)
-- `references/sending-scheduling-and-batch.md` — transactional sends, schedules, tags, attachments, batch limits
-- `references/domains-dns-and-deliverability.md` — domain creation, verification, receiving, TLS, tracking, 403/domain mismatch
-- `references/webhooks-and-listeners.md` — webhook creation, update, signature handling, temporary local listeners
-- `references/inbound-receiving-and-threading.md` — inbound list/get/attachments/forward/listen flows
-- `references/contacts-topics-segments-and-broadcasts.md` — subscription modelling, targeting, campaigns
-- `references/templates-and-coverage-gaps.md` — template lifecycle and the important current CLI gaps
-- `references/diagnostics-and-fallbacks.md` — debug order, CLI quirks, when to fall back to MCP/API
-- `references/recipes.md` — short end-to-end playbooks
-- `references/sources.md` — first-party source manifest and refresh notes
-
-Machine-readable assets:
-
-- `assets/command-catalog.json` — command index with detail levels (`source_inspected`, `readme_confirmed`, `tree_confirmed`)
-- `assets/task-router.json` — route common tasks to command sequences
-- `assets/error-map.json` — fast-fail diagnosis hints
-- `assets/coverage-gaps.json` — current CLI limitations and ambiguities that matter to agents
-- `assets/subprocess-contract.json` — deterministic invocation defaults
-- `assets/scaffold-index.json` — reusable command/file scaffolds
-- `assets/source-manifest.json` — authoritative URLs used to build this skill
-
-Bundled helper:
-
-- `scripts/resend_cli.py` — agent wrapper for probing, routing, scaffolding, batch linting, diagnosis, and safe subprocess execution
-
-## Core operating rules
-
-### 1) Prefer the official CLI for live Resend work
-
-Default order of preference:
-
-1. **Official Resend CLI** for live terminal/CI/agent operations
-2. **Official Resend MCP server** if the environment already exposes it and the CLI is unavailable
-3. **Official SDK** when editing app code inside an existing integration
-4. **Raw REST** only for stack-neutral examples, protocol debugging, or feature gaps
-
-Do not choose raw REST just because it is familiar.
-
-### 2) For agents, stay non-interactive by default
-
-For bounded commands:
-
-- pass all required flags explicitly
-- use global `--json -q`
-- prefer `RESEND_API_KEY` or a stored profile over typing secrets interactively
-- set `RESEND_NO_UPDATE_NOTIFIER=1` for deterministic output
-- capture **both stdout and stderr** defensively
-
-### 3) Run `doctor` early when the environment is unknown
-
-When you do not know whether the CLI is installed, authenticated, or pointed at the right account:
+## Discover and scope
 
 ```bash
+resend --version
+resend --json commands
+resend emails send --help
 resend --json -q doctor
 ```
 
-This is usually the fastest first read on:
+`doctor` can inspect the account; it is not a purely offline version check. Use an
+already authorised connector instead when that is the available execution surface.
+Do not install, log in, change profiles, or broaden credentials just to run a
+read-only inspection. Check effective account/profile and token scope without
+printing keys. Prefer a secret-store environment value or stored profile over
+`--api-key` in arguments. Record the CLI version and help used.
 
-- CLI availability/version
-- whether an API key is being resolved
-- whether verified domains exist
-- whether the machine looks like an AI-agent environment
+For bounded automation, pass every required argument, `--json -q`, and capture
+stdout, stderr, and exit status separately. Current machine output is success
+JSON on stdout and errors on stderr; warnings may also occur. Exit zero and a
+valid expected result are both needed. Stream listeners are not bounded JSON
+commands. Do not concatenate output channels and pretend the result is one JSON
+document. Inspect installed help when a flag or output shape differs.
 
-### 4) Choose the primitive before the command
+## Choose the operation
 
-- One logical transactional email → `emails send`
-- Up to 100 distinct transactional emails in one request → `emails batch`
-- Scheduled transactional email mutation → `emails update` / `emails cancel`
-- Campaign to a segment → `broadcasts create` / `broadcasts send`
-- Reusable hosted content → `templates *`
-- Sender or receiving setup → `domains *`
-- Inbound processing → `emails receiving *` + `webhooks *`
-- Scoped credentials → `api-keys *`
-- Recipient data and preferences → `contacts`, `contact-properties`, `topics`, `segments`
-- Local dev event loop → `webhooks listen` or `emails receiving listen`
+| Intent | Surface | Verification |
+| --- | --- | --- |
+| One transactional email | `emails send` | Persist ID; inspect delivery result later |
+| Distinct transactional messages | `emails batch` | Freeze payload, map returned IDs, reconcile failures |
+| Hosted content | `templates` and `emails send --template` | Published version, variables, sender defaults |
+| Marketing campaign | `broadcasts`, `segments`, `topics` | Exact audience/consent, preview, send status |
+| Sender/receiving setup | `domains` | Returned DNS records and verified capabilities |
+| Received message | `emails receiving` | Fetch full content/attachments after verified event |
+| Event-driven email sequence | `automations`, `events` | Disabled draft, approved activation, run results |
+| Credential/event delivery setup | `api-keys`, `webhooks` | Least privilege, secret storage, test delivery |
 
-### 5) Know the current CLI gaps
+Exact flags come from `resend commands` and subcommand help, not this routing table.
+Do not declare an operation unsupported just because a cached catalogue lacks it.
+Use the API/SDK only after confirming a relevant CLI gap.
 
-This version of the skill treats these as especially important:
+## Hosted-template send
 
-- **Template send gap:** the CLI manages templates, but the current `emails send` command surface does not expose a direct `--template-id`/template-vars flow.
-- **Domain capability update gap:** `domains update` exposes TLS/open/click tracking, but not an explicit sending/receiving capability toggle, while inbound help text references such a toggle.
-- **Stream commands are special:** `webhooks listen` and `emails receiving listen` are long-running and should be treated as NDJSON/event streams in agent mode.
-- **JSON error channel discrepancy:** the README promises machine JSON on stdout only, but the current source writes JSON errors with `console.error`, so wrappers must parse stderr too.
-
-### 6) Keep IDs and file paths
-
-Most multi-step flows become much easier if the agent persists:
-
-- domain IDs
-- email IDs
-- webhook IDs
-- topic IDs
-- segment IDs
-- template IDs/aliases
-- API key IDs
-- the file paths it generated for HTML or batch JSON
-
-## The mutation ladder
-
-For state-changing live operations:
-
-1. classify the task
-2. confirm the command sequence
-3. make any needed file assets (`.html`, batch JSON)
-4. run with `--json -q`
-5. verify with `get`, `list`, or a follow-up check
-6. persist returned IDs and next-step context
-7. only then continue to the next mutation
-
-## Bundled helper script
-
-`scripts/resend_cli.py` is intentionally agent-oriented.
-
-Commands:
-
-- `probe` — find the CLI, report install hints, and show environment basics
-- `catalog` — list known commands from the bundled catalogue
-- `info` — inspect one command and its notes/gaps
-- `recommend` — route a free-text task to the best CLI sequence
-- `scaffold` — print or materialise sample commands/files
-- `lint-batch` — statically validate an `emails batch` JSON file
-- `doctor` — explain likely causes of common CLI/API failures
-- `run` — execute the official CLI with deterministic defaults and tolerant JSON parsing
-
-Examples:
+Current `emails send` supports **`--template` and `--var`**. It is not necessary to
+fall back to REST just to send a hosted template.
 
 ```bash
-python3 scripts/resend_cli.py probe
-python3 scripts/resend_cli.py catalog --resource emails
-python3 scripts/resend_cli.py info "emails send"
-python3 scripts/resend_cli.py recommend "send 70 different shipment notifications"
-python3 scripts/resend_cli.py scaffold batch-send --write-dir ./tmp
-python3 scripts/resend_cli.py lint-batch ./tmp/batch-emails.json
-python3 scripts/resend_cli.py doctor --command "emails send" --status 403 --message "1010 forbidden"
-python3 scripts/resend_cli.py run -- emails list --limit 5
+resend --json -q emails send \
+  --template "$TEMPLATE_ID" --to delivered@resend.dev \
+  --var CUSTOMER_NAME=Taylor --idempotency-key "$SEND_KEY" --dry-run
 ```
 
-## Response shape this skill should produce
+Resolve an actual published template and its variable definitions first. Supply
+sender/subject when not defined by the template; verify overrides. Current CLI
+`--var` values are strings: use an appropriate typed SDK/API payload when numeric
+variable types matter. Do not combine template with raw body flags; the inspected
+CLI also rejects attachments with templates. CLI restrictions need not imply the
+same restriction on every API surface.
 
-A strong answer usually includes:
+The dry run validates local input, not template existence, publication, permissions,
+recipient authorisation, or delivery. Review its payload; remove `--dry-run` only
+for the authorised send, retaining the same content and operation identity.
 
-1. the exact Resend primitive,
-2. the exact CLI command or command sequence,
-3. any file scaffolding the user needs,
-4. the operational caveats that matter here,
-5. the verification step,
-6. the fallback path if the CLI does not currently cover the flow.
+## Mutation and retry discipline
 
-## Example prompts this skill should handle
+Confirm actual recipients, account, content, attachments, schedule/timezone, and
+scope before sending. Drafting or previewing is not permission to send. Sending a
+broadcast or firing a custom event may fan out to many recipients.
 
-- “Use the Resend CLI to send a scheduled password reset email”
-- “Should I use `emails send`, `emails batch`, or `broadcasts create`?”
-- “Create a sending + receiving domain in `eu-west-1`”
-- “Set up local webhook listening with ngrok”
-- “Why is my batch file failing?”
-- “How do I manage multiple Resend accounts from one agent?”
-- “Can the CLI send a hosted template directly?”
-- “How should my agent parse `resend` output safely?”
+Persist a unique idempotency key and exact request **before** email/batch submission.
+Retry the same operation with that key only within the provider's documented
+window (currently 24 hours). New content is a new operation. After the window,
+reconcile rather than replay; do not extend email idempotency guarantees to other
+endpoints. A timeout may mean accepted-but-unacknowledged, not unsent.
+
+Native `--dry-run` exists for specific commands (currently email send and broadcast
+create), not every mutation. Inspect help; never emulate a preview by making a
+live call. For unsupported previews, render the intended payload and recipients
+locally without invoking the mutation.
+
+Read [operational checks](references/OPERATIONS.md) for batching, domains,
+subscriptions, receiving, streams, and Automations. Report IDs, confirmed state,
+unknown outcomes, and next evidence needed. Accepted is not delivered, and
+recorded delivery is not proof of inbox placement or human reading.
+
+## Sources and evaluation
+
+Reviewed against the [official CLI](https://github.com/resend/resend-cli),
+[send source](https://github.com/resend/resend-cli/blob/main/src/commands/emails/send.ts),
+and [API docs](https://resend.com/docs/api-reference/introduction) on 2026-09-13.
+Evaluation cases: [evals/scenarios.json](evals/scenarios.json). They require agent
+trace review; no live account access or send is implied by their presence.
