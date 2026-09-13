@@ -1,69 +1,61 @@
-# Journal calibration
+# Journal-specific calibration
 
-When a specific journal is named, do not rely only on generic Nature-like instincts. Calibrate to the live journal and to recent exemplars.
+Treat the journal, content type, submission stage, and dated guide as the rule
+identity. A sample paper shows editorial practice, not necessarily the current
+submission limit. A publisher-wide style is not one shared schema.
 
-## Why calibration matters
+## Reviewed opening profiles
 
-Two manuscripts can both be good scientific prose but differ in:
-- title texture
-- abstract versus opening-paragraph expectations
-- tolerance for subheadings
-- how much context appears in Results
-- how detailed legends tend to be
-- whether discussion is integrated or separate
-- how much of the story is expected in Extended Data or Supplementary Information
+Reviewed 2026-09-13 from official guide text surfaced in search:
 
-## Step 1: read the live guide
+| Profile | Opening | Length rule | Citation rule |
+| --- | --- | --- | --- |
+| Nature Communications / Article | Abstract | Maximum 200 words | No references |
+| Nature / Article | Summary paragraph | Ideally no more than 200 words | Fully referenced |
 
-Extract only the details that affect execution:
-- article type
-- title rules
-- abstract or summary requirements
-- heading policy
-- methods placement
-- figure or legend expectations
-- end-matter requirements
-- data, code, and reporting requirements
+Sources: [Nature Communications Article](https://www.nature.com/ncomms/submit/article)
+and [Nature formatting guide](https://www.nature.com/nature/for-authors/formatting-guide).
+Direct full-page retrieval was unavailable during this maintenance review; these
+profiles encode the specific surfaced opening rules, not a review of every
+requirement on either page. Recheck the actual guide for each submission. The
+Nature recommendation is not promoted to a hard cutoff by the checker.
 
-Do not hard-code guessed word limits if the guide is not in hand.
+## Custom profile
 
-## Step 2: inspect recent papers
+For another verified journal/content type, supply a JSON object with exactly:
 
-Read 2-4 recent primary research papers in the exact journal and article type.
+```json
+{
+  "journal": "Exact journal",
+  "article_type": "Exact current content type",
+  "opening_heading": "Abstract",
+  "max_words": 200,
+  "limit_kind": "mandatory",
+  "citation_policy": "Copy the verified rule in your own words",
+  "reviewed": "2026-09-13",
+  "source_url": "https://example.org/official-guide"
+}
+```
 
-Build a compact style card with:
-- average title length and texture
-- how the opening paragraph is built
-- how soon the paper reaches the core problem
-- whether Results subsections are claim-led or method-led
-- how cautious the discussion sounds
-- how much detail is pushed into legends, Methods, Extended Data, or Supplementary Information
+This is a schema example, not a claim that the unnamed journal has a 200-word
+limit. Replace every field with checked information. `limit_kind` is mandatory
+or advisory. `citation_policy` is recorded, **not automatically validated**. The
+checker does not fetch the URL or confirm the editor's authority; profile accuracy
+is the reviewer's responsibility.
 
-## Step 3: abstract structure, not wording
+Use `--profile-file /absolute/profile.json`. For Markdown use an explicit ATX
+heading matching `opening_heading`; for a separate prose file use `--opening-only`.
+Extract Word/PDF/LaTeX using appropriate tools and inspect the resulting text
+before counting. Mark unverified when the opening cannot be separated reliably.
 
-Use recent papers to calibrate:
-- the density of context
-- how broad the final implication can be
-- how explicit limitations are
-- whether the journal tolerates sentence-level stylistic flourishes
+## The rest of the manuscript
 
-Never reuse distinctive phrasing from exemplar papers.
+Check title, main-text counting exclusions, article type, display items, reference
+style, section/end-matter order, ethics/reporting forms, availability statements,
+figure files, and editorial correspondence against the actual guide. Distinguish
+required items from recommendations and applicability conditions. Do not create
+fictional declarations to fill missing headings.
 
-## Step 4: reconcile journal style with the user's voice
-
-Priority order:
-1. scientific accuracy
-2. the target journal's visible house expectations
-3. the user's own established writing habits
-4. local elegance preferences
-
-If the user's preferred style conflicts with the journal's visible expectations, follow the journal for externally visible features and keep the user's voice in sentence rhythm and paragraph texture.
-
-## Step 5: state what you calibrated
-
-When it matters, tell the user:
-- which journal mode you chose
-- which live features were verified
-- which details still need checking
-
-A good skill should make its assumptions legible rather than invisible.
+Check [current AI policy](https://www.nature.com/nature-portfolio/editorial-policies/ai)
+for the actual tool use and disclosure language. When the full policy is inaccessible,
+report that limitation and obtain the current text before asserting an exemption.
