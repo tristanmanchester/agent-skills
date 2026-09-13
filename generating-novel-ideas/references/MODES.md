@@ -1,137 +1,43 @@
-# Domain Modes
+# Domain modes
 
-Use these mode-specific adjustments when the task has a clear domain. The main workflow
-still applies.
+Use the relevant adjustments, not every template. The user's brief and requested
+output take precedence over default portfolio structures.
 
-## Startup or product opportunity
+## Product or startup
 
-Priorities:
+Focus on a concrete user job, the closest substitute, the mechanism that changes
+an outcome, and a plausible initial offer. Include adoption/procurement, ownership,
+pricing, and data/trust assumptions where material. Verify current competitor and
+feasibility claims before presenting differentiation as established.
 
-- hidden user tension
-- route to adoption
-- why-now signal
-- business model or ownership logic
-- wedge first, platform later
+## Research
 
-Extra questions:
+State a falsifiable hypothesis or discriminating question, why the mechanism is
+plausible, relevant prior work, instrumentation/data needs, confounders, controls,
+and first experiment. Distinguish untested predictions from established findings.
+A literature gap is bounded by the search; absence of a retrieved paper is not
+proof the idea has never been studied.
 
-- What adjacent workflow can carry this in?
-- Who signs off or blocks adoption?
-- What is the smallest offer that is still compelling?
-- What evidence would prove this is not just another feature idea?
+## Campaign or creative territory
 
-Best final format:
+Work from the audience, desired response, cultural context, channel, and available
+assets. Show the central concept with a few representative executions and risks.
+Do not invent trend evidence, testimonials, or performance forecasts. Adapt the
+mechanism to the channel rather than giving every concept the same format.
 
-- pragmatic wedge
-- strategic differentiator
-- bold bet
-- tests and adoption assumptions
+## Naming
 
-## Research hypothesis or scientific idea
+When the product concept is settled, stay within it. Explore useful verbal
+territories such as literal, evocative, metaphorical, or coined names, then compare
+fit, pronunciation, ambiguity, memorability, and unwanted associations. Check
+current availability only when relevant and authorised; domain availability alone
+does not establish trademark clearance. Do not reopen strategy to satisfy a
+mandatory concept-generation phase.
 
-Priorities:
+## Process or service
 
-- novelty with plausible mechanism
-- evidence limits
-- data or instrumentation requirement
-- experimental tractability
-- failure conditions
-
-Extra questions:
-
-- What assumption or theory is being challenged?
-- What observation would falsify it?
-- What instrument, dataset, or proxy could test it cheaply?
-- What makes it different from a standard literature extrapolation?
-
-Best final format:
-
-- hypothesis
-- why it is interesting
-- why it might work
-- key uncertainty
-- first experiment
-- failure signal
-
-Avoid purely magical proposals with no measurement path.
-
-## Campaign, content, or creative concept
-
-Priorities:
-
-- cultural tension
-- emotional hook
-- memorable framing
-- spread mechanism
-- assetability across formats
-
-Extra questions:
-
-- What identity or feeling is being activated?
-- What visual or verbal hook carries the territory?
-- What makes it shareable or discussable?
-- Can one core idea generate many executions without going thin?
-
-Best final format:
-
-- concept territory
-- central tension
-- hook
-- sample executions
-- channel fit
-- risk
-
-## Naming and verbal concept development
-
-Naming is downstream of concept design.
-
-Workflow:
-
-1. Create 3 to 5 concept territories first.
-2. Pick one or two territories.
-3. Generate names within those territories.
-4. Explain the logic behind the strongest names.
-
-Useful name directions:
-
-- literal and clear
-- evocative
-- metaphorical
-- contrast-based
-- status-based
-- coined or compressed
-- procedural or active
-
-Do not start with name lists before the concept families exist.
-
-Practical caution:
-
-- flag that names still need legal and market checks
-- do not claim clearance without actual verification
-
-## Process, service, or operations redesign
-
-Priorities:
-
-- bottlenecks
-- hand-offs
-- approval and exception paths
-- trust and reversibility
-- who carries the burden
-
-Extra questions:
-
-- Where does work wait?
-- Where does knowledge get lost?
-- Which exception cases consume the team?
-- What proof or audit trail would unblock action?
-- What step should be manual only when risk is high?
-
-Best final format:
-
-- redesigned flow
-- what changes
-- why it is better
-- implementation wedge
-- operational risk
-- pilot
+Locate waiting, hand-offs, information loss, exception handling, and who carries
+risk or effort. Propose a first pilot with a measurable bottleneck and a realistic
+fallback. An automation that transfers work to an unacknowledged person has not
+necessarily removed the burden. Preserve accessibility, accountability, and
+intentional human approval where needed.
