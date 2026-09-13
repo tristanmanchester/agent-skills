@@ -1,266 +1,236 @@
 #!/usr/bin/env python3
-"""Render a simple, dependency-free SVG chart from CSV data.
-
-This is intentionally modest: it creates reviewable first-pass bar, dot, line,
-and scatter charts with labels and honest defaults. Use full plotting libraries
-for publication-grade output when available.
-"""
-
+"""Render explicit first-pass SVG charts without implicit aggregation or time warping."""
 from __future__ import annotations
-
 import argparse
 import csv
+import datetime as dt
 import html
 import json
 import math
-import re
-import sys
-from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
-
-DATE_RE = re.compile(r"^(\d{4}-\d{1,2}-\d{1,2}|\d{4}-\d{1,2}|\d{1,2}/\d{1,2}/\d{2,4})$")
-PALETTE = ["#222222", "#666666", "#999999", "#444444", "#777777", "#bbbbbb"]
+import sys
 
 
-def to_float(value: Any) -> Optional[float]:
-    try:
-        if value is None or str(value).strip() == "":
+def number(value: str, *, allow_missing: bool = False) -> float | None:
+    if not isinstance(value, str):
+        raise ValueError('Expected a CSV text value')
+    if not value.strip():
+        if allow_missing:
             return None
-        return float(str(value).replace(",", ""))
-    except ValueError:
-        return None
-
-
-def read_csv(path: Path) -> List[Dict[str, str]]:
+        raise ValueError('Missing numeric value')
     try:
-        with path.open("r", encoding="utf-8-sig", newline="") as handle:
-            rows = list(csv.DictReader(handle))
-    except FileNotFoundError:
-        raise SystemExit(f"Error: CSV file not found: {path}")
-    except csv.Error as exc:
-        raise SystemExit(f"Error: could not parse CSV: {exc}")
-    if not rows:
-        raise SystemExit("Error: CSV has no data rows.")
-    return rows
+        result = float(value)
+    except ValueError as error:
+        raise ValueError('Expected an explicit numeric value; normalise locale formatting first') from error
+    if not math.isfinite(result):
+        raise ValueError('Non-finite numbers are not plottable observations')
+    return result
 
 
-def infer_chart(rows: List[Dict[str, str]], x: str, y: str, group: Optional[str]) -> str:
-    xs = [r.get(x, "") for r in rows]
-    x_numeric = sum(1 for v in xs if to_float(v) is not None) / max(1, len(xs)) > 0.85
-    x_date = sum(1 for v in xs if DATE_RE.match(str(v).strip())) / max(1, len(xs)) > 0.5
-    if x_date:
-        return "line"
-    if x_numeric:
-        return "scatter"
-    unique_x = len(set(xs))
-    return "bar" if unique_x <= 25 and not group else "dot"
+def date_number(value: str) -> float:
+    # Deliberately unambiguous ISO calendar dates, not locale-dependent date guessing.
+    parsed = dt.date.fromisoformat(value)
+    if value != parsed.isoformat():
+        raise ValueError('Dates must be YYYY-MM-DD')
+    return float(parsed.toordinal())
 
 
-def scale(value: float, domain_min: float, domain_max: float, range_min: float, range_max: float) -> float:
-    if math.isclose(domain_min, domain_max):
-        return (range_min + range_max) / 2
-    return range_min + (value - domain_min) / (domain_max - domain_min) * (range_max - range_min)
+def extent(values: list[float], zero: bool = False) -> tuple[float, float]:
+    low, high = min(values), max(values)
+    if zero:
+        low, high = min(0.0, low), max(0.0, high)
+    if low == high:
+        padding = abs(low) * 0.05 or 1.0
+        return low - padding, high + padding
+    if zero:
+        return low, high
+    span = high - low
+    if not math.isfinite(span):
+        raise ValueError('Numeric range is too large; rescale units before plotting')
+    return low - span * 0.05, high + span * 0.05
 
 
-def nice_ticks(vmin: float, vmax: float, count: int = 5) -> List[float]:
-    if math.isclose(vmin, vmax):
-        return [vmin]
-    span = vmax - vmin
-    raw_step = span / max(1, count - 1)
-    mag = 10 ** math.floor(math.log10(abs(raw_step)))
-    norm = raw_step / mag
-    if norm <= 1:
-        step = 1 * mag
-    elif norm <= 2:
-        step = 2 * mag
-    elif norm <= 5:
-        step = 5 * mag
+def render(rows: list[dict[str, str]], *, x: str, y: str, chart: str,
+           group: str | None = None, x_type: str = 'number', title: str = '',
+           width: int = 900, height: int = 520) -> tuple[str, dict]:
+    if chart not in {'bar', 'dot', 'line', 'scatter'}:
+        raise ValueError('Choose bar, dot, line, or scatter explicitly')
+    if x_type not in {'number', 'date'}:
+        raise ValueError('x_type must be number or date')
+    if type(width) is not int or type(height) is not int or not 400 <= width <= 4000 or not 300 <= height <= 4000:
+        raise ValueError('Width must be 400..4000 and height 300..4000')
+    if not rows or len(rows) > 10000:
+        raise ValueError('Supply 1..10000 rows; larger data needs an appropriate plotting pipeline')
+    required = [x, y] + ([group] if group else [])
+    if any(any(column not in row for column in required) for row in rows):
+        raise ValueError('A selected CSV column is missing')
+    points = []
+    for index, row in enumerate(rows, 1):
+        label, series = row[x], row[group] if group else ''
+        if not isinstance(label, str) or not label.strip() or not isinstance(series, str):
+            raise ValueError(f'Invalid x/group value at data row {index}')
+        coordinate = (date_number(label) if x_type == 'date' else number(label)) if chart in {'line', 'scatter'} else label
+        value = number(row[y], allow_missing=chart == 'line')
+        points.append({'x': coordinate, 'label': label, 'y': value, 'group': series})
+    groups = list(dict.fromkeys(point['group'] for point in points))
+    if len(groups) > 6:
+        raise ValueError('More than six series needs a deliberate small-multiple or other design')
+    if chart in {'bar', 'line'}:
+        keys = [(point['group'], point['x']) for point in points]
+        if len(keys) != len(set(keys)):
+            raise ValueError('Duplicate x within a series: choose and document aggregation before plotting')
+    values = [point['y'] for point in points if point['y'] is not None]
+    if not values:
+        raise ValueError('No observed y values')
+    ymin, ymax = extent(values, zero=chart == 'bar')
+    if not math.isfinite(ymax-ymin) or not math.isfinite(ymin) or not math.isfinite(ymax):
+        raise ValueError('Unrepresentable y range; rescale units')
+    x0, x1, y0, y1 = 82.0, float(width-150 if group else width-30), 64.0, float(height-80)
+    def sy(value):
+        return y1 - (value-ymin)/(ymax-ymin)*(y1-y0)
+    categories = list(dict.fromkeys(point['x'] for point in points)) if chart in {'bar', 'dot'} else []
+    if len(categories) > 30:
+        raise ValueError('More than 30 categories needs a different layout')
+    xmin = xmax = None
+    if categories:
+        def sx(value):
+            return x0 + (categories.index(value)+0.5)*(x1-x0)/len(categories)
     else:
-        step = 10 * mag
-    start = math.floor(vmin / step) * step
-    ticks = []
-    val = start
-    while val <= vmax + step * 0.5 and len(ticks) < 20:
-        if val >= vmin - step * 0.1:
-            ticks.append(0.0 if math.isclose(val, 0.0) else val)
-        val += step
-    return ticks
-
-
-def fmt_num(v: float) -> str:
-    if abs(v) >= 1000 or (abs(v) < 0.01 and not math.isclose(v, 0)):
-        return f"{v:.2g}"
-    if math.isclose(v, round(v)):
-        return str(int(round(v)))
-    return f"{v:.3g}"
-
-
-def aggregate(rows: List[Dict[str, str]], x: str, y: str, group: Optional[str]) -> List[Dict[str, Any]]:
-    acc: Dict[Tuple[str, str], List[float]] = defaultdict(list)
-    for r in rows:
-        yv = to_float(r.get(y))
-        if yv is None:
-            continue
-        xv = str(r.get(x, ""))
-        gv = str(r.get(group, "")) if group else ""
-        acc[(xv, gv)].append(yv)
-    data = []
-    for (xv, gv), vals in acc.items():
-        data.append({"x": xv, "group": gv, "y": sum(vals) / len(vals), "n": len(vals)})
-    return data
-
-
-def svg_text(x: float, y: float, text: str, size: int = 11, anchor: str = "middle", extra: str = "") -> str:
-    return f'<text x="{x:.1f}" y="{y:.1f}" font-family="Arial, sans-serif" font-size="{size}" text-anchor="{anchor}" {extra}>{html.escape(text)}</text>'
-
-
-def render(rows: List[Dict[str, str]], x: str, y: str, chart: str, group: Optional[str], title: str, width: int, height: int) -> Tuple[str, Dict[str, Any]]:
-    data = aggregate(rows, x, y, group)
-    if not data:
-        raise SystemExit("Error: no numeric y values found after parsing.")
-    if chart == "auto":
-        chart = infer_chart(rows, x, y, group)
-    if chart not in {"bar", "dot", "line", "scatter"}:
-        raise SystemExit("Error: --chart must be one of auto, bar, dot, line, scatter.")
-
-    margin = {"left": 72, "right": 32 if not group else 90, "top": 58, "bottom": 74}
-    plot_x0, plot_y0 = margin["left"], margin["top"]
-    plot_x1, plot_y1 = width - margin["right"], height - margin["bottom"]
-    plot_w, plot_h = plot_x1 - plot_x0, plot_y1 - plot_y0
-    yvals = [d["y"] for d in data]
-    if chart == "bar":
-        ymin, ymax = min(0, min(yvals)), max(0, max(yvals))
+        xmin, xmax = extent([point['x'] for point in points])
+        if not math.isfinite(xmax-xmin) or not math.isfinite(xmin) or not math.isfinite(xmax):
+            raise ValueError('Unrepresentable x range; rescale units')
+        def sx(value):
+            return x0 + (value-xmin)/(xmax-xmin)*(x1-x0)
+    escape = lambda text: html.escape(str(text), quote=True)
+    colours = ['#222222', '#0066aa', '#994400', '#337744', '#773399', '#665500']
+    shapes = ['circle', 'square', 'triangle', 'diamond', 'plus', 'cross']
+    elements = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-labelledby="title desc">',
+                f'<title id="title">{escape(title or y + " by " + x)}</title>',
+                f'<desc id="desc">{escape(chart)} chart. No aggregation. {len(rows)} input rows; {len(values)} observations. Missing line values break the path. Consult the source data for exact values.</desc>',
+                '<rect width="100%" height="100%" fill="white"/>']
+    def text(px, py, content, anchor='middle', size=11):
+        elements.append(f'<text x="{px:.4f}" y="{py:.4f}" text-anchor="{anchor}" font-size="{size}" font-family="sans-serif">{escape(content)}</text>')
+    text(width/2, 28, title or f'{y} by {x}', size=16)
+    text((x0+x1)/2, height-20, x)
+    text(x0, 50, y, anchor='start')
+    def tick_values(low, high):
+        values = [low + (high-low)*(index/4) for index in range(5)]
+        if len(set(values)) != len(values):
+            raise ValueError('Axis resolution is insufficient; use an explicit offset or rescale the data')
+        for precision in (5, 8, 12, 17):
+            labels = [format(value, f'.{precision}g') for value in values]
+            if len(set(labels)) == len(labels):
+                return list(zip(values, labels))
+        raise ValueError('Cannot label distinct axis values faithfully')
+    for value, label in tick_values(ymin, ymax):
+        yy = sy(value)
+        elements.append(f'<line x1="{x0}" y1="{yy:.4f}" x2="{x1}" y2="{yy:.4f}" stroke="#dddddd"/>')
+        text(x0-8, yy+4, label, anchor='end')
+    if categories:
+        ticks = [(sx(value), str(value)) for value in categories]
+    elif x_type == 'date':
+        # Actual observed dates; spacing remains proportional to elapsed days.
+        coordinates = sorted(set(point['x'] for point in points))
+        step = max(1, math.ceil(len(coordinates)/8))
+        chosen = coordinates[::step]
+        if coordinates[-1] not in chosen:
+            chosen.append(coordinates[-1])
+        ticks = [(sx(value), dt.date.fromordinal(int(value)).isoformat()) for value in chosen]
     else:
-        pad = (max(yvals) - min(yvals)) * 0.08 or 1.0
-        ymin, ymax = min(yvals) - pad, max(yvals) + pad
-        if min(yvals) >= 0 and ymin < 0:
-            ymin = 0
-    ticks = nice_ticks(ymin, ymax)
-    if ticks:
-        ymin = min(ymin, min(ticks)); ymax = max(ymax, max(ticks))
-
-    elements = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">', '<rect width="100%" height="100%" fill="white"/>']
-    elements.append(svg_text(width/2, 26, title or f"{y} by {x}", size=16))
-    elements.append(svg_text(width/2, height-16, x, size=12))
-    elements.append(f'<text x="18" y="{height/2:.1f}" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" transform="rotate(-90 18 {height/2:.1f})">{html.escape(y)}</text>')
-
-    # Grid and y axis labels
-    for t in ticks:
-        yy = scale(t, ymin, ymax, plot_y1, plot_y0)
-        elements.append(f'<line x1="{plot_x0}" y1="{yy:.1f}" x2="{plot_x1}" y2="{yy:.1f}" stroke="#dddddd" stroke-width="1"/>')
-        elements.append(svg_text(plot_x0-8, yy+4, fmt_num(t), size=10, anchor="end"))
-    elements.append(f'<line x1="{plot_x0}" y1="{plot_y0}" x2="{plot_x0}" y2="{plot_y1}" stroke="#333333" stroke-width="1"/>')
-    elements.append(f'<line x1="{plot_x0}" y1="{plot_y1}" x2="{plot_x1}" y2="{plot_y1}" stroke="#333333" stroke-width="1"/>')
-
-    warnings: List[str] = []
-    groups = sorted(set(d["group"] for d in data)) if group else [""]
-    group_color = {g: PALETTE[i % len(PALETTE)] for i, g in enumerate(groups)}
-
-    if chart in {"bar", "dot", "line"}:
-        xcats = sorted(set(d["x"] for d in data), key=lambda v: (not DATE_RE.match(str(v)), str(v)))
-        xpos = {cat: plot_x0 + (i + 0.5) * plot_w / max(1, len(xcats)) for i, cat in enumerate(xcats)}
-        # x labels, sampled if dense
-        step = max(1, math.ceil(len(xcats) / 12))
-        for i, cat in enumerate(xcats):
-            if i % step == 0 or i == len(xcats) - 1:
-                elements.append(svg_text(xpos[cat], plot_y1+18, str(cat), size=10, anchor="middle", extra='transform="rotate(35 {:.1f} {:.1f})"'.format(xpos[cat], plot_y1+18) if len(str(cat)) > 8 else ""))
-        if chart == "bar":
-            if group:
-                warnings.append("Grouped bars are simplified; consider dot plots or small multiples if many groups need comparison.")
-            bw = plot_w / max(1, len(xcats)) * 0.72 / max(1, len(groups))
-            zero_y = scale(0, ymin, ymax, plot_y1, plot_y0)
-            for d in data:
-                gi = groups.index(d["group"])
-                cx = xpos[d["x"]] - (len(groups)-1)*bw/2 + gi*bw
-                yy = scale(d["y"], ymin, ymax, plot_y1, plot_y0)
-                top, bottom = min(yy, zero_y), max(yy, zero_y)
-                elements.append(f'<rect x="{cx-bw/2:.1f}" y="{top:.1f}" width="{bw:.1f}" height="{max(1,bottom-top):.1f}" fill="{group_color[d["group"]]}"/>')
-        elif chart == "dot":
-            for d in data:
-                gi = groups.index(d["group"])
-                jitter = (gi - (len(groups)-1)/2) * 8
-                cx = xpos[d["x"]] + jitter
-                yy = scale(d["y"], ymin, ymax, plot_y1, plot_y0)
-                elements.append(f'<circle cx="{cx:.1f}" cy="{yy:.1f}" r="4" fill="{group_color[d["group"]]}"/>')
-        else:  # line
-            for g in groups:
-                series = sorted([d for d in data if d["group"] == g], key=lambda d: xcats.index(d["x"]))
-                pts = [(xpos[d["x"]], scale(d["y"], ymin, ymax, plot_y1, plot_y0), d) for d in series]
-                path = " ".join(("M" if i == 0 else "L") + f" {px:.1f} {py:.1f}" for i, (px, py, _) in enumerate(pts))
-                elements.append(f'<path d="{path}" fill="none" stroke="{group_color[g]}" stroke-width="2"/>')
-                for px, py, _ in pts:
-                    elements.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="2.6" fill="{group_color[g]}"/>')
-                if group and pts:
-                    px, py, _ = pts[-1]
-                    elements.append(svg_text(px+6, py+4, str(g), size=10, anchor="start"))
-    else:  # scatter
-        xnums: List[float] = []
-        points: List[Tuple[float, float, str]] = []
-        for r in rows:
-            xv = to_float(r.get(x)); yv = to_float(r.get(y))
-            if xv is None or yv is None:
+        ticks = [(sx(value), label) for value, label in tick_values(xmin, xmax)]
+    for px, label in ticks:
+        text(px, y1+22, label, size=10)
+    def marker(px, py, series_index):
+        colour, shape = colours[series_index], shapes[series_index]
+        common = f'fill="{colour}" stroke="{colour}"'
+        if shape == 'circle':
+            elements.append(f'<circle cx="{px:.4f}" cy="{py:.4f}" r="3.5" {common}/>')
+        elif shape == 'square':
+            elements.append(f'<rect x="{px-3.5:.4f}" y="{py-3.5:.4f}" width="7" height="7" {common}/>')
+        elif shape in {'triangle', 'diamond'}:
+            vertices = [(px,py-4),(px+4,py+4),(px-4,py+4)] if shape == 'triangle' else [(px,py-4),(px+4,py),(px,py+4),(px-4,py)]
+            elements.append('<polygon points="'+' '.join(f'{a:.4f},{b:.4f}' for a,b in vertices)+f'" {common}/>')
+        else:
+            pairs = [((px-4,py),(px+4,py)),((px,py-4),(px,py+4))] if shape == 'plus' else [((px-3,py-3),(px+3,py+3)),((px-3,py+3),(px+3,py-3))]
+            for (a,b),(c,d) in pairs:
+                elements.append(f'<line x1="{a:.4f}" y1="{b:.4f}" x2="{c:.4f}" y2="{d:.4f}" stroke="{colour}" stroke-width="2"/>')
+    for index, series_name in enumerate(groups):
+        series = [point for point in points if point['group']==series_name]
+        if chart == 'line':
+            series.sort(key=lambda point: point['x'])
+            segments, current = [], []
+            for point in series:
+                if point['y'] is None:
+                    if current:
+                        segments.append(current); current=[]
+                else:
+                    current.append(point)
+            if current:
+                segments.append(current)
+            for segment in segments:
+                coords=' '.join(('M' if i==0 else 'L')+f" {sx(point['x']):.4f} {sy(point['y']):.4f}" for i,point in enumerate(segment))
+                elements.append(f'<path d="{coords}" fill="none" stroke="{colours[index]}" stroke-width="1.5"/>')
+        for point in series:
+            if point['y'] is None:
                 continue
-            gv = str(r.get(group, "")) if group else ""
-            xnums.append(xv); points.append((xv, yv, gv))
-        if not points:
-            raise SystemExit("Error: scatter chart requires numeric x and y values.")
-        xmin, xmax = min(xnums), max(xnums)
-        xpad = (xmax-xmin)*0.08 or 1.0
-        xmin, xmax = xmin-xpad, xmax+xpad
-        xticks = nice_ticks(xmin, xmax)
-        for t in xticks:
-            xx = scale(t, xmin, xmax, plot_x0, plot_x1)
-            elements.append(f'<line x1="{xx:.1f}" y1="{plot_y0}" x2="{xx:.1f}" y2="{plot_y1}" stroke="#eeeeee" stroke-width="1"/>')
-            elements.append(svg_text(xx, plot_y1+18, fmt_num(t), size=10))
-        for xv, yv, gv in points:
-            xx = scale(xv, xmin, xmax, plot_x0, plot_x1)
-            yy = scale(yv, ymin, ymax, plot_y1, plot_y0)
-            elements.append(f'<circle cx="{xx:.1f}" cy="{yy:.1f}" r="3.5" fill="{group_color.get(gv, PALETTE[0])}" opacity="0.85"/>')
-
-    if group and chart != "line":
-        lx, ly = plot_x1 + 10, plot_y0 + 12
-        for i, g in enumerate(groups):
-            yleg = ly + i*18
-            elements.append(f'<rect x="{lx}" y="{yleg-9}" width="10" height="10" fill="{group_color[g]}"/>')
-            elements.append(svg_text(lx+14, yleg, str(g), size=10, anchor="start"))
-
-    elements.append(svg_text(plot_x0, height-4, f"Generated as a first-pass SVG; verify source, units, uncertainty, and accessibility before publication.", size=9, anchor="start"))
-    elements.append("</svg>")
-    metadata = {"chart": chart, "x": x, "y": y, "group": group, "rows_input": len(rows), "points_rendered": len(data), "warnings": warnings, "integrity_defaults": ["bar charts include zero baseline", "axes and units should be reviewed", "source and uncertainty must be added if relevant"]}
-    return "\n".join(elements), metadata
+            px, py = sx(point['x']), sy(point['y'])
+            if chart == 'bar':
+                barwidth=(x1-x0)/len(categories)*0.75/len(groups)
+                px += (index-(len(groups)-1)/2)*barwidth
+                zero=sy(0)
+                elements.append(f'<rect x="{px-barwidth/2:.4f}" y="{min(py,zero):.4f}" width="{barwidth:.4f}" height="{abs(py-zero):.4f}" fill="{colours[index]}"/>')
+            else:
+                marker(px,py,index)
+        if group:
+            marker(x1+18,y0+index*22,index)
+            text(x1+29,y0+index*22+4,series_name,anchor='start',size=10)
+    elements.append('</svg>')
+    return '\n'.join(elements)+'\n', {'chart':chart,'x_type':x_type if not categories else 'category',
+        'aggregation':'none','rows_input':len(rows),'points_rendered':len(values),
+        'missing_line_values':len(rows)-len(values),'x_domain':None if categories else [xmin,xmax],
+        'y_domain':[ymin,ymax],'category_order':categories,
+        'limits':'First-pass graphic. Inspect label fit, overlapping points, units, source, uncertainty, and accessibility before publication.'}
 
 
-def main(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description="Render a simple SVG chart from CSV using dependency-free, honest defaults.")
-    parser.add_argument("--csv", type=Path, required=True, help="Input CSV with a header row.")
-    parser.add_argument("--x", required=True, help="Column for x/category/time/relationship axis.")
-    parser.add_argument("--y", required=True, help="Numeric column for y axis.")
-    parser.add_argument("--group", help="Optional grouping column.")
-    parser.add_argument("--chart", choices=("auto", "bar", "dot", "line", "scatter"), default="auto")
-    parser.add_argument("--title", default="", help="Chart title.")
-    parser.add_argument("--width", type=int, default=900)
-    parser.add_argument("--height", type=int, default=520)
-    parser.add_argument("--output", type=Path, required=True, help="Output SVG path.")
-    parser.add_argument("--metadata", type=Path, help="Optional JSON metadata output path.")
-    args = parser.parse_args(argv)
-
-    if args.width < 400 or args.height < 300:
-        print("Error: width must be >=400 and height >=300.", file=sys.stderr)
-        return 2
-    rows = read_csv(args.csv)
-    headers = set(rows[0].keys())
-    for col in [args.x, args.y, args.group]:
-        if col and col not in headers:
-            print(f"Error: column not found: {col}", file=sys.stderr)
-            return 2
-    svg, meta = render(rows, args.x, args.y, args.chart, args.group, args.title, args.width, args.height)
-    args.output.write_text(svg, encoding="utf-8")
-    if args.metadata:
-        args.metadata.write_text(json.dumps(meta, indent=2), encoding="utf-8")
-    print(json.dumps({"output": str(args.output), "metadata": meta}, indent=2))
+def main(argv=None):
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--csv',type=Path,required=True)
+    parser.add_argument('--x',required=True); parser.add_argument('--y',required=True)
+    parser.add_argument('--group'); parser.add_argument('--chart',choices=['bar','dot','line','scatter'],required=True)
+    parser.add_argument('--x-type',choices=['number','date'],default='number')
+    parser.add_argument('--title',default=''); parser.add_argument('--width',type=int,default=900); parser.add_argument('--height',type=int,default=520)
+    parser.add_argument('--output',type=Path,required=True); parser.add_argument('--metadata',type=Path)
+    args=parser.parse_args(argv)
+    try:
+        if args.csv.stat().st_size > 16*1024*1024:
+            raise ValueError('CSV exceeds 16 MiB input limit')
+        with args.csv.open(encoding='utf-8-sig',newline='') as stream:
+            reader=csv.DictReader(stream)
+            if not reader.fieldnames or len(reader.fieldnames)!=len(set(reader.fieldnames)):
+                raise ValueError('CSV headers must be present and unique')
+            rows=[]
+            for row in reader:
+                if None in row or any(value is None for value in row.values()):
+                    raise ValueError('CSV row width does not match header')
+                rows.append(row)
+                if len(rows)>10000:
+                    raise ValueError('CSV exceeds 10000 rows')
+        svg,metadata=render(rows,x=args.x,y=args.y,chart=args.chart,group=args.group,x_type=args.x_type,title=args.title,width=args.width,height=args.height)
+        for target in [args.output]+([args.metadata] if args.metadata else []):
+            if target.exists() or target.is_symlink():
+                raise FileExistsError('Output paths must be new')
+        if args.metadata and args.metadata.absolute()==args.output.absolute():
+            raise ValueError('SVG and metadata need different output paths')
+        with args.output.open('x',encoding='utf-8') as stream:
+            stream.write(svg)
+        if args.metadata:
+            with args.metadata.open('x',encoding='utf-8') as stream:
+                json.dump(metadata,stream,indent=2)
+        print(json.dumps({'output':str(args.output),**metadata}))
+    except (OSError,ValueError,TypeError,csv.Error) as error:
+        print(json.dumps({'error':str(error)}),file=sys.stderr)
+        return 1
     return 0
 
-
-if __name__ == "__main__":
+if __name__=='__main__':
     raise SystemExit(main())
