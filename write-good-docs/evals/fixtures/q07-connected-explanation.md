@@ -1,0 +1,1 @@
+Each claimed job has a 20-second lease. Other workers cannot claim it before the lease expires. Expiry does not stop the original worker. Once the lease expires, another worker can claim the job. The original worker may still be executing it. The two workers can execute the same job at the same time.

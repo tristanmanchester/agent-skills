@@ -2,19 +2,31 @@
 
 Read this reference when documentation contains code, commands, output, APIs, configuration, UI instructions, architecture claims, examples, or other exact technical material.
 
-## Establish the source of truth
+## Match evidence to the claim
 
-Use the most authoritative available evidence for each claim:
+Sources have different jobs; there is no universal ranking that settles every disagreement.
 
-1. User-approved requirements or contractual specifications.
-2. Project-specific documentation and established terminology.
-3. Executable behavior in code, tests, schemas, configuration, generated reference, or observed output.
-4. Maintainer decisions in accepted issues, pull requests, ADRs, or release records.
-5. Current official external documentation for third-party behavior.
+| Claim | Relevant authority | Limit |
+|---|---|---|
+| Required or promised behavior | Approved requirements, contracts, normative specifications | Establishes the obligation, not that the implementation meets it |
+| Behavior of a particular version or deployment | Version-matched code, configuration, schemas, tests, runtime observations | Establishes only what was inspected or exercised under the stated conditions |
+| Accepted choice and rationale | Accepted ADR, maintainer decision, release record | Preserve its status, date, and historical scope |
+| Third-party contract or supported feature | Official documentation for the relevant dependency version | Does not establish local configuration or actual runtime behavior |
+| Reported incident or measurement | Original report, data, and method where available | Distinguish the report from independent observation or verification |
 
-Do not treat comments, stale examples, issue proposals, branch names, or unmerged code as established product behavior without context.
+Project documentation supplies terminology and declared behavior, but it can be stale. A test demonstrates behavior under its conditions, not across every configuration. Comments, branch names, unmerged changes, and proposals do not establish released behavior.
 
-When sources disagree, surface the conflict or choose the higher-authority source. Do not silently synthesize a plausible answer.
+When sources disagree, state the material discrepancy. For a fictional fixture with a 30-day requirement and a 7-day configuration: "The specification requires 30-day retention; the supplied configuration sets 7 days." Do not silently turn either statement into the whole truth.
+
+For consequential claims, retain the source location, version or date, conditions, and status in working notes when useful. Keep the reader-facing distinction between observed, reported, required, intended, inferred, proposed, and unknown claims. Do not make a compulsory evidence table for every document.
+
+### Editing versus enrichment
+
+A prose-only edit cannot supply missing facts. An evidence-enriched rewrite may add details from identified sources. Label hypothetical examples and proposed thresholds as such; do not present invented examples as measured results or supported product behavior.
+
+No attempt limit at a call site does not establish unlimited retries. Inspect the implementation, wrappers, and effective configuration before making the broader claim. The same restriction applies to missing validation, absent support checks, or an unobserved failure.
+
+Check entire claims, including causal or evaluative endings. Neither softer wording such as "helps" nor the phrase "is designed to" substitutes for supporting evidence.
 
 ## Protect exact literals
 
@@ -44,7 +56,8 @@ A sample should be correct for its stated purpose and small enough to understand
 - Keep lines readable without breaking syntax or hiding important structure.
 - Mark pseudocode and incomplete fragments explicitly.
 - Do not use real credentials, personal data, production hosts, or unreserved example addresses.
-- Test runnable samples when tools and environment permit. Otherwise state the validation limit internally and avoid claiming they were tested.
+- Test runnable samples only when execution is authorized and the environment is appropriately isolated. Documentation work does not authorize destructive operations, production mutations, use of credentials, or paid external actions. Inspect a command before deciding whether to execute it.
+- Do not claim validation that did not happen. Keep irrelevant process commentary out of the document, but disclose an unverified platform, missing prerequisite, or other validation gap that materially affects safe use. Missing product facts cannot be repaired with invented commands or success output.
 
 Do not replace exact code with “cleaner” code unless changing the code is part of the task.
 
@@ -66,7 +79,7 @@ Do not replace exact code with “cleaner” code unless changing the code is pa
 
 A reference entry should help the reader use the interface without reading implementation code.
 
-For the applicable surface, document:
+For the applicable surface, document the established facts below. A checklist item is not permission to fill an evidence gap:
 
 - behavior and purpose;
 - syntax or signature;
@@ -88,7 +101,7 @@ Do not describe a single endpoint or method as “the API.”
 
 ## Configuration reference
 
-For each setting, document the facts readers need to choose and operate it:
+For each setting, document the established facts readers need to choose and operate it:
 
 - exact key and type;
 - purpose;
@@ -126,7 +139,9 @@ Do not label a value “recommended” without the scenario or rationale that ma
 
 Distinguish these categories explicitly:
 
-- **Observed:** verified in code, configuration, tests, runtime evidence, or accepted documentation.
+- **Observed:** inspected or exercised behavior, scoped to the code version, configuration, test, or runtime evidence.
+- **Reported:** stated in documentation or an incident or measurement report; not necessarily independently verified.
+- **Required:** an obligation from an applicable approved requirement or normative contract.
 - **Intended:** stated design goal or invariant from an authoritative decision source.
 - **Inferred:** a conclusion drawn from evidence; label it as an inference when material.
 - **Proposed:** not yet implemented or approved.
@@ -155,12 +170,14 @@ For architecture documentation, cover relevant boundaries, data ownership, sourc
 
 ## Links and third-party material
 
-- Link to authoritative sources.
+- Link to sources that support the particular claim and scope. Preserve source versions and original attribution when they matter.
 - Use descriptive link text that states the destination.
 - Verify that the label matches the destination.
 - Disclose unexpected downloads, sign-in requirements, or application launches when useful.
 - Prefer an original summary and link over copied prose, code, screenshots, or diagrams.
 - Preserve required licenses and attribution.
+- After moving or combining sentences, check that each attached citation still supports the entire claim attributed to it. Retaining a URL is not enough if the revised claim exceeds its evidence.
+- Preserve quotation boundaries and exact quoted wording. Do not turn a paraphrase into a quotation or invent a citation. A citation to an uninspected source does not count as independent verification.
 - Do not assume public or open-source material can be copied without conditions.
 
 ## Docstrings and comments
@@ -169,5 +186,5 @@ For architecture documentation, cover relevant boundaries, data ownership, sourc
 - Do not repeat names and types without adding meaning.
 - Do not explain obvious syntax.
 - Keep comments synchronized with the code.
-- Prefer a test or clearer code over a comment that attempts to compensate for ambiguous behavior.
+- During a documentation-only task, flag ambiguous code or a missing test separately; do not refactor it without authorization. A comment cannot repair an ambiguous contract.
 - Explain unusual workarounds, including the condition that permits their removal.

@@ -1,0 +1,1 @@
+We used a robust estimator. The prespecified test found a statistically significant association (p = 0.004, n = 80). It is important to note that this association does not establish causation. The analysis did not estimate an intervention effect.

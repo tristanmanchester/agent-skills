@@ -1,184 +1,91 @@
 # Clear prose
 
-Read this reference when drafting or rewriting for clarity and concision, especially when the source is dense, repetitive, vague, overformal, or AI-sounding.
+Use this reference for a substantive prose rewrite or a specific problem with clarity, tone, uncertainty, or the connections between ideas. These are editorial judgments, not tests of AI authorship.
 
-## Aim
+## Begin with something the reader needs
 
-Clear prose makes the reader do less interpretive work. Concise prose is complete without avoidable friction; it is not prose with facts removed.
+Start with a finding, instruction, decision, useful question, or necessary context. "This document explains" often delays the information; an explicit scope statement is useful when it tells the reader what the guidance applies to.
 
-## Sentences
+Do not create an overview, benefits section, FAQ, key takeaways, and conclusion by default. A summary can legitimately repeat findings for a different reading path. A closing paragraph can synthesize consequences or state a decision; it need not repeat the opening to sound finished.
 
-- Give each sentence one main job.
-- Put the subject and verb early.
-- Prefer a direct subject-verb-object structure.
-- Use active voice unless the actor is unknown, irrelevant, or intentionally concealed.
-- Name the actor when ownership or responsibility matters.
-- Put a condition before the instruction or outcome it governs.
-- Prefer positive constructions over double negatives and exceptions to exceptions.
-- Split clause chains. A sentence with several commas, parentheses, dashes, or semicolons often needs rewriting.
-- Replace noun-heavy phrases with verbs: **perform an evaluation of** → **evaluate**.
-- Expose relationships in stacked nouns: **customer profile update event handling logic** → **logic that handles customer-profile update events**.
-- Keep modifiers next to what they modify.
-- Use parallel grammar for comparable items.
+## Put uncertainty in the claim
 
-Do not enforce an arbitrary sentence-length limit. Use the shortest sentence that carries the full meaning naturally.
+State the strongest claim the evidence supports, with its material conditions and limitations. Do not remove uncertainty to satisfy a request for confident prose.
 
-## Paragraphs
+Given evidence that two candidates share the measured features and the measurement cannot distinguish them:
 
-- Center each paragraph on one idea.
-- Put the key point first.
-- Keep supporting detail close to the claim it supports.
-- Start a new paragraph when the subject, purpose, time, actor, or level of detail changes.
-- Avoid one-sentence paragraphs in a long sequence unless the separation creates useful emphasis or scanning.
-- Do not split one coherent idea into many tiny paragraphs merely to make the page look light.
+> The measured features are consistent with either candidate; this measurement does not distinguish them.
 
-## Natural technical tone
+This carries the information more directly than "I would be cautious about claiming a unique identification." The limitation belongs to the measurement, not to the author's willingness to make a claim.
 
-Sound like a knowledgeable colleague: direct, calm, respectful, and specific.
+Negative findings are substantive: "The test did not reproduce the failure" does not mean "The failure cannot occur." Preserve that distinction. A lack of evidence at one location is not a system-wide negative result.
 
-Prefer:
+Use attribution when it matters: "The operator reported three failures" is different from three independently observed failures. Avoid repeated "it seems," "perhaps," or "I would not claim" when one precise qualifier supplies the same uncertainty. Retain a qualifier that changes probability, scope, or the reader's decision.
 
-- familiar words over ceremony;
-- literal wording over idioms and metaphors;
-- confidence that matches the evidence;
-- contractions when they fit the project's tone;
-- a small amount of personality only when it does not delay the information.
+## Check each step from evidence to implication
 
-Avoid:
+A sentence can begin with a verified fact and end with an unsupported consequence. Inspect clauses introduced by "therefore," "which improves," "ensuring," "demonstrating," or "highlighting." Ask whether the source establishes that consequence and whether the reader needs it.
 
-- academic or bureaucratic phrasing when plain language works;
-- marketing language, hype, and slogans;
-- forced enthusiasm, jokes, memes, and pop-culture references;
-- scolding or talking down to the reader;
-- repeated **please** in ordinary instructions;
-- exclamation marks except for rare genuine emphasis;
-- describing a task as easy, simple, obvious, trivial, painless, or quick.
+For example, a source that establishes only encrypted object storage does not establish an overall secure or reliable service. Delete the broad assurance or replace it with a specifically supported property; do not substitute "helps" as camouflage for the same claim.
 
-## Write for humans, not for the shape of a document
+Distinguish requirements, actual behavior, design intent, inference, and proposal. "Is designed to" needs a source for intent. "Helps" still claims a contribution. "Might" is not permission to add an ungrounded mechanism.
 
-Agents often produce prose that looks organized while making the reader work harder. Remove these patterns:
+Reasoned judgments and recommendations are useful when requested. State the criterion, evidence, and assumptions instead of disguising a judgment as a measured fact.
 
-- a title followed by an opening that restates the title;
-- “This document will cover...,” “In this section...,” or “The following guide provides...”;
-- a generic **Overview** before the actual answer;
-- a **Benefits** section that repeats intended behavior as marketing claims;
-- **Key takeaways** and **Conclusion** sections that repeat the body;
-- an FAQ invented without evidence that readers ask those questions;
-- three near-synonymous adjectives such as “robust, scalable, and reliable”;
-- repetitive transition words such as **Additionally**, **Furthermore**, and **Moreover**;
-- symmetrical sectioning that forces every topic into the same number of bullets;
-- fake quotations, invented reader thoughts, or rhetorical questions used as decoration;
-- meta-commentary about research, analysis, completeness, or how the answer was produced.
+## Connect sentences and paragraphs
 
-Do not add prose to make the output feel substantial. Let a short topic remain short.
+Let each sentence carry a manageable idea without forcing one clause per sentence. Make cause, contrast, sequence, and referents explicit. Use an established concept as the starting point when that helps readers follow the next development.
 
-## Concision pass
+Given an established lease mechanism:
 
-For each sentence or section, ask:
+> When a lease expires, another worker can claim the job. If the original worker is still running, both workers can execute it.
 
-1. Does it add a fact, decision, condition, action, rationale, example, warning, or navigation aid?
-2. Does the reader need it here?
-3. Is the idea already stated?
-4. Can the same meaning be expressed more directly?
-5. Would removing it create ambiguity, risk, or a gap in execution?
+The reader does not have to reconstruct the relationship from four fragments about leases, expiry, workers, and duplicates.
 
-Cut it when the first two answers are no and the fifth is no.
+Use transitions for meaning, not ceremony. "However" is useful for a genuine contrast; repeated "Furthermore" does not connect unrelated observations. A paragraph can begin with a short bridge when the main point otherwise lacks context.
 
-Common compressions, when meaning is preserved:
+Keep support and qualification close to their claim. Break a paragraph when the purpose or subject changes, not merely to produce uniform paragraph lengths. Avoid both long clause chains and strings of abrupt one-sentence blocks. Do not randomly vary rhythm to simulate a human writer.
 
-| Wordy | Direct |
-|---|---|
-| in order to | to |
-| due to the fact that | because |
-| at this point in time | now, or an exact date/version |
-| has the ability to | can |
-| is able to | can |
-| make use of / utilize | use |
-| perform a review of | review |
-| provide an explanation of | explain |
-| a number of | several, or the exact number |
-| in the event that | if |
-| prior to | before |
-| subsequent to | after |
-| with regard to | about |
-| it is important to note that | state the point directly |
-| please note | state the point directly |
-| as mentioned above | name or link the section |
-| the following | often omit |
-| there are three options | three options are available, or list them directly |
+## Choose focus, voice, and syntax
 
-Do not perform blind replacement. **In order to** can be necessary to avoid ambiguity, and **current** can be correct when the reference point is explicit.
+Prefer direct verbs over needless nominalizations: "evaluate" rather than "perform an evaluation of." Keep modifiers beside what they modify, and unpack noun stacks when their relationships are unclear.
 
-## Terminology and jargon
+Use active voice when it clarifies responsibility. Passive voice is appropriate when the object is the topic, the actor is irrelevant, or responsibility is already clear. "The token is refreshed after it expires" can remain unchanged; do not invent the client as actor or imply self-action just to avoid the passive.
 
-- Use the same term for the same concept.
-- Do not vary terminology for style.
-- Prefer an established precise technical term over a simpler but inaccurate substitute.
-- Define unfamiliar terms and abbreviations at the first useful mention.
-- Do not define terms the audience clearly knows merely to sound thorough.
-- Spell out an abbreviation only when the expansion helps the reader.
-- Avoid internal codenames and organization-specific shorthand unless the audience uses them; explain them when unavoidable.
-- Do not use **API** to mean a single endpoint, method, request, or class. Name the actual item.
+Put conditions and warnings before instructions they govern. In explanation, use the order that preserves focus and makes the dependency clear. Prefer positive constructions to tangled double negatives, but keep meaningful negative findings, prohibitions, and exceptions.
 
-## Person, voice, and tense
+No sentence-length quota applies. Split a sentence when it asks too much of the reader; join fragments when their relationship otherwise becomes obscure.
 
-- Address the reader as **you** in task-oriented documentation.
-- Use an imperative for direct steps: “Run the command.”
-- Use **we** only for the organization or authoring team when that actor matters; do not use it to mean the reader and writer together.
-- Avoid **let's** in instructions.
-- Use present tense for product behavior unless a different time is material.
-- Use future tense only for a genuinely future event, not a predictable result: “The command returns...” rather than “The command will return....”
-- Avoid anthropomorphism that assigns knowledge, desire, belief, or intention to software. State the observable behavior or design intent.
+## Make technical language earn its place
 
-## Obligation, recommendation, and uncertainty
+Use one established term for one concept. Define unfamiliar terminology at its first useful mention, but do not explain concepts the intended audience already knows.
 
-Choose words that tell the reader exactly what category a statement belongs to:
+Ask what an abstract phrase commits the system to doing. Can the reader identify the actor, operation, affected state, or relationship? A phrase such as "a coherent operational layer" may need explanation rather than another adjective.
 
-- **must** or an imperative: required action or condition;
-- **can**: capability or optional action;
-- **might**: possible outcome;
-- **we recommend** plus a reason: recommended but optional action;
-- present tense: actual behavior or state;
-- **is designed to** or **helps**: intended contribution without a guarantee.
+Do not replace useful specialist terms with longer, less accurate euphemisms. "Robust estimator" and a precisely supported statistical use of "significant" are not marketing claims. Words such as "robust," "seamless," "complete," and "always" warrant a meaning-and-evidence check, not automatic deletion. Em dashes, three-item lists, and particular vocabulary do not establish authorship.
 
-Avoid ambiguous **should**. When it remains, make sure it clearly means a recognized recommendation rather than a requirement, expected state, or guess.
+## Avoid manufactured rhetoric
 
-Do not change modality while editing. A possibility must not become a guarantee, and a recommendation must not become a requirement.
+Use a contrast when it distinguishes real behaviors or consequences. "At-least-once delivery is not exactly-once execution" can teach a crucial distinction. "This is not merely a tool; it is a new way of working" adds little without explaining what changes.
 
-## Claims
+Question phrases such as "the real challenge," "what matters most," or "this highlights the importance" when they claim significance without a criterion or evidence. Do not force symmetrical sections, three-part slogans, decorative rhetorical questions, fake quotations, or an invented opposing view.
 
-- Make only objective, supportable claims.
-- Scope performance, cost, reliability, compatibility, and security claims to a version, configuration, scenario, and measurement when those details matter.
-- Prefer observable behavior over adjectives.
-- Avoid guarantees and superlatives unless evidence and scope make them literally true.
-- Do not infer roadmaps from code, prototypes, issue trackers, or discussion.
-- Replace time-relative labels with exact versions, dates, or lifecycle states when possible.
+A natural technical voice is calm and specific. Avoid hype, unnecessary ceremony, reader blame, and performative enthusiasm. Do not describe a task as trivial when it may be unfamiliar. Retain an author's useful personality; do not add anecdotes, slang, jokes, or errors to make the text seem human.
 
-Treat these as warning signs:
+## Preserve modality and time
 
-**always**, **never**, **guaranteed**, **ensures**, **best**, **fastest**, **easiest**, **simplest**, **cheapest**, **most secure**, **flawless**, **complete**, **perfect**, **dramatically**, **significantly**, **seamless**, **robust**.
+Use **must** for requirements, **can** for capability or optional action, **might** for possibility, and explicit recommendation language for an optional choice. Use present tense for established behavior and the appropriate tense for historical findings or decisions.
 
-## Lists versus prose
+Resolve ambiguous **should** from evidence, not taste. Preserve formal normative keywords and quoted language. Do not turn "should retry" into "must retry" without establishing which meaning was intended.
 
-Use a list when items are genuinely parallel, sequence matters, or lookup is easier. Use prose when ideas form an argument or each item needs substantial qualification.
+Use dates, versions, and lifecycle states when relative wording would drift. A bounded phrase such as "the current transaction" can already be exact. Do not replace every temporal word mechanically.
 
-Avoid:
+## Reduce effort without flattening the prose
 
-- a bullet list with one item;
-- bullets that each contain several unrelated sentences;
-- a list where every bullet begins with a bold pseudo-heading and a paragraph;
-- nested lists deeper than the reader can hold in working memory;
-- converting a natural two-sentence explanation into bullets solely for visual variety.
+For each passage, ask what it contributes and what the reader would need to reconstruct without it. Remove redundant announcements, filler, and duplicated claims with no distinct purpose. Retain a helpful mental model, example, summary, or standalone warning even if it increases length.
 
-## Final human read
+Common edits include "in order to" to "to," "due to the fact that" to "because," and "it is important to note that" to the point itself. Make the change only when meaning and emphasis survive. Do not invent an exact number to replace "several."
 
-Read the prose at a natural speaking pace.
+Use lists for parallel items, sequence, comparison, or lookup. Use prose for a connected argument. Headings should help someone find an answer; repeated bold pseudo-headings on every sentence rarely help.
 
-Fix:
-
-- wording you would not say to a colleague;
-- abrupt sentence fragments that make the prose choppy;
-- long sentences that require rereading;
-- repeated sentence openings;
-- paragraphs whose point appears only at the end;
-- transitions that announce structure instead of expressing meaning.
+For an existing passage, prefer no change over a change with no reader-facing benefit. Read the revision at a natural pace and check that it retains the author's effective voice, logical connections, and supported meaning. Stop when further changes are merely preferences.

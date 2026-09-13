@@ -2,7 +2,23 @@
 
 Use this map when a condensed rule does not settle an edge case or when a live rule, product name, lifecycle term, or word-list entry might have changed. Prefer project-specific guidance before the general guide.
 
-Research snapshot: August 18, 2026.
+The inherited source inventory below comes from the v2.0.0 research snapshot of August 18, 2026. Sources material to this revision were selectively rechecked on September 13, 2026; this is not a new audit of every inherited link. Style sources establish conventions, not product facts or empirical evidence that this skill improves output.
+
+## Sources checked for version 2.1
+
+| Source | Use in this revision |
+|---|---|
+| [Google guide philosophy](https://developers.google.com/style/philosophy) | Distinguish house style from universal correctness |
+| [Google active voice](https://developers.google.com/style/voice) | Preserve useful passive constructions and reader focus |
+| [Google voice and tone](https://developers.google.com/style/tone) | Avoid choppy sentences and use meaningful connections |
+| [Google word list](https://developers.google.com/style/word-list#deprecate) | Correct the definition of deprecated |
+| [Diátaxis](https://diataxis.fr/) and [colophon](https://diataxis.fr/colophon/) | Acknowledge the four document needs and creator |
+| [Agent Skills specification](https://agentskills.io/specification) | Keep portable metadata and conditional references |
+| [Skill creator best practices](https://agentskills.io/skill-creation/best-practices) | Limit unnecessary reference loading and inspect real usage |
+| [Evaluating skill output quality](https://agentskills.io/skill-creation/evaluating-skills) | Separate fixtures, output comparisons, assertions, and reviewer judgments |
+| [Anthropic prompting guidance](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices) | Use relevant, diverse examples and positive output instructions |
+
+The evidence-preserving workflow, prose examples, evaluation gates, and maintenance scripts are package-specific implementations. Their effect on generated writing still needs controlled comparison.
 
 ## Agent Skills design
 

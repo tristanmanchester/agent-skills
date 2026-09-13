@@ -2,6 +2,8 @@
 
 Use this reference for copyediting and specific language-mechanics questions. Do not load it for every writing task. Project-specific style and exact product terminology take precedence.
 
+These are house-style fallbacks, not correctness rules or tests of AI authorship. Preserve a coherent user, project, domain, or publication convention, including punctuation and citation style. Never restyle exact literals or change modality to satisfy a preference.
+
 ## Language baseline
 
 - Match the user's requested language variety and a coherent existing project convention.
@@ -11,7 +13,7 @@ Use this reference for copyediting and specific language-mechanics questions. Do
 - Prefer familiar, literal, precise words.
 - Use common contractions when they fit the tone.
 - Address the reader as **you** in task content and use imperatives for instructions.
-- Prefer active voice and present tense.
+- Prefer active voice when it clarifies responsibility. Use passive voice for appropriate focus, and tense that matches the claim's time.
 - Avoid **let's** in instructions.
 - Define unfamiliar abbreviations at the first useful mention; do not expand abbreviations when the expansion does not help.
 
@@ -43,7 +45,7 @@ Use this reference for copyediting and specific language-mechanics questions. Do
 - Use an em dash sparingly, with no spaces, for an abrupt break or amplifying phrase.
 - Prefer a colon or separate sentence when clearer.
 - Do not use a hyphen or two hyphens as an em dash in rendered prose.
-- Do not use an en dash; follow the documented range convention.
+- In the Google-derived default, spell ranges out rather than using an en dash. Preserve an established publication or domain convention.
 - Hyphenate compound modifiers before nouns when needed for clarity: **a long-running task**.
 - Do not hyphenate after an adverb ending in **-ly**: **a fully managed service**.
 - Follow project terminology and the official word list for compounds.
@@ -90,7 +92,7 @@ Use this reference for copyediting and specific language-mechanics questions. Do
 
 - Use **from 10 to 20**, not **from 10-20**.
 - For ranges with units, repeat the unit when needed for clarity: **10 MB to 25 MB**.
-- Do not use an en dash.
+- Spell out ranges under this default; preserve established en-dash notation when the publication or domain uses it.
 - Follow exact product or domain notation when it is literal.
 
 ## Dates and times
@@ -189,7 +191,7 @@ These words are not always wrong, but often hide ambiguity or padding:
 
 Do not interchange these terms:
 
-- **deprecated**: supported for now but discouraged and planned for removal according to an authoritative policy;
+- **deprecated**: discouraged from use; describe support status and removal plans separately according to the product's policy;
 - **obsolete**: no longer useful or applicable, when that exact meaning is established;
 - **unsupported**: not covered by support or not accepted by the product;
 - **end of life**: a formal lifecycle state;

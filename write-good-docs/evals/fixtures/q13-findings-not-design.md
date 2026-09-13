@@ -1,0 +1,2 @@
+Investigation: did candidate B reduce preparation time compared with baseline A?
+Evidence: a supplied paired run used the same Linux machine and the same 2 GiB input. A took 48 s; B took 25 s. All supplied preservation checks passed for both. This was one paired run. Background load was not recorded. No macOS run was supplied. The timing did not separate serialization, I/O, and compression. The source does not establish the cause of the reduction.

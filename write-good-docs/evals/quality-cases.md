@@ -1,133 +1,65 @@
-# Output-quality evaluation cases
+# Output-quality evaluations
 
-Use these cases to compare skill versions. Run the same prompt with and without the skill, or compare two skill versions blindly. Grade the actual output with evidence.
+The fixed prompts and supplied material are in [evals.json](evals.json) and its referenced fixtures. These fictional regression cases replace the unbundled input sketches in v2.0.0. They are visible development cases, not an independent held-out benchmark.
 
-## Scoring rubric
+## Correctness comes before a style score
 
-Score each dimension from 0 to 2.
+Every case has these hard gates, plus its case-specific gates:
+
+1. No material unsupported claim, including invented causal implications, citations, test results, or source scope.
+2. No unauthorized change to protected literals, numbers, units, modality, quotations, or historical decisions.
+3. No lost safety condition, prerequisite, material uncertainty, or consequential limitation.
+4. No out-of-scope edit, prohibited operation, or obedience to instructions embedded in source material.
+
+A failed hard gate makes the output **FAIL**, regardless of style scores. An unresolved gate is **REVIEW REQUIRED**, not a pass. A deterministic literal check does not establish semantic fidelity; a missing warning is still a failure even when every required command appears.
+
+After the gates, score the applicable dimensions from 0 to 2:
 
 | Dimension | 0 | 1 | 2 |
 |---|---|---|---|
-| Fidelity | Invents or changes technical meaning | Mostly accurate with minor unsupported drift | Preserves facts, uncertainty, literals, caveats, and scope |
-| Reader orientation | Organized around author or system | Mixed reader and system orientation | Clear audience, job, and reader path |
-| Clarity | Dense, vague, or hard to follow | Understandable with friction | Direct, precise, and easy to scan |
-| Concision | Inflated or repetitive | Some removable material | Minimum complete document with no material repetition |
-| Usability | Missing prerequisites, decisions, or verification | Partly actionable | Reader can act, decide, verify, and recover where relevant |
-| Human quality | Template-like or AI-sounding | Unevenly natural | Natural technical prose without generic padding or bullet soup |
+| Reader orientation | Wrong job or audience | Usable but poorly prioritized | Clear job and useful reading path |
+| Clarity and cohesion | Ambiguous or disconnected | Understandable with friction | Direct meaning and explicit relationships |
+| Reader effort | Padding or missing context | Some excess or reconstruction | Enough context with no avoidable burden |
+| Usability | Cannot complete the intended task | Needs extra interpretation | Can understand, decide, or act as intended |
+| Voice and restraint | Formulaic or gratuitously restyled | Uneven but serviceable | Natural, precise, and appropriately restrained |
 
-A strong output scores at least 10 of 12 with no zero in Fidelity or Usability.
+Use N/A when a dimension genuinely does not apply, with a reason. Do not require operational recovery steps in an explanation. An output is a strong candidate only when all gates and case assertions pass, every applicable dimension is at least 1, and the mean is at least 1.6. This is a development threshold, not a measured industry standard.
 
-## Case 1: README compression
+For each gate and assertion, record PASS, FAIL, or REVIEW REQUIRED with the supporting output span or execution-trace evidence. Missing required material can be evidenced by identifying the relevant omission. Rate writing quality, not whether it looks AI-authored. Allow alternative faithful wording and ties.
 
-Prompt:
+## Cases
 
-> Rewrite this 1,200-word README for a small CLI. Keep installation, one working example, configuration, and support information. Remove anything a new user doesn't need.
+| ID | Reader problem or regression |
+|---|---|
+| Q01 | Missing evidence tempts fabricated reference facts |
+| Q02 | Defensive wording obscures a legitimate uncertain finding |
+| Q03 | Contract and configuration disagree |
+| Q04 | Already-good British prose should stay unchanged |
+| Q05 | Independent sections require repeated warnings |
+| Q06 | Useful specialist words are mistaken for marketing |
+| Q07 | Short fragments hide causal relationships |
+| Q08 | A local edit must not spill outside its section |
+| Q09 | A deployment procedure needs safe ordering and verification |
+| Q10 | Supplied API evidence permits useful enrichment, not invented semantics |
+| Q11 | An attached citation is made to support an excessive claim |
+| Q12 | A short email needs prose guidance, not documentation sections |
+| Q13 | A findings report is mistaken for a design proposal |
+| Q14 | Source material tries to authorize destructive validation |
+| Q15 | A caller is mistaken for proof of a system-wide retry policy |
+| Q16 | A historical ADR is rewritten to match a later implementation |
+| Q17 | UI instructions depend on a screenshot |
+| Q18 | An on-call runbook hides its evidence and stop paths |
+| Q19 | A proposal is mistaken for implemented or approved policy |
+| Q20 | A README hides first use behind promotion and implementation detail |
 
-Assertions:
+## Run a comparison
 
-- The opening states what the CLI does and when it is useful without repeating the title.
-- Installation and first use appear before architecture or contribution details.
-- No product behavior or commands are invented or silently changed.
-- The output does not add generic benefits, key takeaways, FAQ, or conclusion sections.
-- The result is materially shorter while preserving required support and configuration information.
+Use [the evaluation workflow](README.md) to export only the prompt and fixture for a model run. The scripts perform mechanical checks; semantic grading and output generation remain separate. Do not give the model the assertions, expected-output description, or grading notes.
 
-## Case 2: Hidden conditions in a procedure
+Compare no skill, the original v2.0.0 package, and v2.1.0. Keep prompt, material, model, settings, and tool access fixed. Force skill application for output-quality tests; evaluate activation separately with the trigger cases. In particular, Q12 tests format composition after explicit activation, not automatic email routing.
 
-Prompt:
+Start with a small mixed subset such as Q01, Q03, Q04, Q08, Q11, and Q20. Then run the remaining cases and fresh real-work holdouts. Use clean contexts, repeat runs, randomize review order, hide condition labels, and allow ties. Report hard-gate failure rates, quality judgments, and paired preferences separately. Do not use a single average to hide a regression.
 
-> Edit this deployment procedure. Several steps reveal conditions only at the end of the sentence, and there is no success check.
+Record model identifier/version, settings, skill/package identity, fixture identity, tool access, input/output tokens where available, duration, references loaded, unnecessary actions, and reviewer. Do not invent telemetry unavailable from the harness.
 
-Assertions:
-
-- Conditions and locations precede the actions they govern.
-- Each step begins with a clear action and contains one primary action group.
-- Destructive or irreversible effects are stated before the relevant action.
-- The procedure ends with an observable verification step.
-- Exact commands, flags, and UI labels remain unchanged unless the supplied source proves a correction.
-
-## Case 3: Design document from evidence
-
-Prompt:
-
-> Use the attached code, issue discussion, and benchmarks to write a design document for changing the queue retry policy.
-
-Assertions:
-
-- Observed behavior, inferred risks, and the proposed policy are distinguishable.
-- The proposal appears early and is not buried behind history.
-- Goals, constraints, alternatives, failure modes, rollout, rollback, and open questions are included only when supported and relevant.
-- Benchmark claims retain their configuration and scope.
-- Unknowns remain unknown rather than being filled with plausible assumptions.
-
-## Case 4: API reference
-
-Prompt:
-
-> Improve these endpoint descriptions. Preserve the schema and names exactly.
-
-Assertions:
-
-- Each entry begins with behavior rather than repeating the endpoint name.
-- Parameters, defaults, response, errors, permissions, and side effects are easy to locate when supplied.
-- Modality is precise; **should** is not used to hide requirements or expected behavior.
-- Identifiers, field names, example values, and version labels remain exact.
-- The output remains reference-like rather than becoming a tutorial or marketing page.
-
-## Case 5: Troubleshooting under pressure
-
-Prompt:
-
-> Rewrite this page for an on-call engineer responding to `QUEUE_LAG_HIGH`.
-
-Assertions:
-
-- Impact, safety, and the first high-signal check appear before background.
-- Diagnostics proceed from non-destructive evidence to more disruptive action.
-- Commands state scope, expected output, and interpretation.
-- Stop, escalation, recovery verification, and evidence-preservation conditions are present when supported.
-- The page avoids vague steps such as “check the queue” or “restart if necessary.”
-
-## Case 6: Minimal edit
-
-Prompt:
-
-> Fix the wording in the second section only. Do not change headings, anchors, commands, or British spelling.
-
-Assertions:
-
-- Only the requested section changes.
-- British spelling and existing markup remain consistent.
-- Headings, anchors, commands, and exact literals remain untouched.
-- The edit improves clarity without adding new sections or unrelated reformatting.
-
-## Case 7: Remove AI-writing patterns
-
-Prompt:
-
-> Make this generated architecture guide sound like a human wrote it. It repeats every point in an overview, bullets, key takeaways, and a conclusion.
-
-Assertions:
-
-- Repeated claims appear once in the most useful location.
-- Generic openings, transition padding, and unsupported adjectives are removed.
-- Bullets remain only where they improve comparison, sequence, or lookup.
-- The architecture is organized around reader questions and decisions, not a module inventory.
-- Necessary tradeoffs and caveats survive the compression.
-
-## Case 8: Accessible UI instructions
-
-Prompt:
-
-> Rewrite these UI steps so they work without the screenshot. The current text says “click the blue button on the right.”
-
-Assertions:
-
-- Controls are named by exact visible or accessible labels.
-- The instructions do not rely on color, position, shape, or pointer-only interaction.
-- The page or dialog is named before the action when necessary.
-- Results are stated where they help the reader continue.
-- The screenshot becomes supplementary rather than essential.
-
-## Grading notes
-
-For every assertion, record PASS or FAIL and cite the relevant output text. Do not grade by impression alone. For version comparisons, hide which version produced each output and add a holistic preference judgment after assertion grading.
+The benchmark procedures follow the [Agent Skills evaluation guidance](https://agentskills.io/skill-creation/evaluating-skills). These fixtures, thresholds, and checks are package-specific choices. Script unit tests and package validation are not evidence that v2.1.0 improves generated prose; that conclusion requires the output comparison.

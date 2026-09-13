@@ -1,0 +1,1 @@
+I would be wary of claiming that pattern R uniquely identifies phase M. Pattern R contains the three peaks shared by phases M and N, and the measured range contains no peak that distinguishes them. It is important to acknowledge that no replicate scans were supplied. I would therefore not go so far as to say we have resolved the identity of the phase.

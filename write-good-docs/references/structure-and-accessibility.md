@@ -30,7 +30,7 @@ Do not front-load product history, a glossary, or broad motivation unless the re
 ## Paragraphs
 
 - Keep one main idea per paragraph.
-- Put the critical point first.
+- Put the critical point early; a short bridge from the preceding idea can come first when it makes the relationship clearer.
 - Use short paragraphs, but do not fragment one coherent idea into artificial one-sentence blocks.
 - Left-align prose. Do not rely on manual line breaks inside paragraphs.
 - Use a list, table, or code block only when its structure makes information easier to retrieve or follow.
@@ -88,6 +88,7 @@ Put essential prerequisites and ordinary instructions in the main flow, not in n
 - Link only the meaningful words, not surrounding punctuation.
 - Do not force links to open in a new tab without a specific reason.
 - Preserve inbound links and anchors when restructuring.
+- Preserve citation-to-claim support after moving or combining sentences; an unchanged link must not appear to support a broader claim.
 - Avoid link chains that make readers traverse several pages to reach a required step.
 
 ## Code and UI formatting
@@ -165,7 +166,7 @@ Common alternatives include:
 
 ## Footnotes and mathematical notation
 
-Avoid footnotes. They separate information from its context and can create accessibility and localization problems. Prefer a sentence in the main flow, a short parenthetical, a note, or a cross-reference. When a footnote is unavoidable, use the publication's standard semantic markup and never put essential information only in the footnote.
+For task documentation, prefer nearby prose, a note, or a cross-reference when a footnote would separate needed information from its context. In scholarly or other publications with established footnote conventions, preserve them and use semantic markup. Never put essential instructions or safety information only in a footnote.
 
 For mathematical notation:
 

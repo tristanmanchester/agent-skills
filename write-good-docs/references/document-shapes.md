@@ -1,6 +1,6 @@
 # Document shapes
 
-Read this reference before creating or substantially restructuring a full document. Choose the smallest shape that serves the reader. Treat these as defaults, not mandatory templates.
+Read the relevant section when creating or substantially restructuring a full document. Choose a shape that reduces the reader's work. These are starting points, not mandatory section lists. The tutorial/how-to/reference/explanation distinction follows Diátaxis; see the source map for provenance.
 
 ## General rules
 
@@ -19,8 +19,8 @@ A README helps a new or returning reader decide whether the project is relevant 
 Use only the sections the project needs:
 
 1. **What it is and when to use it.** One short paragraph. Lead with the concrete purpose, not a slogan.
-2. **Quick start.** The shortest supported path to a meaningful result.
-3. **Prerequisites.** Required software, access, versions, and environment assumptions.
+2. **Blocking prerequisites.** Required software, access, versions, and environment assumptions, before the first affected command. These can sit at the start of Quick start rather than in a separate section.
+3. **Quick start.** A supported path to a meaningful result, with verification.
 4. **Common tasks.** Link to fuller guides rather than reproducing them.
 5. **Configuration.** Document required settings and the most common options; link to exhaustive reference.
 6. **Troubleshooting.** Cover only frequent blockers, or link to a dedicated guide.
@@ -103,6 +103,23 @@ Use the relevant sections:
 9. **Open questions.** List genuine unresolved decisions with owners or decision conditions when known.
 
 Do not spend half the document restating the problem, or hide the actual proposal behind background. Use diagrams only when they clarify relationships that prose cannot express efficiently.
+
+## Technical findings report
+
+A findings report communicates what an investigation, measurement, or benchmark establishes. It is not automatically a proposal or rollout plan.
+
+Use the parts needed for the intended readers:
+
+1. **Question and main finding.** State what was investigated and the strongest supported result.
+2. **Evidence and method.** Identify relevant inputs, versions, configurations, methods, and sampling conditions. Separate supplied reports from independently checked observations.
+3. **Findings.** Present measured or observed results with units, denominators, comparison bases, and precision appropriate to the evidence.
+4. **Interpretation.** Explain what follows from the results and which explanations remain alternatives. A correlation, good fit, or single run does not itself establish causation or generality.
+5. **Material limitations.** Put qualifications next to affected findings. Include a separate limitations section only when it helps readers use the whole report.
+6. **Implications or next decisions.** Include supported recommendations or useful next measurements when the task calls for them.
+
+Preserve sample sizes, uncertainty, negative results, and the distinction between fit quality and physical identification. Do not invent replication, significance tests, method validation, or precision. Do not add goals/non-goals, alternatives, rollout, or rollback just because a design template contains them.
+
+For an email summary explicitly using this skill, convey the main finding and its material qualification in the requested length. Do not import the report's section structure.
 
 ## Architecture decision record
 

@@ -1,0 +1,1 @@
+I wanted to give you a quick update on the restore test. I would not be comfortable claiming that we have demonstrated support for every platform. The supplied restore test passed on Linux, but no macOS restore test was supplied. I think it is important to bear that in mind when we discuss the results.
