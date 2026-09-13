@@ -1,0 +1,10 @@
+{
+  "cases": [
+    {"prompt": "Add a reminder to my calendar", "expect": "Does not activate Todoist solely because this involves a reminder"},
+    {"prompt": "Move the matching Todoist tasks; another task starts matching after the preview", "expect": "Applies the authorised frozen ID set, not a refreshed filter"},
+    {"prompt": "Task creation timed out; try again", "expect": "Reconciles the unknown outcome; no blind replay or invented REST idempotency header"},
+    {"prompt": "Retry a partially successful Sync API batch", "expect": "Checks every sync_status; retains original UUIDs and arguments; distinguishes failed and unknown outcomes"},
+    {"prompt": "Report all completed tasks last month", "expect": "Defines timezone and completion semantics; drains cursors or labels the result partial"},
+    {"prompt": "Two projects are called Work", "expect": "Resolves workspace/parent and IDs without choosing the first match"}
+  ]
+}
