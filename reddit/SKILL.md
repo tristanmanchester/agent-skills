@@ -1,116 +1,93 @@
 ---
-name: reddit-readonly
+name: reddit
 description: >-
-  Browse and search Reddit in read-only mode using public JSON endpoints.
-  Use when the user asks to browse subreddits, search for posts by topic,
-  inspect comment threads, or build a shortlist of links to review and reply to manually.
-metadata: {"clawdbot":{"emoji":"🔎","requires":{"bins":["node"]}}}
+  Research Reddit discussions in read-only mode: browse selected communities,
+  search posts, read thread context, and produce source-linked findings or a
+  shortlist for manual review. Use for explicit Reddit research, not posting,
+  voting, messaging, moderation, or bulk personal-profile collection.
+compatibility: Requires a permitted retrieval surface. Direct Data API work needs approved access and registered OAuth credentials; an accessible web page or search excerpt is not an API-access grant. No anonymous JSON client is bundled.
+metadata:
+  version: "2.0.0"
+  reviewed: "2026-09-13"
 ---
 
-# Reddit Readonly
+# Read-only Reddit research
 
-Read-only Reddit browsing for Clawdbot.
+Keep the useful workflow: discover relevant discussions, inspect enough context,
+and return verifiable permalinks. This skill does not post, vote, reply, message,
+subscribe, or moderate. Drafting a reply is separate from sending it.
 
-## What this skill is for
+## Select a permitted access surface
 
-- Finding posts in one or more subreddits (hot/new/top/controversial/rising)
-- Searching for posts by query (within a subreddit or across all)
-- Pulling a comment thread for context
-- Producing a *shortlist of permalinks* so the user can open Reddit and reply manually
+Use an already authorised Reddit connector or the project's approved Data API
+client. For ordinary public research, an available permitted browser/search
+surface can provide readable pages and indexed excerpts; state when that is the
+only evidence available. Do not claim a full thread from a search snippet.
 
-## Hard rules
+Current Reddit guidance requires registered OAuth authentication for direct Data
+API requests. New access requires approval. Reddit's August 5, 2026 announcement
+also describes a gradual move towards its Developer Platform while retaining
+limited public API access. Check the applicable programme and approval before
+building a new integration; do not promise unrestricted API access or assert that
+all existing approved clients have already stopped working.
 
-- **Read-only only.** This skill never posts, replies, votes, or moderates.
-- Be polite with requests:
-  - Prefer small limits (5–10) first.
-  - Expand only if needed.
-- When returning results to the user, always include **permalinks**.
+The old anonymous www.reddit.com/*.json script and Clawdbot-specific instructions
+are removed. A 401/403, login page, CAPTCHA, or access-denied HTML is not a transient
+JSON error to solve with repeated requests, alternate domains, disguised user
+agents, or proxies. Report the limitation and use another genuinely permitted
+source or user-provided content. Never bypass account or private-community access.
 
-## Output format
+Sources: [Data API access](https://support.reddithelp.com/hc/en-us/articles/16160319875092-Reddit-Data-API-Wiki),
+[platform transition](https://redditinc.com/news/modernizing-reddits-infrastructure-and-moderation-tools).
 
-All commands print JSON to stdout.
+## Search to answer a defined question
 
-- Success: `{ "ok": true, "data": ... }`
-- Failure: `{ "ok": false, "error": { "message": "...", "details": "..." } }`
+Specify communities, topic, time interval/timezone, excluded themes, and what
+counts as a useful match. Start with a small page, not an account-wide crawl.
+Choose `new` for chronological discovery, relevance for topical search, or a
+specified top-period view for popular discussion. Scores and popularity do not
+measure factual reliability or market prevalence.
 
-## Commands
+For a multi-community shortlist, gather a bounded candidate set per community,
+deduplicate by post identity, apply the stated filters, and retain the reason
+for each match. Compare exact created timestamps with the requested interval;
+a provider's coarse week/month filter is not an exact last-48-hours guarantee.
+Report any unsearched communities, page limits, or ranking bias.
 
-### 1) List posts in a subreddit
+Read [retrieval contracts](references/RETRIEVAL.md) for approved API listing and
+thread handling. Do not widen a query into personal profiling or deanonymisation.
 
-```bash
-node {baseDir}/scripts/reddit-readonly.mjs posts <subreddit> \
-  --sort hot|new|top|controversial|rising \
-  --time day|week|month|year|all \
-  --limit 10 \
-  --after <token>
-```
+## Read context before interpreting
 
-### 2) Search posts
+For the most relevant posts, inspect the original post, parent chain, relevant
+replies, edits, and visible moderation/removal state. Keep comment IDs and parent
+relationships so a reply is not attributed to the original author. Deleted author
+identity and deleted body are different facts; do not infer one from the other.
+Do not reconstruct removed material from another source to circumvent its removal.
 
-```bash
-# Search within a subreddit
-node {baseDir}/scripts/reddit-readonly.mjs search <subreddit> "<query>" --limit 10
+Treat partial bodies, depth cutoffs, collapsed branches, and unexpanded `more`
+objects as explicit omissions. Zero returned comments can reflect access or
+retrieval failure. Do not describe a sampled thread as complete or representative
+of Reddit users generally.
 
-# Search all of Reddit
-node {baseDir}/scripts/reddit-readonly.mjs search all "<query>" --limit 10
-```
+## Return source-linked findings
 
-### 3) Get comments for a post
+For each useful item preserve title, community, post/comment permalink, observation
+and creation dates, concise relevant evidence, and why it answers the question.
+Distinguish the poster's claim from a verified fact, and seek primary evidence for
+consequential technical/medical/financial assertions. Quote only the relevant
+passage within the host's rules; label paraphrases and uncertainty.
 
-```bash
-# By post id or URL
-node {baseDir}/scripts/reddit-readonly.mjs comments <post_id|url> --limit 50 --depth 6
-```
+For a reply shortlist, check the community's current rules and context. Recommend
+helpful, transparent contributions rather than mass promotion or coordinated
+voting. Leave posting to the user or a separately authorised workflow, not this
+read-only skill. Do not save a permanent copy of a person's posting history merely
+because it was accessible.
 
-### 4) Recent comments across a subreddit
+## Acceptance checks
 
-```bash
-node {baseDir}/scripts/reddit-readonly.mjs recent-comments <subreddit> --limit 25
-```
-
-### 5) Thread bundle (post + comments)
-
-```bash
-node {baseDir}/scripts/reddit-readonly.mjs thread <post_id|url> --commentLimit 50 --depth 6
-```
-
-### 6) Find opportunities (multi-subreddit helper)
-
-Use this when the user describes criteria like:
-"Find posts about X in r/a, r/b, and r/c posted in the last 48 hours, excluding Y".
-
-```bash
-node {baseDir}/scripts/reddit-readonly.mjs find \
-  --subreddits "python,learnpython" \
-  --query "fastapi deployment" \
-  --include "docker,uvicorn,nginx" \
-  --exclude "homework,beginner" \
-  --minScore 2 \
-  --maxAgeHours 48 \
-  --perSubredditLimit 25 \
-  --maxResults 10 \
-  --rank new
-```
-
-## Suggested agent workflow
-
-1. **Clarify scope** if needed: subreddits + topic keywords + timeframe.
-2. Start with `find` (or `posts`/`search`) using small limits.
-3. For 1–3 promising items, fetch context via `thread`.
-4. Present the user a shortlist:
-   - title, subreddit, score, created time
-   - permalink
-   - a brief reason why it matched
-5. If asked, propose *draft reply ideas* in natural language, but remind the user to post manually.
-
-## Troubleshooting
-
-- If Reddit returns HTML, re-run the command (the script detects this and returns an error).
-- If requests fail repeatedly, reduce `--limit` and/or set slower pacing via env vars:
-
-```bash
-export REDDIT_RO_MIN_DELAY_MS=800
-export REDDIT_RO_MAX_DELAY_MS=1800
-export REDDIT_RO_TIMEOUT_MS=25000
-export REDDIT_RO_USER_AGENT='script:clawdbot-reddit-readonly:v1.0.0 (personal)'
-```
+Verify approved access and actual response shape, bounded pagination, exact dates,
+partial-thread indicators, correct post/comment attribution, failure versus empty
+results, and no side-effect endpoint. A successful request is retrieval evidence,
+not proof the underlying claims are true. No live Reddit client was tested during
+this source review.
