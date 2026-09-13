@@ -1,139 +1,112 @@
 ---
 name: ios-simulator
-description: This skill should be used when the user asks to "test on iOS simulator", "run app on iPhone", "take iOS screenshot", "tap button in simulator", "automate iOS UI", "install app on simulator", "boot simulator", or when working with iOS apps, Xcode, Simulator, simctl, idb, UI automation, or iOS testing. It automates iOS Simulator workflows including device lifecycle (create/boot/erase), app management (install/launch), push notifications, privacy grants, screenshots, and accessibility-based UI navigation.
-metadata: {"clawdbot":{"emoji":"📱","os":["darwin"],"requires":{"bins":["xcrun"]},"install":[{"brew":{"formula":"idb-companion","bins":["idb_companion"],"tap":"facebook/fb"}}]}}
+description: >-
+  Run and inspect an app on an iOS Simulator: choose a target, install and launch,
+  capture evidence, exercise accessibility-driven UI, and diagnose simulator
+  failures. Use for explicit simulator testing or automation, not general iOS
+  implementation, physical-device validation, or App Store approval.
+compatibility: Local simctl needs macOS and full Xcode with an installed simulator runtime. Current idb companion binaries require arm64, macOS 15+, and Xcode 26+; a remote client can run elsewhere. The optional checked runner requires Node.js 22+.
+metadata:
+  version: "2.0.0"
+  reviewed: "2026-09-13"
 ---
 
-# iOS Simulator Automation
+# iOS Simulator
 
-This skill provides a **Node-only** CLI wrapper around:
-- `xcrun simctl` for simulator/device/app management
-- `idb` for **accessibility-tree** inspection + synthesised UI input (tap/text/button)
+Use Apple's `xcrun simctl` for lifecycle and app operations, and current `idb` for
+accessibility/input. Keep native command syntax rather than a second simulator
+API. Resolve `SKILL_DIR` to the directory containing this file; it is not the app
+repository's `scripts/` directory.
 
-It is designed for **AI agents**: minimal, structured output by default, with opt-in detail.
-
-## Important constraints
-
-- **Must run on macOS** with Xcode Command Line Tools (or Xcode) available.
-- If the ClawdBot gateway is not macOS, run these commands on a connected **macOS node** (see “Remote macOS node” below).  
-- `idb` is optional, but required for UI tree / semantic tapping. (Install steps below.)
-
-## Quick start
+## Establish the target
 
 ```bash
-# 1) Sanity check
-node {baseDir}/scripts/ios-sim.mjs health
-
-# 2) List simulators (compact)
-node {baseDir}/scripts/ios-sim.mjs list
-
-# 3) Select a default simulator (writes .ios-sim-state.json in the current dir)
-node {baseDir}/scripts/ios-sim.mjs select --name "iPhone" --runtime "iOS" --boot
-
-# 4) Install + launch an .app
-node {baseDir}/scripts/ios-sim.mjs app install --app path/to/MyApp.app
-node {baseDir}/scripts/ios-sim.mjs app launch --bundle-id com.example.MyApp
-
-# 5) Inspect current UI (requires idb)
-node {baseDir}/scripts/ios-sim.mjs ui summary
-node {baseDir}/scripts/ios-sim.mjs ui tap --query "Log in"
-node {baseDir}/scripts/ios-sim.mjs ui type --text "hello world"
-
-# 6) Screenshot
-node {baseDir}/scripts/ios-sim.mjs screenshot --out artifacts/screen.png
+xcode-select -p
+xcodebuild -version
+xcrun simctl list --json
+idb --help
+idb list-targets
 ```
 
-## Remote macOS node
+Record the Xcode/runtime, exact simulator UDID, app bundle ID, build/configuration,
+and reproduction steps. Choose from the actual inventory; never choose the first
+fuzzy name match or silently switch to a different booted device. Use the same
+explicit UDID for every operation. Inspect effective `IDB_COMPANION`/`IDB_UDID`
+configuration without exposing credentials before assuming a local target.
 
-If you are not on macOS, run the same commands on the macOS node using ClawdBot’s node execution (e.g. `exec` with `host: node` / node tools). Ensure the skill folder exists on that node, or copy it there.
+Only install missing tools or runtimes when authorised. The current upstream
+route is `brew install facebook/fb/idb`, which includes client and companion.
+Full Xcode is required, not standalone Command Line Tools. Check host requirements
+against [installation](https://fbidb.io/docs/idb/installation/); do not force an
+unsupported binary onto a different architecture. The client may connect to an
+explicitly authorised remote Mac; do not invent a remote-execution tool or expose
+a companion to the public network.
 
-## Output conventions (token-efficient)
+## Run, observe, act, verify
 
-- Default output: **single-line JSON** (small summary object).
-- Add `--pretty` to pretty-print JSON.
-- Add `--text` for a short human-readable summary (when provided by the command).
-- Commands that can be huge (`ui tree`, `list --full`) are **opt-in**.
+1. Inspect `xcrun simctl help COMMAND` or `idb ui COMMAND --help` for the installed
+   version. Unsupported syntax is a setup issue, not a reason to guess fallbacks.
+2. Boot only when needed, then wait with `xcrun simctl bootstatus "$UDID" -b`.
+   A boot request is not proof that the app is ready; an already-booted error is
+   acceptable only after confirming the intended target's actual state.
+3. Install the simulator-compatible `.app`, launch the exact bundle, and capture
+   the initial screenshot/accessibility state.
+4. Read the current UI; resolve a unique intended element; take one authorised
+   action; check its expected postcondition. Re-read after layout/navigation changes.
+5. Save the smallest useful evidence and distinguish process completion from
+   app behaviour. A screenshot or successful tap alone does not pass a test.
 
-## State / default UDID
-
-`select` writes a state file (default: `./.ios-sim-state.json`) that stores the chosen UDID.
-All commands accept `--udid <UUID>` and otherwise fall back to the state file.
-
-Override location with:
-- `IOS_SIM_STATE_FILE=/path/to/state.json`
-
-## Dependency notes
-
-### Xcode / simctl availability
-If `xcrun` cannot find `simctl`, ensure Xcode CLI tools are selected (via Xcode settings or `xcode-select`) and run the first-launch setup:
-- `xcodebuild -runFirstLaunch`
-
-### idb (for accessibility automation)
-Install `idb_companion` and the `idb` CLI:
 ```bash
-brew tap facebook/fb
-brew install idb-companion
-python3 -m pip install --upgrade fb-idb
+xcrun simctl install "$UDID" /absolute/path/MyApp.app
+xcrun simctl launch "$UDID" com.example.MyApp
+idb ui describe-all --udid "$UDID"
+idb ui text 'test text' --udid "$UDID"
+xcrun simctl io "$UDID" screenshot /absolute/path/evidence.png
 ```
 
-## Safety tiers
+`idb ui text`, not `idb text`, targets the currently focused field. Use synthetic
+values, not real credentials in arguments. Prefer a verified accessibility
+identifier when available. Current marker matching is **first substring match**,
+not unique equality: inspect candidates before tapping; refuse ambiguity. For
+installed versions supporting it, guard with `--expected-value`. A coordinate
+fallback needs a fresh image, correct point scaling, and a checked target; it is
+not equivalent to accessibility activation.
 
-| Tier | Commands | Notes |
-|------|----------|------|
-| SAFE | `list`, `health`, `boot`, `shutdown`, `screenshot`, `ui *` | No data loss |
-| CAUTION | `privacy *`, `push`, `clipboard *`, `openurl` | Alters simulator/app state |
-| DANGEROUS | `erase`, `delete` | Requires `--yes` |
+See [operations and diagnosis](references/OPERATIONS.md) for remaining lifecycle,
+permissions, push, clipboard, recording, logs, and test workflows.
 
-## Command index
+## Reliable command outcomes
 
-All commands live under:
+The optional helper runs a bounded, non-interactive command without a shell:
+
 ```bash
-node {baseDir}/scripts/ios-sim.mjs <command> [subcommand] [flags]
+node "$SKILL_DIR/scripts/run.mjs" --timeout-ms 120000 -- \
+  xcrun simctl bootstatus "$UDID" -b
 ```
 
-### Core simulator lifecycle
-- `list [--full]`
-- `select --name <substr> [--runtime <substr>] [--boot]`
-- `boot [--udid <uuid>] [--wait]`
-- `shutdown [--udid <uuid>|--all]`
-- `erase --yes [--udid <uuid>|--all]`
-- `delete --yes [--udid <uuid>]`
-- `create --name <name> --device-type <substr> --runtime <substr>`
+It reports a JSON envelope and nonzero exit for failed launch, nonzero child exit,
+signal, timeout, or output overflow. Captured output defaults to 1 MiB total;
+`--max-bytes` adjusts that bound up to 16 MiB. It does not parse the command's own
+result, approve actions, redact output, or guarantee termination of remote work.
+Inspect nested results and verify state. A timed-out write may already have run;
+do not blindly repeat a tap, purchase, push, or destructive operation.
 
-### App management
-- `app install --app <path/to/App.app> [--udid ...]`
-- `app uninstall --bundle-id <id> [--udid ...]`
-- `app launch --bundle-id <id> [--udid ...] [-- <args...>]`
-- `app terminate --bundle-id <id> [--udid ...]`
-- `app container --bundle-id <id> [--type data|app] [--udid ...]`
+Run recordings, interactive tools, and streaming logs directly with explicit
+lifecycle control, not through this bounded helper. Some execution interfaces
+(such as idb-repl) report execution errors in their output despite exit zero;
+process status alone cannot validate them.
 
-### Screenshots & video
-- `screenshot --out <file.png> [--udid ...]`
-- `record-video --out <file.mp4> [--udid ...]` (runs until Ctrl+C)
+## Safety and acceptance
 
-### Clipboard / URL
-- `clipboard get [--udid ...]`
-- `clipboard set --text <text> [--udid ...]`
-- `openurl --url <url> [--udid ...]`
+A simulator app can reach real services. UI input, URLs, push, permissions,
+uninstall, erase, and delete are mutations, not a blanket safe tier. Use test
+accounts/backends and the user's authorised scope. Before destructive operations,
+identify the target and data loss; never default to `all` or erase to fix an
+unrelated failure. Keep screenshots/logs private and review them before sharing.
 
-### Simulator permissions & push notifications
-- `privacy grant --bundle-id <id> --service <svc[,svc...]> [--udid ...]`
-- `privacy revoke --bundle-id <id> --service <svc[,svc...]> [--udid ...]`
-- `privacy reset --bundle-id <id> --service <svc[,svc...]> [--udid ...]`
-- `push --bundle-id <id> --payload <json-string> [--udid ...]`
+Report the build/UDID, actions, expected versus observed results, evidence paths,
+and unresolved failures. Simulator success does not establish physical-device
+performance, store billing, hardware behaviour, or submission readiness.
 
-### Logs
-- `logs show [--last 5m] [--predicate <expr>] [--udid ...]`
-
-### Accessibility-driven UI automation (requires idb)
-- `ui summary [--limit 12]`
-- `ui tree` (full UI JSON array)
-- `ui find --query <text> [--limit 20]`
-- `ui tap --query <text>` (find + tap best match)
-- `ui tap --x <num> --y <num>` (raw coordinate tap)
-- `ui type --text <text>`
-- `ui button --name HOME|LOCK|SIRI|SIDE_BUTTON|APPLE_PAY`
-
-## Troubleshooting
-
-See: [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md)
+Maintainer check: `node --test "$SKILL_DIR/tests/run.test.mjs"`. These runner tests
+exercise local subprocess semantics, not Xcode, idb, or a real application.
