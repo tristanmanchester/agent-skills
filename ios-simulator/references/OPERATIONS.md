@@ -18,7 +18,7 @@ xcrun simctl terminate "$UDID" com.example.MyApp
 ```
 
 For creation, select exact available device-type and runtime identifiers from
-the inventory, then use `simctl create NAME TYPE_ID RUNTIME_ID`. Record the
+the inventory, then use `xcrun simctl create NAME TYPE_ID RUNTIME_ID`. Record the
 returned UDID. Erase/delete/uninstall require a deliberately authorised target
 and loss assessment; verify the result with inventory or app state. They are
 not generic troubleshooting steps.
@@ -53,12 +53,12 @@ Bound waits by a deadline and report the last observed state; never poll forever
   the recording. A killed recorder may leave an unusable file.
 - Logs: `xcrun simctl spawn "$UDID" log show --last 5m --predicate 'process == "MyApp"'`.
   Bound time and filters; logs may contain personal data and tokens.
-- Clipboard: `simctl pbpaste "$UDID"` / `simctl pbcopy "$UDID"` (copy reads stdin).
+- Clipboard: `xcrun simctl pbpaste "$UDID"` / `xcrun simctl pbcopy "$UDID"` (copy reads stdin).
   Use native input piping, not the runner, whose stdin is deliberately closed.
-- URL: `simctl openurl "$UDID" URL`. Deep links can mutate remote state.
-- Privacy: `simctl privacy "$UDID" grant SERVICE BUNDLE_ID`; also inspect help for
+- URL: `xcrun simctl openurl "$UDID" URL`. Deep links can mutate remote state.
+- Privacy: `xcrun simctl privacy "$UDID" grant SERVICE BUNDLE_ID`; also inspect help for
   revoke/reset and supported service names. Verify requested permissions in-app.
-- Push: `simctl push "$UDID" BUNDLE_ID /absolute/path/payload.apns`. Create the
+- Push: `xcrun simctl push "$UDID" BUNDLE_ID /absolute/path/payload.apns`. Create the
   JSON privately, verify its intended app/payload, then remove the temporary file.
   Simulated delivery does not test production APNs registration or routing.
 
