@@ -1,10 +1,12 @@
 # Template index
 
-These templates are starting points, not one-size-fits-all answers.
+These templates are starting points, not one-size-fits-all answers. Check the
+selected template's actual imports and lifecycle against the application's
+installed stack; the whole collection has not been certified on a native build.
 
 ## Visual surfaces
 
-- `ambient-gradient-card.tsx` — premium ambient card with blurred orbs
+- `ambient-gradient-card.tsx` — ambient card with blurred orbs
 - `shimmer-cta-button.tsx` — clipped shimmer button with paragraph label
 - `shader-noise-background.tsx` — procedural shader background
 - `morphing-blob.tsx` — path interpolation for organic motion
@@ -19,13 +21,17 @@ These templates are starting points, not one-size-fits-all answers.
 
 ## Interaction / high-instance patterns
 
-- `pan-zoom-image-stage.tsx` — memoised pan + pinch image surface
+- `pan-zoom-image-stage.tsx` **and** `pan-zoom-math.ts` — RNGH 3 pan/pinch,
+  bounded viewport-centred geometry, and native zoom/move/reset controls. Copy
+  both files. Read the [integration and test notes](../../references/pan-zoom-template.md).
 - `sprite-atlas-field.tsx` — repeated textured sprites via `Atlas`
 - `snapshot-composite.tsx` — capture React Native content into Skia
 
 ## Adaptation advice
 
-1. Preserve the architecture choice unless the workload changes.
-2. Rename colours, dimensions, and copy to match the product.
-3. If the user asks for "lighter" or "safer", remove secondary motion before rewriting the whole component.
-4. If the user asks for "more premium", strengthen hierarchy and lighting before adding more moving parts.
+Preserve the architecture when it still suits the workload. Rename dimensions,
+colours, and copy to match the product. Remove secondary motion before rewriting
+a component solely to make it lighter; strengthen hierarchy before adding more
+moving parts. Check loading/error paths, cancellation, cleanup, and accessibility
+in the selected template rather than assuming the entry-point guidance has
+already been implemented in every example.
