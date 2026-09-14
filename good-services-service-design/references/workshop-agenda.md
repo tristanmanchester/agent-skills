@@ -31,8 +31,12 @@ Print or share templates:
 - Mark: drop-offs, handoffs, and “where users seek help”.
 
 ### 1:05–1:30 — Principles scan
-- Rapidly score the 15 principles (0–2).
-- Capture evidence and disagreements as “unknowns to test”.
+- Review the 15 principles for the agreed service, user groups, and channels.
+- Mark each principle assessed, unverified, or out of scope using the scorecard.
+  Assign a local 0–2 score only when assessed evidence supports it; leave the
+  score blank for unverified or out-of-scope principles.
+- Record sources, coverage gaps, and disagreements. An unresolved disagreement
+  is an evidence question, not a reason to manufacture or average a numeric score.
 
 ### 1:30–1:55 — Backlog & ownership
 - Convert top failures into backlog items (Now/Next/Later).
