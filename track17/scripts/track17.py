@@ -125,7 +125,7 @@ def connect(path: Path) -> sqlite3.Connection:
     CREATE TABLE IF NOT EXISTS parcels (
       number TEXT NOT NULL, carrier INTEGER NOT NULL, label TEXT NOT NULL DEFAULT '',
       param TEXT NOT NULL DEFAULT '', lang TEXT NOT NULL DEFAULT 'en',
-      snapshot TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL,
+      snapshot TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL, last_refreshed_at TEXT,
       PRIMARY KEY(number, carrier)
     );
     CREATE TABLE IF NOT EXISTS receipts (
@@ -137,6 +137,9 @@ def connect(path: Path) -> sqlite3.Connection:
       FOREIGN KEY(number, carrier) REFERENCES parcels(number, carrier) ON DELETE CASCADE
     );
     """)
+    if 'last_refreshed_at' not in {row[1] for row in conn.execute('PRAGMA table_info(parcels)')}:
+        conn.close()
+        raise Track17Error('Different development schema detected; choose a new TRACK17_DATA_DIR. No parcel data was migrated.')
     conn.commit()
     return conn
 
@@ -206,6 +209,12 @@ def apply_item(conn: sqlite3.Connection, item: dict[str, Any], *, label: str | N
             digest = hashlib.sha256(data.encode()).hexdigest()
             conn.execute("INSERT OR IGNORE INTO parcel_events VALUES(?,?,?,?)", (number, carrier, digest, data))
     return changed
+
+
+def mark_refreshed(conn: sqlite3.Connection, item: dict[str, Any]) -> None:
+    number, carrier = identity(item)
+    conn.execute('UPDATE parcels SET last_refreshed_at=? WHERE number=? AND carrier=?',
+                 (now(), number, carrier))
 
 
 def parse_webhook(raw: bytes, sign: str | None, key: str | None) -> dict[str, Any]:
@@ -378,6 +387,7 @@ def run(args: argparse.Namespace) -> tuple[Any, int]:
                             raise Track17Error("Response contains an unrequested parcel")
                         if apply_item(conn, item):
                             changes.append({"number": item["number"], "carrier": item["carrier"]})
+                        mark_refreshed(conn, item)
                 returned = {identity(item) for item in good}
                 if len(good) + len(bad) < len(batch):
                     failures.append({"error": "Incomplete response", "missing": sorted(wanted - returned)})
@@ -388,12 +398,17 @@ def run(args: argparse.Namespace) -> tuple[Any, int]:
         target = {"number": args.number, "carrier": args.carrier}
         if command == "status":
             if args.refresh:
-                item = require_accepted(api("gettrackinfo", [target]))[0]
+                refresh_target = {key: row[key] for key in ("number", "carrier", "param", "lang")}
+                refreshed = require_accepted(api("gettrackinfo", [refresh_target]))
+                if len(refreshed) != 1:
+                    raise Track17Error("Expected exactly one refreshed parcel")
+                item = refreshed[0]
                 validate_item(item)
                 if identity(item) != (args.number, args.carrier):
                     raise Track17Error("Response identity mismatch")
                 with conn:
                     apply_item(conn, item)
+                    mark_refreshed(conn, item)
                 row = conn.execute("SELECT * FROM parcels WHERE number=? AND carrier=?", (args.number, args.carrier)).fetchone()
             events = [json.loads(e[0]) for e in conn.execute("SELECT event_json FROM parcel_events WHERE number=? AND carrier=?", (args.number, args.carrier))]
             return dict(row) | {"snapshot": json.loads(row["snapshot"]), "events": events}, 0

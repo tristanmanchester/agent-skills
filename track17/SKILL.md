@@ -72,3 +72,7 @@ Run offline and loopback HTTP regressions:
 ```bash
 python3 -m unittest discover -s "$SKILL_DIR/tests" -v
 ```
+
+`updated_at` records snapshot changes; `last_refreshed_at` records the most recent
+accepted polling response, including an unchanged snapshot. Neither is the carrier
+event time. Webhook receipt/deduplication does not count as a successful poll.
