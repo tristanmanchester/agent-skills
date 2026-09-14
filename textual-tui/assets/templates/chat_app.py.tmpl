@@ -6,64 +6,102 @@ from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, VerticalScroll
 from textual.reactive import var
-from textual.widgets import Button, Footer, Header, Input, Markdown
+from textual.widgets import Button, Footer, Header, Input, Static
+from textual.worker import Worker, WorkerState
 
 
-class MessageBubble(Markdown):
+class MessageBubble(Static):
     DEFAULT_CSS = """
     MessageBubble {
+        height: auto;
         margin: 0 0 1 0;
         padding: 0 1;
         border: round $primary;
     }
-
-    MessageBubble.-user {
-        border: round $accent;
-    }
-
-    MessageBubble.-assistant {
-        border: round $success;
-    }
+    MessageBubble.-user { border: round $accent; }
+    MessageBubble.-assistant { border: round $success; }
     """
+
+    def __init__(self, text: str, role: str) -> None:
+        # Plain text is intentional: a prompt is not trusted Markdown or markup.
+        super().__init__(text, markup=False)
+        self.message_text = text
+        self.add_class("-" + role)
 
 
 class {{CLASS_NAME}}(App):
     CSS_PATH = "{{MODULE}}.tcss"
     TITLE = "{{APP_TITLE}}"
-    SUB_TITLE = "Streaming / chat starter"
-    BINDINGS = [
-        ("slash", "focus_prompt", "Prompt"),
-    ]
-
+    SUB_TITLE = "Single-reply chat starter"
+    BINDINGS = [("slash", "focus_prompt", "Prompt"), ("escape", "cancel_reply", "Stop reply")]
     message_count = var(0)
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.busy = False
+        self.reply_status = "Ready."
+        self._revision = 0
+        self._closing = False
+        self._reply_worker = None
 
     def compose(self) -> ComposeResult:
         yield Header()
         yield VerticalScroll(id="history")
+        yield Static(self.reply_status, id="reply-status", markup=False)
         with Horizontal(id="composer"):
             yield Input(placeholder="Ask something…", id="prompt")
             yield Button("Send", id="send", variant="primary")
+            yield Button("Stop", id="stop", disabled=True)
         yield Footer()
 
     def on_mount(self) -> None:
-        self.add_message("Welcome. Replace the fake worker with your real backend.", "assistant")
+        self.add_message("Welcome. The demo backend makes no network calls.", "assistant")
         self.query_one("#prompt", Input).focus()
 
-    def add_message(self, markdown: str, role: str) -> None:
+    def on_unmount(self) -> None:
+        self._closing = True
+        self._revision += 1
+
+    def _set_status(self, text: str) -> None:
+        self.reply_status = text
+        self.query_one("#reply-status", Static).update(text)
+
+    def _set_busy(self, busy: bool) -> None:
+        self.busy = busy
+        self.query_one("#send", Button).disabled = busy
+        self.query_one("#stop", Button).disabled = not busy
+
+    def _follow_if_unchanged(self, history: VerticalScroll, previous_y: float) -> None:
+        # A user may scroll between mount and the refresh callback.
+        if not self._closing and history.is_mounted and history.scroll_y == previous_y:
+            history.scroll_end(animate=False, immediate=True, x_axis=False)
+
+    def add_message(self, text: str, role: str) -> None:
         history = self.query_one("#history", VerticalScroll)
-        bubble = MessageBubble(markdown)
-        bubble.add_class("-{0}".format(role))
-        history.mount(bubble)
-        history.anchor()
+        follow = history.is_vertical_scroll_end
+        previous_y = history.scroll_y
+        history.mount(MessageBubble(text, role))
+        if follow:
+            self.call_after_refresh(self._follow_if_unchanged, history, previous_y)
         self.message_count += 1
 
-    def submit_prompt(self, text: str) -> None:
+    def submit_prompt(self, text: str) -> bool:
         text = text.strip()
-        if not text:
-            return
+        if not text or self.busy or self._closing:
+            return False  # Keep the draft; do not cancel an already accepted prompt.
+        self._revision += 1
+        revision = self._revision
         self.add_message(text, "user")
         self.query_one("#prompt", Input).value = ""
-        self.generate_reply(text)
+        self._set_busy(True)
+        self._set_status("Waiting for reply…")
+        try:
+            self._reply_worker = self.generate_reply(text, revision)
+        except Exception:
+            self._set_busy(False)
+            self._set_status("Reply could not start. No automatic retry.")
+            raise
+        return True
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "prompt":
@@ -72,22 +110,48 @@ class {{CLASS_NAME}}(App):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "send":
             self.submit_prompt(self.query_one("#prompt", Input).value)
+        elif event.button.id == "stop":
+            self.action_cancel_reply()
 
-    @work(exclusive=True)
-    async def generate_reply(self, prompt: str) -> None:
-        await asyncio.sleep(0.05)
-        self.add_message(
-            "\n".join(
-                [
-                    "**Starter response**",
-                    "",
-                    "- Prompt: `{0}`".format(prompt),
-                    "- Replace this worker with your real async call.",
-                    "- Keep the history container anchored for streaming output.",
-                ]
-            ),
-            "assistant",
-        )
+    async def build_reply(self, prompt: str) -> str:
+        """Replace with an async service adapter; define its timeout/recovery policy."""
+        await asyncio.sleep(0.05)  # Demo latency, not a test synchronisation mechanism.
+        return "Starter response\n\n" + prompt
+
+    @work(group="reply", exit_on_error=False)
+    async def generate_reply(self, prompt: str, revision: int) -> None:
+        if self._closing or revision != self._revision:
+            return
+        reply = await self.build_reply(prompt)
+        if not isinstance(reply, str):
+            raise TypeError("Reply adapter must return text")
+        if not self._closing and revision == self._revision:
+            self.add_message(reply, "assistant")
+
+    def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
+        if self._closing or event.worker is not self._reply_worker:
+            return
+        statuses = {
+            WorkerState.SUCCESS: "Ready.",
+            WorkerState.ERROR: "Reply failed. No automatic retry.",
+            WorkerState.CANCELLED: "Reply stopped. Remote outcome may be unknown.",
+        }
+        if event.state in statuses:
+            self._reply_worker = None
+            self._set_busy(False)
+            self._set_status(statuses[event.state])
+
+    def action_cancel_reply(self) -> None:
+        worker = self._reply_worker
+        if worker is None or self._closing:
+            return
+        # Revoke local ownership before cancelling; a late result cannot overwrite
+        # the next reply, even when an adapter suppresses cancellation.
+        self._revision += 1
+        self._reply_worker = None
+        self._set_busy(False)
+        self._set_status("Reply stopped. Remote outcome may be unknown.")
+        worker.cancel()
 
     def action_focus_prompt(self) -> None:
         self.query_one("#prompt", Input).focus()
