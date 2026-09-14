@@ -34,9 +34,13 @@ Current Python example (after installing the official `exa-py` in the chosen
 project environment):
 
 ```python
+import os
 from exa_py import Exa
 
-exa = Exa()  # EXA_API_KEY from the environment.
+api_key = os.environ.get("EXA_API_KEY")
+if not api_key:
+    raise ValueError("EXA_API_KEY is required")
+exa = Exa(api_key=api_key)
 response = exa.search(
     "experimental studies of metal corrosion using X-ray tomography",
     type="auto",
