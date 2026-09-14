@@ -2,8 +2,7 @@ import { useEffect } from 'react';
 import Purchases from 'react-native-purchases';
 import { useUser } from 'expo-superwall';
 
-// One mounted owner. Serialise native identity calls, which effect cleanup cannot cancel.
-let identityQueue: Promise<void> = Promise.resolve();
+import { billingCoordinator } from './billing-coordination';
 
 type Props = {
   isAuthResolved: boolean;
@@ -17,16 +16,19 @@ type Props = {
  * Mount inside loaded providers, after RevenueCat configuration.
  * Increment identityRevision in the same auth-state update that changes userId.
  * Gate purchases/features until the acknowledged revision equals the current one.
- * Keep onSynchronized stable. The app must defer account changes while a store
- * purchase/restore is in flight; this example does not cancel store transactions.
+ * Keep onSynchronized stable. Auth and store operations share billingCoordinator:
+ * native identity changes wait for a running purchase/restore to settle. UI auth
+ * may change earlier, but keep premium actions gated until the new revision is ready.
+ * Effect cleanup never cancels an in-flight store transaction or releases its lock.
  */
 export function AuthIdentitySync({ isAuthResolved, userId, allowAnonymousState,
   identityRevision, onSynchronized }: Props) {
   const { identify, signOut, setSubscriptionStatus } = useUser();
   useEffect(() => {
     let cancelled = false;
+    onSynchronized(identityRevision, false);
     if (!isAuthResolved) return;
-    identityQueue = identityQueue.then(async () => {
+    void billingCoordinator.synchronizeIdentity(async () => {
       if (cancelled) return;
       if (userId) {
         await Purchases.logIn(userId);

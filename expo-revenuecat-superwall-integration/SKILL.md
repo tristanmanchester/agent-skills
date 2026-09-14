@@ -58,3 +58,5 @@ Report the chosen owner, changed files, exact package versions, tests actually r
 - `references/troubleshooting.md`: failure investigation.
 
 Primary contracts reviewed 2026-09-13: [RevenueCat React Native API](https://revenuecat.github.io/react-native-purchases-docs/9.7.5/classes/default.html), [Superwall purchase controller](https://superwall.com/docs/expo/sdk-reference/components/CustomPurchaseControllerProvider), [Superwall RevenueCat integration](https://superwall.com/docs/expo/guides/using-revenuecat), and [RevenueCat Expo setup](https://www.revenuecat.com/docs/getting-started/installation/expo).
+
+For the shared native identity/store queue, read [identity coordination](references/billing-identity-coordination.md).
