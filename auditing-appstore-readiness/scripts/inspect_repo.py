@@ -11,7 +11,7 @@ import sys
 from xml.parsers.expat import ExpatError
 from urllib.parse import urlsplit
 
-IGNORE = {'.git', 'node_modules', 'Pods', 'build', 'DerivedData', '.expo', '.venv'}
+IGNORE = {'.git', 'node_modules', 'Pods', 'build', '.build', 'DerivedData', '.expo', '.venv'}
 MAX_BYTES = 2 * 1024 * 1024
 
 
@@ -29,7 +29,7 @@ def inventory(repo: Path, max_entries: int = 20000) -> dict:
                      'excluded_directory_names': sorted(IGNORE), 'skipped_symlinks': []},
         'projects': [], 'packages': [], 'expo_configs': [], 'dynamic_configs': [],
         'icons': [], 'plists': [], 'privacy_manifests': [], 'entitlements': [],
-        'launch_assets': [], 'issues': [],
+        'launch_assets': [], 'interface_assets': [], 'other_plists': [], 'issues': [],
     }
 
     def rel(p: Path) -> str:
@@ -39,7 +39,7 @@ def inventory(repo: Path, max_entries: int = 20000) -> dict:
         result['issues'].append({'path': rel(p), 'reason': reason})
         result['coverage']['complete_within_scope'] = False
 
-    def load(p: Path, parser):
+    def load(p: Path, parser, *, mapping=True):
         # No project code, shell, package manager, or dynamic config is executed.
         if p.is_symlink() or not p.is_file() or not p.resolve().is_relative_to(root):
             issue(p, 'non-regular file, symlink, or outside source root')
@@ -50,7 +50,7 @@ def inventory(repo: Path, max_entries: int = 20000) -> dict:
             if len(raw) > MAX_BYTES:
                 raise ValueError('source metadata exceeds size bound')
             value = parser(raw)
-            if not isinstance(value, dict):
+            if mapping and not isinstance(value, dict):
                 raise ValueError('expected an object/dictionary')
             return value
         except (OSError, ValueError, TypeError, OverflowError, plistlib.InvalidFileException, ExpatError) as error:
@@ -89,7 +89,7 @@ def inventory(repo: Path, max_entries: int = 20000) -> dict:
                 ios = expo.get('ios') if isinstance(expo.get('ios'), dict) else {}
                 icon = ios.get('icon', expo.get('icon'))
                 values = icon if isinstance(icon, dict) else {'default': icon} if icon is not None else {}
-                result['expo_configs'].append({'path': rel(p), 'resolved': False,
+                result['expo_configs'].append({'path': rel(p), 'resolved': False, 'target_membership': 'NOT_ASSESSED',
                     'declared': {k: v for k, v in {'bundleIdentifier': ios.get('bundleIdentifier'),
                         'version': expo.get('version'), 'buildNumber': ios.get('buildNumber')}.items() if isinstance(v, str)},
                     'icon_references': {k: reference(p.parent, v) for k, v in values.items()}})
@@ -106,11 +106,13 @@ def inventory(repo: Path, max_entries: int = 20000) -> dict:
                                         'file': reference(p.parent, image.get('filename'))})
             result['icons'].append({'path': rel(p.parent), 'kind': 'asset-catalog',
                                     'entries': entries, 'compiled_validity': 'NOT_ASSESSED'})
-        elif name == 'Info.plist':
-            data = load(p, plistlib.loads)
-            if data is not None:
+        elif p.suffix == '.plist':
+            data = load(p, plistlib.loads, mapping=False)
+            if data is not None and not isinstance(data, dict):
+                result['other_plists'].append(rel(p))
+            if isinstance(data, dict):
                 ats = data.get('NSAppTransportSecurity', {})
-                result['plists'].append({'path': rel(p), 'resolved': False,
+                result['plists'].append({'path': rel(p), 'resolved': False, 'target_membership': 'NOT_ASSESSED',
                     'declared': {k: data[k] for k in ('CFBundleIdentifier', 'CFBundleShortVersionString', 'CFBundleVersion', 'UILaunchStoryboardName') if isinstance(data.get(k), str)},
                     'usage_description_keys': sorted(k for k in data if k.startswith('NS') and k.endswith('UsageDescription')),
                     'arbitrary_loads': ats.get('NSAllowsArbitraryLoads') if isinstance(ats, dict) else None,
@@ -122,7 +124,7 @@ def inventory(repo: Path, max_entries: int = 20000) -> dict:
         elif p.suffix == '.icon':
             result['icons'].append({'path': rel(p), 'kind': 'icon-composer', 'compiled_validity': 'NOT_ASSESSED'})
         elif p.suffix in {'.storyboard', '.xib'}:
-            result['launch_assets'].append(rel(p))
+            result['interface_assets'].append(rel(p))
 
     def walk_error(error):
         result['coverage']['complete_within_scope'] = False
@@ -153,6 +155,11 @@ def inventory(repo: Path, max_entries: int = 20000) -> dict:
             else:
                 inspect(p)
         dirs.sort()
+    launch_names = {Path(p['declared']['UILaunchStoryboardName']).stem
+                    for p in result['plists'] if p['declared'].get('UILaunchStoryboardName')
+                    and '$(' not in p['declared']['UILaunchStoryboardName']}
+    result['launch_assets'] = [p for p in result['interface_assets']
+                              if Path(p).stem in launch_names or Path(p).stem.lower().startswith('launch')]
     return result
 
 

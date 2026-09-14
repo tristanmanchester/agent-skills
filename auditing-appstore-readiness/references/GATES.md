@@ -83,3 +83,9 @@ means unverified, not automatically compliant or noncompliant.
 
 These links establish the review baseline, not a substitute for checking the
 rules and exact project SDK when performing an audit.
+
+The source inventory scans dictionary-valued `.plist` files as unresolved candidates,
+including custom filenames. It does not resolve `INFOPLIST_FILE` for a build target.
+`interface_assets` lists storyboards/XIBs; `launch_assets` contains only launch-named
+or declared-launch-reference candidates, not proof of a compiled launch screen.
+SwiftPM `.build` is excluded along with other dependency/build outputs.
