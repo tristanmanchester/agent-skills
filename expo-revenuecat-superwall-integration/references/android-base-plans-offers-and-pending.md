@@ -1,83 +1,25 @@
-# Android Base Plans, Offers, and Pending Purchases
+# Android product, base-plan, and offer identity
 
-Google Play subscriptions are often the place where a "working demo" breaks in production.
+A displayed offer is part of the purchase the user selected. Never substitute another option merely because the requested one is unavailable.
 
-## The problem
+## Exact selection
 
-Superwall can tell your purchase callback more than just a `productId`. On Android it can also provide:
+Fetch the requested subscription with RevenueCat's `PRODUCT_CATEGORY.SUBSCRIPTION`, inspect its `subscriptionOptions`, and match both the subscription's `productId` and the option's `id`. A base-plan option uses the base plan ID; an offer uses `basePlanId:offerId`. Require exactly one match. An empty explicit offer, an offer without a base plan, a different product, or multiple matches is an error.
 
-- `basePlanId`
-- `offerId` when present
+Call `Purchases.purchaseSubscriptionOption(option)` with that exact object. Do not probe for old API names or fall back to `purchaseStoreProduct`, `defaultOption`, or the first array entry. Refresh the paywall and let the user choose again when availability or eligibility changed. A deliberately default-selected product is a separate product contract; it does not authorise fallback from an explicit selection.
 
-If you ignore those and simply call `purchaseStoreProduct(product)`, you may buy the wrong option or rely on RevenueCat's default offer selection when the product actually needs explicit control.
+`examples/custom-purchase-controller.android-offers.tsx` and the pure `selectPlayOption` helper implement this rule. The helper has executable cases for exact base/offer selection, missing offers, wrong products, empty identifiers, and ambiguous matches.
 
-## Recommended handling
+## Outcomes and fulfilment
 
-1. Resolve the RevenueCat `StoreProduct` by `productId`.
-2. Read `storeProduct.subscriptionOptions`.
-3. Build the option identifier from `basePlanId` plus optional `offerId`.
-4. Find the matching `SubscriptionOption`.
-5. If an explicit match does not exist, decide whether falling back to `defaultOption` is acceptable.
-6. Purchase the selected option using the method exposed by the installed `react-native-purchases` version.
-7. Only report success to Superwall when the returned `CustomerInfo` has the expected active entitlement.
+Use RevenueCat's typed cancellation and payment-pending codes, not message regexes. Return Superwall's explicit `cancelled`, `pending`, `failed`, or `purchased` result. Returning void can count as a conversion under the controller contract, so do not silently fall through.
 
-## When fallback to `defaultOption` is acceptable
+A completed purchase and an active feature entitlement are different facts. Report a completed charge as purchased, then check the specific entitlement before running the feature. An inactive entitlement after payment requires reconciliation of product mappings, identity, delayed delivery, and provider state; do not mark the store payment failed or retry it automatically. A pending purchase grants no access until entitlement evidence arrives.
 
-Fallback is usually reasonable when:
+## Integration checks
 
-- the dashboard is meant to choose the default trial or intro offer
-- there is no special developer-determined offer logic
-- the team is comfortable with RevenueCat selecting the longest free trial or cheapest eligible intro option
+Verify product/base-plan/offer IDs in both dashboards and the actual store response. Check displayed price/trial against the selected option; exercise ineligible and withdrawn offers. Test pending completion after restart, cancelled purchase, account changes, restore, and delayed entitlement publication.
 
-Fallback is not ideal when:
+This example covers a direct subscription purchase, not replacement/proration of an existing subscription, personalised-pricing disclosures, promotional offers, or alternative stores. Add those supported current API arguments when required, and test their store-specific semantics rather than guessing.
 
-- specific Play offers map to specific campaigns or experiments
-- you use developer-determined offers
-- the business wants exact option control
-
-## Pending purchases
-
-Google Play can place a purchase into a pending state, especially with delayed payment methods or family approval.
-
-Treat pending as its own result, not as a clean success.
-
-Suggested behaviour:
-
-- return `{ type: "pending" }` if your integration surface supports it
-- otherwise return a clear failure-style message and explain that access will unlock after Google confirms payment
-- keep entitlement checks in place because pending does not guarantee active access yet
-
-## Purchase success is not the same as entitlement success
-
-Even after a purchase callback returns without throwing:
-
-- inspect the `CustomerInfo`
-- confirm the expected entitlement is active
-- if not active, do not quietly mark the purchase as complete inside your app state
-
-This catches configuration problems such as:
-
-- product IDs exist but entitlements are not attached in RevenueCat
-- Superwall and RevenueCat products are out of sync
-- the wrong base plan or offer was selected
-- a pending purchase has not completed yet
-
-## Developer-determined offer caveat
-
-If the Play Console uses developer-determined offers, RevenueCat's automatic offer logic can still consider them unless you structure your offer setup carefully. For exact control, manually select the `SubscriptionOption` you intend to buy.
-
-## Implementation pointers
-
-- see `examples/custom-purchase-controller.android-offers.tsx`
-- see the helper functions in `examples/monetization.shared.tsx`
-
-## Debug checklist
-
-If Android purchases behave unexpectedly:
-
-- verify the incoming `productId`, `basePlanId`, and `offerId`
-- inspect the resolved RevenueCat `StoreProduct`
-- log the available `subscriptionOptions`
-- confirm the expected entitlement becomes active in `CustomerInfo`
-- confirm the same product and entitlement setup exists in both RevenueCat and Superwall
-- confirm the Android main activity launch mode is `standard` or `singleTop`
+Sources reviewed 2026-09-13: [RevenueCat purchase API](https://revenuecat.github.io/react-native-purchases-docs/9.7.5/classes/default.html), [SubscriptionOption contract](https://revenuecat.github.io/react-native-purchases-docs/8.2.4/interfaces/SubscriptionOption.html), [Superwall controller results](https://superwall.com/docs/expo/sdk-reference/components/CustomPurchaseControllerProvider).
