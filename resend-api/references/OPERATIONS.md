@@ -30,7 +30,11 @@ HTML/text, links, unsubscribe mechanism, and visible sender all need review.
 ## Transport and recovery
 
 Use least-privilege credentials and keep API keys out of client bundles, URLs,
-logs, fixtures, and command history. Raw API requests target HTTPS api.resend.com;
+logs, fixtures, and command history. Raw API requests must include `Authorization: Bearer …`, the appropriate content
+type, and a descriptive `User-Agent` such as `my-app/1.0`. A missing User-Agent can
+cause an edge-layer 403 / error 1010 before the request reaches Resend; SDKs include
+it automatically. See [the header requirement](https://resend.com/docs/knowledge-base/403-error-1010).
+Raw API requests target HTTPS api.resend.com;
 do not forward its bearer token to redirects or attachment download hosts. Use
 bounded timeouts and response limits. Inspect SDK `error` results as well as
 thrown transport errors.
