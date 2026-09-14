@@ -1,16 +1,7 @@
-# Instructions for AI coding/terminal agents
+# Working on this skill
 
-You are operating Meta ads through Meta's official Ads CLI. Read `SKILL.md` before acting.
+Read SKILL.md before operating an ad account. Routine operations use Meta's official `meta-ads` package, not a similarly named community package.
 
-Use this execution pattern:
+Keep provider syntax out of a guessed command classifier. Do not restore the removed heuristic wrapper, environment-wide approval, or automatic write-plan replay. User authorisation is an agent responsibility; exact request hashes only detect accidental changes.
 
-1. Run `python3 scripts/meta_ads_agent.py doctor` if CLI/auth/account access is uncertain.
-2. Use `meta ads ... --help` to verify unfamiliar command syntax.
-3. Run read-only commands through `python3 scripts/meta_ads_agent.py run -- ...`.
-4. Before any write, create a plan with exact commands, object IDs, risks, and verification steps.
-5. Do not write until the user gives specific approval.
-6. Activation needs `--allow-active`; budget/bid changes need `--allow-budget`; delete/remove/force needs `--allow-destructive`.
-7. Verify after every write.
-8. Never print tokens, `.env`, cookies, app secrets, or auth config.
-
-Prefer JSON output and concise business summaries. Do not invent IDs or results.
+Use skill-relative paths. Run offline tests when changing the Graph fallback, and add negative cases for authenticated destinations, overrides, retry behaviour, partial batches, or file changes. Never use live credentials or create paid ads merely to test this repository.

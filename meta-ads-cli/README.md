@@ -1,53 +1,11 @@
-# Meta Ads CLI Agent Skill v2
+# meta-ads-cli
 
-A general-purpose skill for AI agents that manage Meta/Facebook/Instagram ads via Meta's official Ads CLI.
+A provider-specific Agent Skill for **Meta's official `meta-ads` package**. Start with [SKILL.md](SKILL.md).
 
-V2 is deliberately different from v1:
+The official CLI handles routine account, campaign, ad set, ad, creative, catalogue, dataset, and Insights operations. The small `scripts/meta_graph.py` fallback retains raw Graph calls, independent batches, and image/video uploads when installed CLI help confirms a gap. It does not duplicate the full CRUD client.
 
-- v1 implemented a custom Marketing API wrapper.
-- v2 assumes Meta's official `meta ads ...` CLI should handle auth, pagination, object operations, output formats, and API edge cases.
-- v2 adds what agents still need: safety gates, command planning, JSON-first execution, verification workflows, evals, and cross-agent instructions.
+Revision 3 removes the heuristic command-risk wrapper, automatic plan runner, duplicate agent prompts, and stale command/risk catalogues. They were not a reliable authorisation boundary. The direct workflow requires specific user authorisation, paused creation, exact account context, and read-after-write verification.
 
-## Quick start
+The fallback accepts only relative paths on `https://graph.facebook.com`, never follows redirects or paging URLs, performs no automatic retry, and reports per-item batch failure. Writes require an exact locally reviewed plan hash. Existing scripts and environment conventions from `meta-ads-control` are not compatibility interfaces.
 
-```bash
-python3.12 -m pip install meta-ads
-meta auth status
-python3 scripts/meta_ads_agent.py doctor
-python3 scripts/meta_ads_agent.py run -- meta ads campaign list --limit 25
-```
-
-## Directory layout
-
-```text
-SKILL.md                         Primary skill instructions
-scripts/meta_ads_agent.py         Safety wrapper around Meta Ads CLI
-references/                       Agent playbooks and deep references
-templates/                        Machine-readable plan templates and schema
-evals/                            Behavioural tests and rubric
-```
-
-## Safe execution pattern
-
-Read-only commands can be run directly through the guard:
-
-```bash
-python3 scripts/meta_ads_agent.py run -- meta ads insights get --date-preset last_7d --fields spend,impressions,clicks,ctr
-```
-
-Writes require approval:
-
-```bash
-python3 scripts/meta_ads_agent.py run \
-  --approved "User approved pausing ad 120000000000000" \
-  -- meta ads ad update 120000000000000 --status PAUSED
-```
-
-Activation requires an extra flag:
-
-```bash
-python3 scripts/meta_ads_agent.py run \
-  --approved "User approved activating campaign 120000000000000" \
-  --allow-active \
-  -- meta ads campaign update 120000000000000 --status ACTIVE
-```
+This skill's MIT licence does not relicense Meta's proprietary CLI. Offline tests use synthetic data and mocks, not an ad account. No live CLI/API compatibility or advertising result is implied by those tests.
