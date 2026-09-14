@@ -1,183 +1,108 @@
 ---
 name: tracking-pettracer-location
 description: >-
-  Tracks PetTracer (pettracer.com) GPS collars via the PetTracer portal API: fetches a pet’s latest location,
-  location history, and optionally streams updates via the PetTracer WebSocket (SockJS/STOMP).
-  Use when the user asks “where is my pet/cat”, “track my PetTracer”, wants GPS coordinates/history,
-  or needs help with PetTracer authentication tokens or live tracking.
+  Retrieve and interpret an authorised owner's PetTracer collar inventory, latest
+  known GPS fix, or bounded location history. Use for explicit PetTracer work,
+  not generic pet questions or tracking a person. Distinguish measurement time,
+  contact time, missing data, and stale fixes.
+compatibility: Optional Python 3.10+ standard-library helper uses the unofficial PetTracer portal protocol. It requires authorised credentials for live reads; vendor API stability and current field semantics are not guaranteed.
+metadata:
+  version: "1.0.0"
+  reviewed: "2026-09-13"
 ---
 
-# Tracking PetTracer pet location
+# PetTracer location evidence
 
-## Why this exists
+Keep this skill: it solves a specific owner's lookup task. No current official
+public developer API or replacement CLI was established during this review. The
+portal helper is therefore explicitly unofficial, not a vendor-supported client
+or a guarantee of live tracking. Prefer the official app/portal when its behaviour
+or the account contract differs.
 
-PetTracer exposes an (unofficial) web portal API used by their apps/website. This skill gives a reliable, low-drama workflow for:
-- **Current location** (latest known point)
-- **Recent route/history** (time-windowed points)
-- **Near-real-time updates** (WebSocket push, optional)
+## Establish the target and permission
 
-It is designed to minimise API load (be respectful) and to produce **consistent, copy/paste-friendly outputs**.
+Use only an account/collar the user owns or is authorised to inspect. Confirm the
+actual device ID against the account inventory and official app before interpreting
+coordinates as the pet's location. A HomeStation's configured position is not a
+collar GPS fix. An absent device-type field remains unverified; do not infer type
+from an arbitrary name or the first item in a response.
 
-## Quick start
-
-### Snapshot location (recommended default)
-1. Set credentials (prefer env vars, not CLI args):
-
-```bash
-export PETTRACER_USERNAME="you@example.com"
-export PETTRACER_PASSWORD="••••••••"
-```
-
-2. List devices:
+Resolve SKILL_DIR to this installed skill directory. Set PETTRACER_TOKEN privately,
+or PETTRACER_USERNAME and PETTRACER_PASSWORD for an authorised login. Never ask for
+credentials in chat or pass them in command arguments. The helper does not store
+or print tokens and does not accept arbitrary API origins or credential redirects.
 
 ```bash
-python scripts/pettracer_cli.py list --format json --pretty
+python "$SKILL_DIR/scripts/pettracer.py" list
+python "$SKILL_DIR/scripts/pettracer.py" locate --device-id 12345 --max-age-seconds 900
 ```
 
-3. Locate a pet:
+Replace the sample ID with the verified collar ID. The 900-second default is a
+local reporting threshold, not a manufacturer guarantee or the right threshold
+for every tracking mode. `recent` means the supplied measurement timestamp passes
+that chosen threshold; it does not mean the pet has stayed at those coordinates.
 
-- By name:
+## Read timestamps literally
+
+Use only `timeMeasure` to compute fix age. Keep `timeDb` and `lastContact` separate;
+new database activity/contact cannot make an old position fresh. Reject timezone-
+less dates rather than silently calling them UTC. Unknown times and future times
+are explicit states, never fresh by default. Display the actual fix time/timezone
+and age alongside retrieval time.
+
+The helper validates finite latitude/longitude ranges and preserves zero values.
+It does not estimate a battery percentage or convert raw signal/accuracy fields
+without a verified calibration/units contract. `acc` and `horiPrec` remain separate
+raw quality fields with unverified units; do not call either a metre-radius merely
+because a community integration did. `home` is a device flag, not proof the pet is
+inside a precise geofence.
+
+## History
+
+Use an explicit timezone-aware window, at most seven days per helper request:
+
 ```bash
-python scripts/pettracer_cli.py locate --pet "Fluffy" --format json --pretty
+python "$SKILL_DIR/scripts/pettracer.py" history --device-id 12345 \
+  --from-time 2026-09-13T06:00:00+02:00 --to-time 2026-09-13T12:00:00+02:00
 ```
 
-- By id:
-```bash
-python scripts/pettracer_cli.py locate --device-id 12345 --format json --pretty
-```
+These are example times, not the current requested interval. The helper preserves
+provider order and states completeness is unverified. Check returned timestamps
+against the requested interval; unknown/out-of-window points remain labelled.
+Sort or deduplicate deliberately for a route, preserving originals and gaps.
+Straight lines between sparse GPS fixes are not the actual path travelled.
 
-- If the account has **exactly one collar**, you can omit `--pet/--device-id`:
-```bash
-python scripts/pettracer_cli.py locate --format json --pretty
-```
+## Live updates and modes
 
-### Get location history (last 6 hours)
-```bash
-python scripts/pettracer_cli.py history --pet "Fluffy" --hours 6 --format json --pretty
-```
+For immediate owner search/live mode use the official app/portal. A subscription
+to updates does not itself command the collar to obtain a new fix. Changing modes
+can affect battery and device behaviour; do not change settings as a side effect
+of a location read. The old unbounded watcher is removed; retained protocol notes
+in [portal and streaming](references/PORTAL.md) describe the evidence needed for
+an explicitly scoped new integration, not a tested live client.
 
-## Core workflow the agent should follow
+Do not promise continuous watching or future notification unless an authorised
+running service/scheduler has actually been established. A failed stream or no GPS
+fix is not evidence that the pet is safe, stationary, indoors, or at home.
 
-### 1) Decide: snapshot vs history vs live updates
-- **Snapshot**: user asks “where is X right now?” → use `locate`.
-- **History**: user asks “where has X been today/last hour?” → use `history`.
-- **Live**: user wants continuous updates → use WebSocket (see [references/websocket.md](references/websocket.md)).
+## Return an honest location result
 
-Default to **snapshot** unless the user explicitly wants a route or live tracking.
+State the selected collar, latest valid measured coordinates, measurement time,
+age/freshness state, and relevant missing/quality data. Report last contact separately.
+A map link can disclose precise location to a third party; include it only as
+appropriate to the user's request and keep raw history private. Do not overstate
+accuracy, reverse-geocode a precise address without need, or infer human routines.
 
-### 2) Authenticate safely
-Preferred order:
-1. Use `PETTRACER_TOKEN` if already available.
-2. Else login with `PETTRACER_USERNAME` + `PETTRACER_PASSWORD` (or `PETTRACER_EMAIL`).
+Exit zero means the read was processed, not that a recent GPS fix exists. Inspect
+`last_fix.freshness` and `device_type_verified`. Missing/invalid fixes, schema errors,
+auth failures, and empty history are different outcomes. Per-request socket timeout
+and a 2 MiB response bound are not a total wall-clock SLA. There are no automatic
+retries or re-login loops; verify an unexpected endpoint/schema before retrying.
 
-**Never** ask the user to paste tokens into chat. Ask them to set env vars or store secrets in their vault.
+Maintainers: `python -m unittest discover -s "$SKILL_DIR/tests" -v` tests parsing,
+selection, request boundaries, and mocked transport. No live account or collar was
+queried in this review. Vendor operational help: https://help.pettracer.com/.
 
-Optional overrides (useful for debugging / future-proofing):
-- `PETTRACER_API_BASE` (REST base; default `https://portal.pettracer.com/api`)
-- `PETTRACER_WS_BASE` (WebSocket base; default `wss://pt.pettracer.com/sc`)
-
-### 3) Identify the right device
-- Fetch devices via `GET /api/map/getccs` (wrapped by `pettracer_cli.py list`).
-- Match by `details.name` case-insensitively.
-- If multiple matches: show a disambiguation list (id + name) and ask the user which one.
-- If no match: show available device names.
-- If the account has exactly one collar, you can default to it.
-
-### 4) Fetch location data
-- **Current location** comes from `device.lastPos` (collars) or top-level `posLat/posLong` (HomeStations):
-  - `posLat`, `posLong`
-  - `timeMeasure` (timestamp)
-  - `acc` (accuracy, metres) or `horiPrec` (fallback)
-- **History** uses `POST /api/map/getccpositions` with:
-  - `devId`, `filterTime` (ms), `toTime` (ms)
-
-See [references/endpoints.md](references/endpoints.md) and [references/data-model.md](references/data-model.md).
-
-### 5) Present results consistently
-When reporting location, include:
-- Pet name + device id
-- Coordinates (lat, lon)
-- Last update time
-- Accuracy (if present)
-- How old the fix is (seconds/minutes since last fix), if possible
-- Optional: a map link (Google Maps + OpenStreetMap)
-
-**Preferred JSON shape (for tool-to-tool handoff):**
-```json
-{
-  "pet": { "id": 12345, "name": "Fluffy" },
-  "last_fix": {
-    "lat": 48.137154,
-    "lon": 11.576124,
-    "time": "2026-02-25T12:34:56+00:00",
-    "accuracy_m": 12
-  },
-  "last_fix_age_s": 90,
-  "battery_mv": 4012,
-  "battery_percent_est": 78,
-  "home": false,
-  "links": {
-    "google_maps": "https://www.google.com/maps?q=48.137154,11.576124",
-    "openstreetmap": "https://www.openstreetmap.org/?mlat=48.137154&mlon=11.576124#map=18/48.137154/11.576124"
-  }
-}
-```
-
-Notes:
-- `battery_percent_est` is an **estimate** derived from voltage (PetTracer reports millivolts, not %).
-- If there’s no GPS fix, report `error=no_recent_fix` and include `last_contact`.
-
-## Live tracking (optional, avoid aggressive polling)
-
-If you need frequent updates:
-- Prefer WebSocket push (avoid aggressive polling).
-- Only fall back to polling if WebSocket is not possible; keep polling ≥ 60s by default.
-
-Install dependency:
-```bash
-pip install aiohttp
-```
-
-Then run:
-```bash
-python scripts/pettracer_watch.py --pet "Fluffy"
-```
-
-See:
-- [references/websocket.md](references/websocket.md)
-- `scripts/pettracer_watch.py` for a working SockJS/STOMP implementation.
-
-## Troubleshooting playbook
-
-### No location / `lastPos` is missing
-Common reasons:
-- Collar hasn’t reported a GPS fix recently (indoors, low signal).
-- Battery low / collar off.
-- Subscription expired.
-
-Action:
-- Report “no recent fix” and show `lastContact` if available.
-- Suggest switching to a higher-frequency mode (Fast/Live) in the PetTracer app/portal **only if the user asks** (see [references/modes.md](references/modes.md)).
-
-### Auth failures (401 / invalid_auth)
-- Re-login to obtain a fresh `access_token`.
-- Confirm the login payload uses keys `login` + `password` (not `username`).
-
-### Rate limiting / service respect
-- Avoid tight loops against `/map/getccs`.
-- Prefer WebSocket for near-real-time tracking.
-
-## THE EXACT PROMPT — Location response format
-
-Use this when the user wants a human-readable answer:
-
-```
-Give the pet’s latest known PetTracer location.
-
-Include:
-- Pet name + device id
-- Time of last fix (and last contact if different)
-- Coordinates + map link(s)
-- Accuracy (metres) if present
-- One-line assessment: “recent fix” vs “stale fix” (use last_fix_age_s if available; interpret in the context of the current tracking mode)
-```
+History results retain each original record and label its measurement time as inside,
+outside, or unknown relative to the requested inclusive window. This is separate
+from fix age. A non-object `lastPos` is a schema error, not evidence of no GPS fix.
