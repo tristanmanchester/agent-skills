@@ -1,15 +1,74 @@
 from __future__ import annotations
 
-import pytest
+import asyncio
 
-from {{MODULE}} import {{CLASS_NAME}}
+import pytest
+from textual.widgets import Input
+from textual.worker import WorkerCancelled, WorkerFailed
+
+from {{MODULE}} import {{CLASS_NAME}}, MessageBubble
+
+
+async def settled(app, pilot) -> None:
+    async def wait_for_idle() -> None:
+        while app.busy:
+            await pilot.pause()
+    await asyncio.wait_for(wait_for_idle(), timeout=2)
+
 
 @pytest.mark.asyncio
-async def test_chat_roundtrip() -> None:
+async def test_chat_preserves_pending_prompt_and_draft(monkeypatch) -> None:
+    ready, release = asyncio.Event(), asyncio.Event()
+    async def build_reply(prompt: str) -> str:
+        ready.set()
+        await release.wait()
+        return "Reply to " + prompt
+    app = {{CLASS_NAME}}()
+    monkeypatch.setattr(app, "build_reply", build_reply)
+    async with app.run_test(size=(100, 30)) as pilot:
+        prompt = app.query_one("#prompt", Input)
+        prompt.value = "[bold]literal[/bold]"
+        await pilot.press("enter")
+        await asyncio.wait_for(ready.wait(), timeout=2)
+        worker = app._reply_worker
+        prompt.value = "next draft"
+        assert not app.submit_prompt(prompt.value)
+        assert app._reply_worker is worker
+        release.set()
+        await asyncio.wait_for(worker.wait(), timeout=2)
+        await settled(app, pilot)
+        assert prompt.value == "next draft"
+        assert [bubble.message_text for bubble in app.query(MessageBubble)][-2:] == [
+            "[bold]literal[/bold]", "Reply to [bold]literal[/bold]"
+        ]
+
+
+@pytest.mark.asyncio
+async def test_chat_failure_has_explicit_status(monkeypatch) -> None:
+    async def build_reply(prompt: str) -> str:
+        raise RuntimeError("Synthetic service failure")
+    app = {{CLASS_NAME}}()
+    monkeypatch.setattr(app, "build_reply", build_reply)
+    async with app.run_test(size=(100, 30)) as pilot:
+        assert app.submit_prompt("hello")
+        worker = app._reply_worker
+        with pytest.raises(WorkerFailed):
+            await asyncio.wait_for(worker.wait(), timeout=2)
+        await settled(app, pilot)
+        assert app.message_count == 2  # Welcome and user; no invented reply.
+        assert app.reply_status == "Reply failed. No automatic retry."
+
+
+@pytest.mark.asyncio
+async def test_stop_before_worker_starts_releases_local_ownership() -> None:
     app = {{CLASS_NAME}}()
     async with app.run_test(size=(100, 30)) as pilot:
-        await pilot.click("#prompt")
-        await pilot.press("h", "e", "l", "l", "o")
-        await pilot.press("enter")
-        await pilot.pause(0.1)
-        assert app.message_count >= 3
+        assert app.submit_prompt("hello")
+        worker = app._reply_worker
+        app.action_cancel_reply()
+        assert not app.busy and app._reply_worker is None
+        with pytest.raises(WorkerCancelled):
+            await asyncio.wait_for(worker.wait(), timeout=2)
+        await pilot.pause()
+        assert app.message_count == 2
+        assert "Remote outcome may be unknown" in app.reply_status

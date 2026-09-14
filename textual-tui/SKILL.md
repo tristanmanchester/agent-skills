@@ -80,6 +80,10 @@ identifiers are validated, and all selected templates are parsed before any writ
 Generated Python is reformatted by ast.unparse, not executed. A write failure can
 leave a private partial draft; it is not an atomic multi-file transaction.
 
+For the chat starter, read [request ownership and tests](references/chat-template.md).
+Its explicit Stop action, draft preservation, and late-result checks are part of
+the supplied example, not behaviour to infer from the worker decorator.
+
 Integrate selected output deliberately into the app. Review packaging/CI against
 the existing project and current supported Python/tool versions rather than copying
 a new universal build system. Older standalone emit helpers are optional starting
