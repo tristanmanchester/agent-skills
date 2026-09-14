@@ -17,12 +17,16 @@ Use **`meta-ads`**, published by Meta's `facebook` PyPI account; its executable 
 Inspect the installed version and help before composing unfamiliar options:
 
 ```bash
-python3.13 -m pip show meta-ads
+command -v meta
 meta --help
 meta ads --help
 meta ads adaccount --help
 meta ads campaign list --help
 ```
+
+Use the `meta` executable from the intended environment. For package metadata,
+run `python3 -m pip show meta-ads` with the interpreter that owns that installation;
+a different system interpreter cannot establish whether an isolated CLI is installed.
 
 Install `meta-ads` in an isolated environment only when needed and authorised. Match an available wheel to the interpreter/OS/architecture; Python >=3.12 alone does not guarantee a supported platform. The reviewed release is 1.1.0, published 17 June 2026, labelled Alpha. Treat the installed CLI's help and actual output as the execution contract, not a copied command catalogue.
 
