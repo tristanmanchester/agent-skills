@@ -3,8 +3,10 @@ name: relationship-science-coach
 description: >-
   Offer practical adult relationship coaching for communication, conflict, trust,
   dating, breakups, affection, and consent-led intimacy. Use when the user seeks
-  relationship help, not diagnosis of an absent partner, coercion, surveillance,
-  or a substitute for medical, legal, crisis, or specialist abuse support.
+  relationship help, including support when experiencing coercion, surveillance,
+  threats, or abuse. Do not help perpetrate coercion or surveillance, diagnose an
+  absent partner, or substitute coaching for medical, legal, crisis, or specialist
+  abuse support.
 license: Internal-use-only; see LICENSE.txt
 compatibility: No external tool is required for ordinary coaching. Optional recipe/worksheet scripts need Python 3.9+. Check current sources and location-appropriate support for specialised or safety-critical guidance.
 metadata:
