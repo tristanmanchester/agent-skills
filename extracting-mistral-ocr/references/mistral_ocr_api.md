@@ -1,80 +1,40 @@
-# Mistral OCR API (quick reference)
+# Mistral OCR contract
 
-This skill targets Mistral's OCR endpoint and its companion Files endpoint.
-
-## Endpoints
-
-- **OCR**: `POST https://api.mistral.ai/v1/ocr`
-- **Files upload**: `POST https://api.mistral.ai/v1/files` with `purpose="ocr"`
-
-## Default model
-
-- `mistral-ocr-latest`
-
-## Input options (PDF)
-
-Pick the most reliable option for the situation:
-
-1. **Local PDF path** (most common): upload the PDF via the Files endpoint, then OCR using the returned `file_id`.
-2. **Public URL**: call OCR directly using a `document_url` (must be reachable by Mistral's API without auth/cookies).
-
-### Upload (Python SDK)
+Reviewed 2026-09-13. Runtime dependencies: Python >=3.10 and `mistralai>=2.10,<3`.
 
 ```python
-upload = client.files.upload(
-    file={"file_name": "document.pdf", "content": open("document.pdf", "rb")},
-    purpose="ocr",
-)
-file_id = upload.id
+from mistralai.client import Mistral
+
+with Mistral(api_key=api_key) as client:
+    with open("document.pdf", "rb") as stream:
+        uploaded = client.files.upload(file={"file_name": "document.pdf", "content": stream}, purpose="ocr")
+    try:
+        response = client.ocr.process(
+            model="mistral-ocr-latest",
+            document={"type": "file", "file_id": uploaded.id},
+            table_format="html",
+            include_image_base64=False,
+            retries=None,
+        )
+        data = response.model_dump(mode="json", by_alias=True)
+    finally:
+        client.files.delete(file_id=uploaded.id)
 ```
 
-### OCR request fields (common)
+Document URLs use `{ "type": "document_url", "document_url": "https://..." }`; images use `image_url` with an HTTPS or data URL. Zero-based page selection is explicit. A private URL requiring browser authentication is not a public document URL.
 
-```json
-{
-  "model": "mistral-ocr-latest",
-  "document": { "file_id": "..." }
-}
-```
+OCR table objects contain `id`, `content`, and `format` (`html` or `markdown`). SDK `format_` is an internal field name; JSON-mode dumping with aliases preserves the wire shape. Pages also contain Markdown, images, dimensions, optional headers/footers, blocks, and confidence metadata. Keep the complete response rather than flattening away information not used by the export.
 
-Common parameters you may set (names match the OCR docs):
+Structured annotations use a JSON Schema response format. The SDK dictionary uses `schema_definition` inside `json_schema`; its wire alias is `schema`. The old generic `json_object`/`text` annotation switch is removed. Schema validation does not establish that extracted values are true.
 
-- `model`: string
-- `document`: one of
-  - `{ "type": "document_url", "document_url": "<public url>" }`
-  - `{ "type": "image_url", "image_url": "<public url>" }`
-  - `{ "file_id": "<uploaded id>" }`
-- `table_format`: `null` | `"markdown"` | `"html"`
-- `extract_header`: bool (default false)
-- `extract_footer`: bool (default false)
-- `include_image_base64`: bool (when true, embedded images are returned with base64)
-- `pages`: list[int] (0-indexed)
-- `image_limit`: int (max images to extract)
-- `image_min_size`: int (min width/height for extracted images)
-- `document_annotation_prompt`: string (optional)
-- `document_annotation_format`: object like `{ "type": "text" | "json_object" | "json_schema" }` (must be provided when using `document_annotation_prompt`)
+Do not treat upload limits as OCR processing limits. Check current service limits and model capabilities before large jobs. Table/header/footer options need OCR 2512 or newer; structural blocks need OCR 4 or newer. Paid requests are not automatically retried by this helper.
 
-## Response shape (high level)
+## Primary sources
 
-Top-level fields:
-
-- `pages`: list[page]
-- `model`: string
-- `usage_info`: object
-- `document_annotation`: string|null (only when using document annotations)
-
-Each `page` commonly includes:
-
-- `index`: page index
-- `markdown`: extracted page content in Markdown
-- `images`: list[{id, top_left_x, top_left_y, bottom_right_x, bottom_right_y, image_base64?}]
-- `tables`: list[...] (when using `table_format="markdown"` or `"html"`)
-- `hyperlinks`: list[...]
-- `header` / `footer`: strings when enabled
-- `dimensions`: object (dpi, width, height)
-
-## Practical notes
-
-- When extracting images/tables, page Markdown will contain placeholders like `![img-0.jpeg](img-0.jpeg)` and `[tbl-3.html](tbl-3.html)`. Map placeholders to the extracted artefacts using the `images` and `tables` fields.
-- For high throughput, Mistral recommends using Batch Inference for OCR workloads.
-- File upload size limits are documented as 512 MB; for huge PDFs, use page selection or split the document.
+- [SDK migration guide](https://github.com/mistralai/client-python/blob/main/MIGRATION.md): v2 imports and Python minimum.
+- [OCR processor](https://docs.mistral.ai/studio/document-processing/basic_ocr): current capabilities and inputs.
+- [SDK OCR implementation](https://github.com/mistralai/client-python/blob/main/src/mistralai/client/ocr.py): supported keyword arguments and annotation schema requirement.
+- [File document type](https://github.com/mistralai/client-python/blob/main/src/mistralai/client/models/filechunk.py).
+- [Table response model](https://github.com/mistralai/client-python/blob/main/src/mistralai/client/models/ocrtableobject.py).
+- [JSON Schema model](https://github.com/mistralai/client-python/blob/main/src/mistralai/client/models/jsonschema.py).
+- [Package releases](https://pypi.org/project/mistralai/): 2.10.0 released 2026-09-09.

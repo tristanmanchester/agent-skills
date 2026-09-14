@@ -1,378 +1,284 @@
 #!/usr/bin/env python3
-"""OCR a PDF (or image) with Mistral OCR and write deterministic outputs.
-
-Supports:
-- Local PDF path (auto-uploads to Mistral Files API with purpose=ocr)
-- Public document URL (document_url)
-- Optional document annotation for whole-document structured extraction
-
-Outputs:
-- raw_response.json (full OCR response)
-- combined.md (all pages concatenated)
-- pages/page-XYZ.md (per-page markdown)
-- images/ (decoded images when include_image_base64=True)
-- tables/ (best-effort extraction when table_format is set)
-"""
-
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["mistralai>=2.10,<3"]
+# ///
+"""OCR with Mistral SDK v2; export auditable, self-contained Markdown assets."""
 from __future__ import annotations
 
 import argparse
 import base64
+from dataclasses import dataclass
+from contextlib import contextmanager
 import json
 import os
+from pathlib import Path
 import re
 import sys
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
-
-# The official SDK uses this import path in Mistral's docs.
-try:
-    from mistralai import Mistral  # type: ignore
-except Exception as e:  # pragma: no cover
-    raise SystemExit(
-        "Missing dependency 'mistralai'. Install it (for example): pip install mistralai\n"
-        f"Original import error: {e}"
-    )
+import tempfile
+from typing import Any
+from urllib.parse import urlsplit
 
 
 class CLIError(RuntimeError):
     pass
 
 
-def _to_plain_dict(obj: Any) -> Any:
-    """Convert SDK response objects into JSON-serialisable Python objects."""
-    if obj is None:
+@dataclass
+class Source:
+    payload: dict[str, Any]
+    uploaded_file_id: str | None = None
+
+
+def parse_pages_spec(spec: str | None) -> list[int] | None:
+    if spec is None:
         return None
-    # Pydantic v2 model
-    dump = getattr(obj, "model_dump", None)
-    if callable(dump):
-        return dump()
-    # Pydantic v1 model
-    dict_fn = getattr(obj, "dict", None)
-    if callable(dict_fn):
-        return dict_fn()
-    if isinstance(obj, dict):
-        return {k: _to_plain_dict(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple)):
-        return [_to_plain_dict(v) for v in obj]
-    # Dataclasses
-    if hasattr(obj, "__dataclass_fields__"):
-        return {k: _to_plain_dict(getattr(obj, k)) for k in obj.__dataclass_fields__.keys()}
-    # Plain objects: best effort
-    if hasattr(obj, "__dict__") and not isinstance(obj, (str, int, float, bool)):
-        return {k: _to_plain_dict(v) for k, v in vars(obj).items() if not k.startswith("_")}
-    return obj
-
-
-_PAGE_SPEC_RE = re.compile(r"^\s*(\d+)(?:\s*-\s*(\d+))?\s*$")
-
-
-def parse_pages_spec(spec: Optional[str]) -> Optional[List[int]]:
-    """Parse a pages spec like '0,2-4,7' into a sorted unique list of ints."""
-    if spec is None or not spec.strip():
-        return None
-    pages: List[int] = []
+    pages: set[int] = set()
     for part in spec.split(","):
-        part = part.strip()
-        if not part:
-            continue
-        m = _PAGE_SPEC_RE.match(part)
-        if not m:
-            raise CLIError(f"Invalid --pages segment: {part!r}. Use like 0,2-4,7")
-        start = int(m.group(1))
-        end = int(m.group(2)) if m.group(2) is not None else start
-        if end < start:
-            raise CLIError(f"Invalid --pages range: {part!r} (end < start)")
-        pages.extend(range(start, end + 1))
-    # de-dup + sort
-    return sorted(set(pages))
-
-
-def ensure_dir(path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True)
-
-
-def decode_maybe_data_uri(b64: str) -> bytes:
-    """Decode base64, tolerating optional data URI prefixes."""
-    # Common shapes: "data:image/png;base64,AAAA" or raw base64 "AAAA"
-    if "," in b64 and b64.lstrip().lower().startswith("data:"):
-        b64 = b64.split(",", 1)[1]
-    return base64.b64decode(b64, validate=False)
-
-
-def safe_write_text(path: Path, text: str) -> None:
-    path.write_text(text, encoding="utf-8", errors="replace")
-
-
-def safe_write_bytes(path: Path, data: bytes) -> None:
-    path.write_bytes(data)
-
-
-def write_json(path: Path, payload: Any) -> None:
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        match = re.fullmatch(r"\s*(\d+)(?:\s*-\s*(\d+))?\s*", part)
+        if not match:
+            raise CLIError("Use zero-based pages such as 0,2-4; empty segments are invalid")
+        start, end = int(match[1]), int(match[2] or match[1])
+        if end < start or end > 10000:
+            raise CLIError("Invalid page range (helper limit: page 10000)")
+        pages.update(range(start, end + 1))
+    return sorted(pages)
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="OCR PDFs/images via Mistral OCR and write Markdown/JSON outputs.")
-    src = p.add_mutually_exclusive_group(required=True)
-    src.add_argument("--input", type=str, help="Local file path (PDF or image). Uploaded to Mistral Files API.")
-    src.add_argument("--url", type=str, help="Public URL to a PDF or image.")
-    p.add_argument("--out", type=str, required=True, help="Output directory.")
-    p.add_argument("--model", type=str, default="mistral-ocr-latest", help="OCR model to use.")
-    p.add_argument(
-        "--table-format",
-        choices=["inline", "markdown", "html"],
-        default="inline",
-        help="Table extraction mode. 'inline' keeps tables in Markdown; others also populate page.tables.",
-    )
-    p.add_argument("--extract-header", action="store_true", help="Extract header into page.header.")
-    p.add_argument("--extract-footer", action="store_true", help="Extract footer into page.footer.")
-    p.add_argument(
-        "--include-image-base64",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Whether to include base64 image data for extracted figures.",
-    )
-    p.add_argument("--image-limit", type=int, default=None, help="Max images to extract.")
-    p.add_argument("--image-min-size", type=int, default=None, help="Minimum width/height of images to extract.")
-    p.add_argument("--pages", type=str, default=None, help="Page selection: '0,2-4,7' (0-indexed).")
-
-    # Document-level structured extraction
-    p.add_argument(
-        "--annotation-prompt",
-        type=str,
-        default=None,
-        help="Optional prompt to extract structured info from the entire document.",
-    )
-    p.add_argument(
-        "--annotation-format",
-        choices=["text", "json_object"],
-        default="json_object",
-        help="document_annotation_format.type to use when annotation prompt is set.",
-    )
-
-    p.add_argument(
-        "--cleanup-upload",
-        action="store_true",
-        help="Attempt to delete the uploaded file after OCR (best effort).",
-    )
-
-    return p
+    parser = argparse.ArgumentParser(description=__doc__)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--input", type=Path)
+    source.add_argument("--url")
+    parser.add_argument("--url-type", choices=("document", "image"), default="document")
+    parser.add_argument("--out", type=Path, required=True, help="New output directory; existing directories are never overwritten")
+    parser.add_argument("--model", default="mistral-ocr-latest")
+    parser.add_argument("--table-format", choices=("inline", "markdown", "html"), default="inline")
+    parser.add_argument("--pages")
+    parser.add_argument("--include-image-base64", action="store_true")
+    parser.add_argument("--include-blocks", action="store_true")
+    parser.add_argument("--confidence", choices=("page", "word", "block"))
+    parser.add_argument("--extract-header", action="store_true")
+    parser.add_argument("--extract-footer", action="store_true")
+    parser.add_argument("--image-limit", type=int)
+    parser.add_argument("--image-min-size", type=int)
+    parser.add_argument("--annotation-schema", type=Path, help="JSON Schema document for structured annotations")
+    parser.add_argument("--annotation-prompt")
+    parser.add_argument("--keep-upload", action="store_true", help="Retain this run's uploaded PDF instead of deleting it in finally")
+    return parser
 
 
-@dataclass
-class Source:
-    kind: str  # 'file_id' | 'document_url'
-    payload: Dict[str, Any]
-    uploaded_file_id: Optional[str] = None
-
-
-def require_api_key() -> str:
-    api_key = os.getenv("MISTRAL_API_KEY")
-    if not api_key:
-        raise CLIError("MISTRAL_API_KEY is not set in the environment")
-    return api_key
-
-
-def is_probably_pdf(path_or_url: str) -> bool:
-    return path_or_url.lower().endswith(".pdf")
-
-
-def prepare_source(client: Mistral, args: argparse.Namespace) -> Source:
+def prepare_source(client: Any, args: argparse.Namespace) -> Source:
     if args.url:
-        url = args.url
-        # Use document_url for PDFs and image_url for images.
-        if is_probably_pdf(url):
-            return Source(kind="document_url", payload={"type": "document_url", "document_url": url})
-        return Source(kind="image_url", payload={"type": "image_url", "image_url": url})
-
-    in_path = Path(args.input)
-    if not in_path.exists() or not in_path.is_file():
-        raise CLIError(f"Input file not found: {in_path}")
-
-    # Upload to Files API with purpose='ocr'
-    upload = client.files.upload(
-        file={"file_name": in_path.name, "content": open(in_path, "rb")},
-        purpose="ocr",
-    )
-    upload_dict = _to_plain_dict(upload)
-    file_id = upload_dict.get("id") or upload_dict.get("file_id")
-    if not file_id:
-        raise CLIError(f"Upload succeeded but no file id returned. Response keys: {list(upload_dict.keys())}")
-
-    return Source(kind="file_id", payload={"file_id": file_id}, uploaded_file_id=file_id)
+        parsed = urlsplit(args.url)
+        if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+            raise CLIError("Provide a public HTTPS URL without embedded credentials")
+        kind = args.url_type + "_url"
+        return Source({"type": kind, kind: args.url})
+    path = args.input.expanduser()
+    if not path.is_file():
+        raise CLIError("Input file does not exist")
+    if path.suffix.lower() == ".pdf":
+        with path.open("rb") as stream:
+            uploaded = client.files.upload(file={"file_name": path.name, "content": stream}, purpose="ocr")
+        return Source({"type": "file", "file_id": uploaded.id}, uploaded.id)
+    media = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif"}
+    mime = media.get(path.suffix.lower())
+    if not mime:
+        raise CLIError("Local input must be PDF, PNG, JPEG, WebP, or AVIF")
+    data = base64.b64encode(path.read_bytes()).decode("ascii")
+    return Source({"type": "image_url", "image_url": f"data:{mime};base64,{data}"})
 
 
-def call_ocr(client: Mistral, source: Source, args: argparse.Namespace) -> Dict[str, Any]:
-    pages = parse_pages_spec(args.pages)
-
-    table_format = None if args.table_format == "inline" else args.table_format
-
-    ocr_kwargs: Dict[str, Any] = {
+def request_options(args: argparse.Namespace) -> dict[str, Any]:
+    options: dict[str, Any] = {
         "model": args.model,
-        "document": source.payload,
-        "table_format": table_format,
-        "extract_header": bool(args.extract_header),
-        "extract_footer": bool(args.extract_footer),
-        "include_image_base64": bool(args.include_image_base64),
+        "table_format": None if args.table_format == "inline" else args.table_format,
+        "include_image_base64": args.include_image_base64,
+        "include_blocks": args.include_blocks,
+        "extract_header": args.extract_header,
+        "extract_footer": args.extract_footer,
+        "retries": None,
     }
-
+    pages = parse_pages_spec(args.pages)
     if pages is not None:
-        ocr_kwargs["pages"] = pages
-    if args.image_limit is not None:
-        ocr_kwargs["image_limit"] = args.image_limit
-    if args.image_min_size is not None:
-        ocr_kwargs["image_min_size"] = args.image_min_size
-
-    if args.annotation_prompt:
-        ocr_kwargs["document_annotation_prompt"] = args.annotation_prompt
-        ocr_kwargs["document_annotation_format"] = {"type": args.annotation_format}
-
-    res = client.ocr.process(**ocr_kwargs)
-    return _to_plain_dict(res)
-
-
-def best_effort_delete_upload(client: Mistral, file_id: str) -> None:
-    # Not all SDK versions expose delete; swallow errors.
-    try:
-        delete = getattr(client.files, "delete", None)
-        if callable(delete):
-            delete(file_id=file_id)
-    except Exception:
-        pass
-
-
-def extract_tables(page: Dict[str, Any]) -> List[Tuple[str, str, str]]:
-    """Return (suggested_filename, ext, content) for table outputs."""
-    out: List[Tuple[str, str, str]] = []
-    tables = page.get("tables")
-    if not isinstance(tables, list):
-        return out
-
-    for i, tbl in enumerate(tables):
-        if not isinstance(tbl, dict):
-            continue
-        tbl_id = str(tbl.get("id") or f"tbl-{i}")
-
-        # Heuristics: common keys seen in OCR outputs.
-        html = tbl.get("html") or tbl.get("table_html") or tbl.get("content_html")
-        md = tbl.get("markdown") or tbl.get("table_markdown") or tbl.get("content_markdown")
-
-        if isinstance(html, str) and html.strip():
-            out.append((tbl_id, "html", html))
-        elif isinstance(md, str) and md.strip():
-            out.append((tbl_id, "md", md))
-        else:
-            # Unknown structure; dump JSON for visibility.
-            out.append((tbl_id, "json", json.dumps(tbl, ensure_ascii=False, indent=2)))
-
-    return out
+        options["pages"] = pages
+    for field in ("image_limit", "image_min_size"):
+        value = getattr(args, field)
+        if value is not None:
+            if value <= 0:
+                raise CLIError(f"{field} must be positive")
+            options[field] = value
+    if args.confidence:
+        if args.confidence == "block" and not args.include_blocks:
+            raise CLIError("Block confidence requires --include-blocks")
+        options["confidence_scores_granularity"] = args.confidence
+    if args.annotation_prompt and not args.annotation_schema:
+        raise CLIError("--annotation-prompt requires --annotation-schema")
+    if args.annotation_schema:
+        schema = json.loads(args.annotation_schema.read_text(encoding="utf-8"))
+        if not isinstance(schema, dict):
+            raise CLIError("Annotation schema must be a JSON object")
+        options["document_annotation_format"] = {"type": "json_schema", "json_schema": {
+            "name": "document_annotation", "schema_definition": schema, "strict": True,
+        }}
+        if args.annotation_prompt:
+            options["document_annotation_prompt"] = args.annotation_prompt
+    return options
 
 
-def write_outputs(out_dir: Path, ocr: Dict[str, Any]) -> None:
-    ensure_dir(out_dir)
-    ensure_dir(out_dir / "pages")
+def asset_id(value: Any) -> str:
+    # Provider responses are untrusted filenames; do not resolve or sanitise paths.
+    if not isinstance(value, str) or len(value) > 200 or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", value):
+        raise CLIError("Unsafe image/table identifier in OCR response")
+    return value
 
-    write_json(out_dir / "raw_response.json", ocr)
 
-    pages = ocr.get("pages")
-    if not isinstance(pages, list):
-        raise CLIError("Unexpected OCR response: missing 'pages' list")
+def write_json(path: Path, value: Any) -> None:
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
 
-    combined_parts: List[str] = []
 
-    images_dir = out_dir / "images"
-    tables_dir = out_dir / "tables"
+def render_links(markdown: str, assets: dict[str, str], prefix: str = "") -> str:
+    # Rewrite only exact Markdown destinations, not occurrences in prose.
+    for original, relative in assets.items():
+        markdown = markdown.replace(f"]({original})", f"]({prefix}{relative})")
+    return markdown
 
+
+@contextmanager
+def prepare_output(out: Path):
+    """Probe the actual destination before uploads or billed work; clean failed staging."""
+    if out.exists() or out.is_symlink():
+        raise CLIError("Output path already exists; choose a new directory")
+    out.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with tempfile.TemporaryDirectory(prefix=".mistral-ocr-", dir=out.parent) as temporary:
+        root = Path(temporary)
+        # Creating the directory alone does not establish file-write permission.
+        probe = root / ".write-probe"
+        with probe.open("xb") as stream:
+            stream.write(b"probe")
+        probe.unlink()
+        yield root
+
+
+def write_outputs(out: Path, response: dict[str, Any], *, staging: Path | None = None) -> None:
+    if staging is None:
+        with prepare_output(out) as root:
+            write_outputs(out, response, staging=root)
+        return
+    if out.exists() or out.is_symlink():
+        raise CLIError("Output path already exists; choose a new directory")
+    root = staging
+    pages = response.get("pages")
+    if not isinstance(pages, list) or not pages:
+        raise CLIError("OCR response has no pages")
+    for name in ("pages", "images", "tables"):
+        (root / name).mkdir()
+    write_json(root / "raw_response.json", response)
+    combined, manifest, seen = [], [], set()
     for page in pages:
-        if not isinstance(page, dict):
-            continue
-        idx = page.get("index")
-        try:
-            idx_int = int(idx)
-        except Exception:
-            idx_int = len(combined_parts)
+        if not isinstance(page, dict) or isinstance(page.get("index"), bool) or not isinstance(page.get("index"), int) or page["index"] < 0:
+            raise CLIError("OCR response contains an invalid page index")
+        index = page["index"]
+        if index in seen:
+            raise CLIError("OCR response contains duplicate page indices")
+        seen.add(index)
+        markdown = page.get("markdown")
+        if not isinstance(markdown, str):
+            raise CLIError("OCR page is missing Markdown")
+        mapping: dict[str, str] = {}
+        for image in page.get("images") or []:
+            identifier = asset_id(image.get("id"))
+            encoded = image.get("image_base64")
+            if encoded is None:
+                continue
+            if not isinstance(encoded, str):
+                raise CLIError("Invalid image data")
+            if encoded.startswith("data:"):
+                encoded = encoded.split(",", 1)[1]
+            data = base64.b64decode(encoded, validate=True)
+            relative = f"images/page-{index:03d}-{identifier}"
+            if identifier in mapping:
+                raise CLIError("Duplicate asset ID within a page")
+            (root / relative).write_bytes(data)
+            mapping[identifier] = relative
+        for table in page.get("tables") or []:
+            identifier = asset_id(table.get("id"))
+            content, format_ = table.get("content"), table.get("format")
+            if not isinstance(content, str) or format_ not in ("html", "markdown"):
+                raise CLIError("Unsupported table shape; expected content and format")
+            if identifier in mapping:
+                raise CLIError("Duplicate asset ID within a page")
+            extension = "html" if format_ == "html" else "md"
+            relative = f"tables/page-{index:03d}-{identifier}"
+            if not relative.endswith("." + extension):
+                relative += "." + extension
+            if relative in mapping.values():
+                raise CLIError("Asset filename collision")
+            (root / relative).write_text(content, encoding="utf-8")
+            mapping[identifier] = relative
+        (root / "pages" / f"page-{index:03d}.md").write_text(render_links(markdown, mapping, "../"), encoding="utf-8")
+        combined.append(f"<!-- page {index} -->\n\n" + render_links(markdown, mapping))
+        manifest.append({"page": index, "assets": mapping})
+    (root / "combined.md").write_text("\n\n---\n\n".join(combined), encoding="utf-8")
+    annotation = response.get("document_annotation")
+    if annotation is not None:
+        parsed = True
+        if isinstance(annotation, str):
+            try:
+                annotation = json.loads(annotation)
+            except ValueError:
+                parsed = False
+                (root / "document_annotation.txt").write_text(annotation, encoding="utf-8")
+        if parsed:
+            write_json(root / "document_annotation.json", annotation)
+    write_json(root / "manifest.json", {"model": response.get("model"), "pages": manifest})
+    if out.exists() or out.is_symlink():
+        raise CLIError("Output appeared during processing; choose a new directory")
+    root.rename(out)
 
-        md = page.get("markdown") or ""
-        if not isinstance(md, str):
-            md = str(md)
 
-        page_md_name = f"page-{idx_int:03d}.md"
-        safe_write_text(out_dir / "pages" / page_md_name, md)
-
-        combined_parts.append(f"\n\n<!-- page {idx_int} -->\n\n" + md)
-
-        # Images
-        images = page.get("images")
-        if isinstance(images, list) and images:
-            ensure_dir(images_dir)
-            for img in images:
-                if not isinstance(img, dict):
-                    continue
-                img_id = img.get("id")
-                b64 = img.get("image_base64")
-                if not img_id or not isinstance(img_id, str):
-                    continue
-                if not b64 or not isinstance(b64, str):
-                    continue
-                try:
-                    data = decode_maybe_data_uri(b64)
-                except Exception:
-                    continue
-                safe_write_bytes(images_dir / img_id, data)
-
-        # Tables
-        table_blobs = extract_tables(page)
-        if table_blobs:
-            ensure_dir(tables_dir)
-            for tbl_id, ext, content in table_blobs:
-                safe_write_text(tables_dir / f"{tbl_id}.{ext}", content)
-
-    safe_write_text(out_dir / "combined.md", "\n\n---\n\n".join(combined_parts).lstrip())
-
-    # Document annotation
-    ann = ocr.get("document_annotation")
-    if isinstance(ann, str) and ann.strip():
-        # Try JSON parse; if it fails, still store raw.
-        ann_path_json = out_dir / "document_annotation.json"
-        ann_path_txt = out_dir / "document_annotation.txt"
-        try:
-            parsed = json.loads(ann)
-            write_json(ann_path_json, parsed)
-        except Exception:
-            safe_write_text(ann_path_txt, ann)
-
-
-def main(argv: Optional[List[str]] = None) -> int:
-    parser = build_arg_parser()
-    args = parser.parse_args(argv)
-
-    try:
-        api_key = require_api_key()
-        out_dir = Path(args.out)
-        ensure_dir(out_dir)
-
-        client = Mistral(api_key=api_key)
-
+def execute(client: Any, args: argparse.Namespace) -> None:
+    options = request_options(args)
+    if args.out.exists() or args.out.is_symlink():
+        raise CLIError("Output already exists; no request was sent")
+    with prepare_output(args.out) as staging:
         source = prepare_source(client, args)
-        ocr = call_ocr(client, source, args)
+        try:
+            response = client.ocr.process(document=source.payload, **options)
+            write_outputs(args.out, response.model_dump(mode="json", by_alias=True), staging=staging)
+        finally:
+            if source.uploaded_file_id and not args.keep_upload:
+                # Cleanup failure is an error, not a silent claim that data was deleted.
+                try:
+                    client.files.delete(file_id=source.uploaded_file_id)
+                except Exception as exc:
+                    raise CLIError(f"Uploaded file cleanup failed: {source.uploaded_file_id}. Check remote retention; local output may already exist.") from exc
 
-        write_outputs(out_dir, ocr)
-
-        if args.cleanup_upload and source.uploaded_file_id:
-            best_effort_delete_upload(client, source.uploaded_file_id)
-
-        print(str(out_dir.resolve()))
+def main(argv: list[str] | None = None) -> int:
+    args = build_arg_parser().parse_args(argv)
+    os.umask(0o077)
+    try:
+        key = os.environ.get("MISTRAL_API_KEY")
+        if not key:
+            raise CLIError("MISTRAL_API_KEY is not set")
+        # Lazy v2-only import keeps --help and offline export tests usable without SDK/network.
+        from mistralai.client import Mistral
+        with Mistral(api_key=key) as client:
+            execute(client, args)
+        print(str(args.out.resolve()))
         return 0
-    except CLIError as e:
-        print(f"error: {e}", file=sys.stderr)
+    except ImportError:
+        print("Install dependencies from this skill's scripts/requirements.txt with Python 3.10+", file=sys.stderr)
+        return 2
+    except CLIError as exc:
+        print(f"error: {exc}", file=sys.stderr)
         return 2
     except KeyboardInterrupt:
-        print("interrupted", file=sys.stderr)
         return 130
-    except Exception as e:
-        print(f"unexpected error: {e}", file=sys.stderr)
+    except Exception as exc:
+        # SDK exceptions can contain document URLs or response content.
+        print(f"OCR/export failed ({type(exc).__name__}); inspect locally without exposing secrets", file=sys.stderr)
         return 1
 
 
