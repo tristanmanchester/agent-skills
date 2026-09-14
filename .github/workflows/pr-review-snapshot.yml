@@ -1,0 +1,98 @@
+name: PR review snapshot
+
+on:
+  push:
+    branches: [maintenance/catalogue-progress-20260913]
+    paths: [.github/workflows/pr-review-snapshot.yml]
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: read
+  statuses: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Bundle public source refs without stored credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --bare "https://github.com/${GITHUB_REPOSITORY}.git" repo.git
+          git -C repo.git bundle create "$PWD/review.bundle" --all
+      - name: Record current PR reviews and checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: python
+        run: |
+          import concurrent.futures
+          import datetime
+          import json
+          import os
+          import re
+          import urllib.request
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repo):
+              raise ValueError('Unexpected repository identifier')
+          root = 'https://api.github.com/repos/' + repo
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+          opener = urllib.request.build_opener(NoRedirect())
+          def get(path):
+              request = urllib.request.Request(root + path, headers={
+                  'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                  'Accept': 'application/vnd.github+json',
+                  'X-GitHub-Api-Version': '2022-11-28',
+                  'User-Agent': 'agent-skills-pr-review',
+              })
+              with opener.open(request, timeout=30) as response:
+                  data = response.read(20 * 1024 * 1024 + 1)
+              if len(data) > 20 * 1024 * 1024:
+                  raise ValueError('API response exceeded review bound')
+              return json.loads(data)
+          def pages(path):
+              result = []
+              for page in range(1, 101):
+                  separator = '&' if '?' in path else '?'
+                  rows = get(path + separator + f'per_page=100&page={page}')
+                  if not isinstance(rows, list):
+                      raise ValueError('Expected paginated list')
+                  result.extend(rows)
+                  if len(rows) < 100:
+                      return result
+              raise ValueError('Pagination bound reached; no complete snapshot')
+          prs = pages('/pulls?state=open')
+          def details(pr):
+              number, sha = pr['number'], pr['head']['sha']
+              return str(number), {
+                  'pr': get(f'/pulls/{number}'),
+                  'reviews': pages(f'/pulls/{number}/reviews'),
+                  'check_runs': get(f'/commits/{sha}/check-runs?per_page=100'),
+                  'status': get(f'/commits/{sha}/status?per_page=100'),
+              }
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+              detailed = dict(pool.map(details, prs))
+          report = {
+              'repository': repo,
+              'captured_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              'main': get('/git/ref/heads/main'),
+              'pull_requests': detailed,
+              'issue_comments': pages('/issues/comments'),
+              'inline_comments': pages('/pulls/comments'),
+          }
+          with open('review-metadata.json', 'x', encoding='utf-8') as stream:
+              json.dump(report, stream, indent=2)
+          print(f"Recorded {len(prs)} open PRs; no repository or account mutations performed by this job.")
+      - name: Upload source and evidence for this review
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pr-review-snapshot
+          path: |
+            review.bundle
+            review-metadata.json
+          retention-days: 3
+          if-no-files-found: error
