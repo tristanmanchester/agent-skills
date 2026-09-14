@@ -48,14 +48,17 @@ def tokens(text: str) -> set[str]:
 def audit(ideas: list[dict[str, str]]) -> dict:
     if not 1 <= len(ideas) <= MAX_IDEAS:
         raise ValueError('Idea count outside supported range')
+    normalised = [' '.join(idea['concept'].casefold().split()) for idea in ideas]
     token_sets = [tokens(idea['concept']) for idea in ideas]
     candidates = []
     for left, a in enumerate(token_sets):
         for right in range(left+1, len(token_sets)):
             b = token_sets[right]
             similarity = len(a & b) / len(a | b) if a or b else 0.0
-            if similarity >= 0.5:
-                candidates.append({'left': left+1, 'right': right+1, 'jaccard': similarity})
+            exact = bool(normalised[left]) and normalised[left] == normalised[right]
+            if exact or similarity >= 0.5:
+                candidates.append({'left': left+1, 'right': right+1, 'jaccard': similarity,
+                                   'exact_normalised_match': exact})
     candidates.sort(key=lambda pair: (-pair['jaccard'], pair['left'], pair['right']))
     return {'scope': 'lexical-overlap-only', 'novelty': 'NOT_ASSESSED', 'ideas': len(ideas),
             'candidate_pairs': candidates,
