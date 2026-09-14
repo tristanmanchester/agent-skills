@@ -1,92 +1,42 @@
-# Gestures (RNGH 3 + Reanimated 4)
+# Gesture Handler 3 contracts
 
-## Root setup (required)
+Use hooks such as usePanGesture/useTapGesture and the v3 composition hooks for new
+v3 code. Verify installed types; these names are not a v2 compatibility layer.
 
-Wrap your app with `GestureHandlerRootView` near the root.
+## Lifecycle and outcomes
 
-```tsx
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+The v3 renames include onStart -> onActivate and onEnd -> onDeactivate. The old
+second `success` parameter is replaced by `event.canceled`, with inverted meaning.
+Use `!event.canceled` before an application action. onFinalize cleanup must also
+cover failure before activation; do not assume every begin leads to deactivate.
 
-export default function App() {
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ActualApp />
-    </GestureHandlerRootView>
-  );
-}
-```
+The old onChange callback moves to change* values on onUpdate. Do not add both
+absolute translation and a delta in one frame. Preserve a start offset for each
+new drag/pinch; otherwise each gesture jumps back to its local origin. Capture
+an active gesture's bounds deliberately when the viewport changes.
 
-Official installation notes:
-- Root view defaults to `flex: 1`; keep it if you override styles.
-- Gestures won’t be recognised outside the root view.
-- Nested roots are OK: only the top-most is used.
-- For Modals on Android, wrap the Modal’s content with a root view.
+For a destructive/remote action, separate the gesture decision, visual transition,
+application request, and actual outcome. Gate repeated attempts while pending and
+provide recoverable UI on failure. Animation completion is not commit evidence.
 
-Docs: https://docs.swmansion.com/react-native-gesture-handler/docs/fundamentals/installation/
+## Composition and hierarchy
 
-## GestureDetector basics
+Same-component relations use useCompetingGestures, useSimultaneousGestures, or
+useExclusiveGestures. Cross-component relations use the documented requireToFail,
+block, and simultaneousWith properties. Relations cannot cross between new hook
+and old API generations; migrate a related group together. Do not reuse one gesture
+instance across multiple detectors.
 
-- `GestureDetector` attaches a gesture (or composed gesture) to a subtree.
-- RNGH 3 supports both the **hook API** and **builder pattern**.
-- Avoid nesting detectors that use different API styles.
-- Avoid reusing the same gesture instance across multiple detectors.
+RNGH 3 GestureDetector changes view hierarchy. For hierarchy-dependent rendering
+such as nested SVG interaction, use the documented InterceptingGestureDetector
+and VirtualGestureDetector arrangement rather than inserting arbitrary native
+views into the drawing tree. VirtualGestureDetector belongs below the intercepting
+parent. Inspect current types/examples for the actual drawing library.
 
-Docs: https://docs.swmansion.com/react-native-gesture-handler/docs/fundamentals/gesture-detectors/
+Keep the real GestureHandlerRootView boundary, modal handling, enabled state,
+scroll competition, hit slop, and accessibility equivalent actions explicit.
+Worklet callbacks can update shared values; cross to React Native only for a
+necessary application action defined in that runtime.
 
-## Default: hook API (RNGH 3)
-
-```tsx
-import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
-
-export function DragBox() {
-  const x = useSharedValue(0);
-  const y = useSharedValue(0);
-
-  const pan = usePanGesture({
-    onUpdate: (e) => {
-      x.value = e.translationX;
-      y.value = e.translationY;
-    },
-  });
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value }, { translateY: y.value }],
-  }));
-
-  return (
-    <GestureDetector gesture={pan}>
-      <Animated.View style={[{ width: 80, height: 80 }, style]} />
-    </GestureDetector>
-  );
-}
-```
-
-RNGH 3 migration notes:
-- The hook API replaces builder-style chaining; config is passed as an object.
-- Some callback names changed (e.g. `onStart` → `onActivate`, `onEnd` → `onDeactivate`).
-- `onChange` is removed; use `change*` values from `onUpdate`.
-
-Docs: https://docs.swmansion.com/react-native-gesture-handler/docs/guides/upgrading-to-3/
-
-## Gesture composition & interactions
-
-RNGH 3 recommends answering: “Are all gestures attached to the same component?”
-- If yes: use **composition hooks** to bundle gestures into one object for a `GestureDetector`.
-- If no: use relation properties (e.g. `simultaneousWith`, `requireToFail`, etc.).
-
-Docs: https://docs.swmansion.com/react-native-gesture-handler/docs/fundamentals/gesture-composition/
-
-Example (competing gestures so pan doesn’t move after long-press activates):
-
-```ts
-const pan = usePanGesture({ /* ... */ });
-const longPress = useLongPressGesture({ /* ... */ });
-const gesture = useCompetingGestures(pan, longPress);
-```
-
-(See the composition page for full examples and other hooks.)
-
-## “UI thread first” rule
-
-Keep gesture callbacks workletised and update **shared values**. Bridge to JS only for side-effects (navigation, analytics, React state), using `scheduleOnRN` (see `worklets-and-threading.md`).
+Source reviewed 2026-09-13:
+https://docs.swmansion.com/react-native-gesture-handler/docs/guides/upgrading-to-3/

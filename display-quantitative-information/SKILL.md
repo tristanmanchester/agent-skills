@@ -1,84 +1,102 @@
 ---
 name: display-quantitative-information
-description: "Use this skill when the user needs to design, critique, redesign, audit, generate, code, or explain quantitative graphics: charts, dashboards, tables, maps, scientific/statistical figures, visual evidence, or chart specifications. It helps choose display forms, avoid misleading encodings, compute lie factors, inspect CSV structure, generate simple SVG charts, check color contrast, and produce Tufte-informed but non-formulaic recommendations. Do not use for decorative illustration or general data cleaning unless a quantitative display is involved."
-license: Proprietary. See LICENSE.txt for terms.
-compatibility: Portable Agent Skill. Bundled scripts require Python 3.9+ and use only the standard library.
+description: >-
+  Design, critique, or implement quantitative graphics, scientific figures,
+  dashboards, and evidence tables. Use for display choice, scale/encoding integrity,
+  uncertainty, and accessible chart handoff. Do not use for decorative illustration
+  or general data cleaning without a quantitative display.
+license: Proprietary
+compatibility: Bundled helpers require Python 3.10+ and use the standard library. The SVG renderer is a first-pass tool, not a full plotting or accessibility-validation system.
 metadata:
-  version: "2.0.0"
-  category: data-visualization
-  source-note: "Distilled from user-provided skill-authoring resources and OCR-derived study material from Edward R. Tufte's The Visual Display of Quantitative Information. Original source text and images are not bundled."
+  version: "2.1.0"
+  reviewed: "2026-09-13"
+  source-note: "Tufte-informed methods adapted from previously supplied study material; source book text and images are not bundled. No missing licence terms have been reconstructed."
 ---
 
-# Display Quantitative Information
+# Display quantitative information
 
-Use this skill to help an agent create, critique, redesign, audit, or explain quantitative displays that let people reason from evidence. The default standard is truthfulness first, comparison power second, and visual economy third. Minimalism is not the goal; clear quantitative reasoning is.
+Help the viewer reason from evidence. Prioritise truthful encoding and useful
+comparisons over cosmetic minimalism. Preserve the package's Tufte-informed
+methods without turning data-ink or any other maxim into an automatic verdict.
 
-## Activation boundaries
+## Work from the analytical task
 
-Use this skill for chart choice, data visualization code, dashboard review, statistical/scientific figures, misleading graphics, graph redesign, tables used as evidence, uncertainty displays, small multiples, map-based quantitative displays, or user language such as data-ink, chartjunk, graphical integrity, lie factor, Tufte, visual evidence, publication-ready figure, or dashboard critique.
+1. Identify the comparison or decision: lookup, trend, relationship, distribution,
+   composition, geography, uncertainty, or monitoring.
+2. Inspect grain, units, denominator, groups, missingness, time spacing, transformations,
+   sample size, and uncertainty before plotting. Separate observations from summaries.
+3. Choose a display for that task using [display selection](references/display-selection.md)
+   when needed. Establish intentional aggregation and ordering explicitly.
+4. Audit scales and encodings before aesthetics. Check actual data bounds, baseline,
+   transformations, temporal spacing, omitted values, and uncertainty against source data.
+5. Deliver the requested chart, code, specification, or critique. Verify the output
+   itself rather than assuming a successful plotting command preserved its meaning.
 
-Do not use it for decorative illustration, infographics with no measured quantities, brand-only design, slide aesthetics without data, or general data wrangling unless a display or visual explanation is part of the task.
+For a critique, lead with a demonstrated integrity or comparison problem. A sound
+chart may need no change; do not manufacture an improvement to satisfy a template.
+For scientific work, retain conditions, uncertainty, calibration, and raw observations
+where they affect interpretation. For dashboards, align time windows and denominators
+with the actual decision, not decorative KPI symmetry.
 
-## Working loop
+## Use helpers deliberately
 
-1. Name the viewer's task: lookup, comparison, trend, relationship, distribution, part-to-whole, geography, uncertainty, monitoring, explanation, or persuasion.
-2. Inspect the data structure: grain, units, denominators, time order, grouping, spatial structure, missingness, transformations, sample size, and uncertainty.
-3. Choose the display from the task and data, not from a favorite chart type. Use `references/display-selection.md` when the choice is not obvious.
-4. Audit integrity before aesthetics: baselines, scales, proportionality, encodings, transformations, omitted context, denominators, uncertainty, source, and accessibility. Use `references/integrity-audit.md` or `scripts/audit_visual_display.py` for structured specs.
-5. Redesign by improving the intended comparison. Remove distracting marks, but keep labels, notes, reference lines, captions, and structure when they help interpretation.
-6. Deliver the artifact requested: chart, code, SVG, design spec, critique, dashboard review, or short recommendation. Put the highest-impact fix first.
+Resolve `SKILL_DIR` to this installed directory. Bundled scripts do not live in the
+target project's `scripts/` directory. Read a helper's help before invoking it.
+The spec audit, display suggestions, lie-factor calculation, and text-fingerprint
+checks are heuristics or scoped calculations, not a substitute for inspecting data
+and the rendered graphic. A repetition score does not establish poor writing or
+AI authorship. Preserve clear consistent terminology instead of varying it randomly.
 
-## Mode-specific guidance
+```bash
+python "$SKILL_DIR/scripts/suggest_display.py" --csv data.csv --goal auto --format markdown
+python "$SKILL_DIR/scripts/audit_visual_display.py" --spec chart.json --format markdown
+python "$SKILL_DIR/scripts/render_chart_svg.py" --csv observations.csv \
+  --x date --y defect_rate --chart line --x-type date --output new-chart.svg
+```
 
-For a quick critique, answer in plain language: what works, what may mislead, and the most valuable fix. Do not bury an integrity problem under cosmetic advice.
+### SVG renderer contract
 
-For a redesign, state the proposed display form, encodings, scale choices, labels, annotations, and integrity safeguards. Explain choices in terms of the viewer's comparison or decision.
+Choose `bar`, `dot`, `line`, or `scatter` explicitly. The renderer does not guess a
+chart type or silently average duplicate observations. It reads at most 10,000 rows
+from a CSV of at most 16 MiB. New output paths are required; no output overwrite.
 
-For chart creation, produce the chart or code when tools permit. Add a short final check covering units, scale, baseline, source/context, uncertainty, and accessibility.
+- Scatter plots retain all observations and compute both axis limits from those
+  observations, not group means.
+- Lines use numeric x values, or `--x-type date` for unambiguous `YYYY-MM-DD` dates,
+  with proportional spacing. A blank y value breaks the path; omitted rows cannot
+  establish an unrecorded missing interval. Duplicate x values within a line series
+  are rejected until the caller selects an appropriate aggregation/representation.
+- Bars require unique category/group pairs and include zero. Zero values have zero
+  bar height. Dots retain observations; both preserve category encounter order.
+- Missing/non-finite/ambiguous numeric values are rejected outside the explicitly
+  supported line-gap case. Locale numbers need deliberate normalisation first.
 
-For dashboards, review the workflow first: whether panels answer a coherent decision, share compatible time windows and denominators, and show trends or distributions rather than isolated decorative KPIs.
+Optional `--group`, `--title`, `--metadata`, `--width`, and `--height` configure the
+first-pass output. Metadata records input/point counts, domains, gaps, and lack of
+aggregation. SVG title/description and distinct markers help, but do not certify
+accessibility. Inspect crowded labels, overplotting, group identification, contrast,
+and the source/uncertainty annotations needed for the deliverable. Use a full
+plotting library for intervals, complex dates, dense categories, or publication layout.
+SVG and optional metadata are separate writes, not an atomic two-file transaction.
 
-For scientific figures, prioritize sample size, units, conditions, uncertainty, transformations, calibration, and comparison across panels. Avoid summary-only bars when raw observations or intervals are central.
+## References and assets
 
-## Non-negotiables
+Load only the relevant material:
+[principles](references/principles.md), [integrity](references/integrity-audit.md),
+[redesign](references/redesign-workflow.md), [specification](references/chart-spec.md),
+[accessibility](references/accessibility-and-output.md), [examples](references/examples.md),
+and [review rubric](references/rubric.md). Rubric scores organise judgement; they
+are not empirical accuracy measures. The language/fingerprint material is a review
+prompt, not an instruction to distort a good existing voice.
 
-Never trade a misleading chart for a cleaner misleading chart. Preserve or restore units, source, definitions, sample size, denominators, relevant uncertainty, and methodological context whenever they affect interpretation.
+Keep the existing chart-spec, critique-note, and handoff templates as optional
+scaffolds. Preserve units, sources, denominators, uncertainty, and exact numerical
+meaning through revisions. A cleaner misleading chart is still misleading.
 
-Do not mechanically apply slogans. Data-ink discipline is an editing principle, not a license to remove explanation. A legend, gridline, note, or reference band is useful when it reduces ambiguity or supports comparison.
+## Maintenance
 
-Avoid formulaic critique language. Across multiple outputs, vary the opener, recommendation order, examples, and vocabulary according to the dataset and audience. Use `references/language-and-variation.md` or `scripts/fingerprint_text.py` for long/batch deliverables.
-
-## Reference map
-
-Read only the files needed for the task.
-
-- `references/principles.md` — core Tufte-informed judgment standards.
-- `references/display-selection.md` — display choices by task and data structure.
-- `references/integrity-audit.md` — distortion, lie factors, baselines, context, and uncertainty.
-- `references/redesign-workflow.md` — practical redesign and handoff sequence.
-- `references/chart-spec.md` — structured chart-spec fields and examples.
-- `references/accessibility-and-output.md` — contrast, color, labels, alt text, and code/output defaults.
-- `references/language-and-variation.md` — anti-fingerprint guidance for critiques.
-- `references/rubric.md` — scoring rubric for reviews.
-- `references/examples.md` — worked patterns; adapt, do not copy.
-
-## Scripts and assets
-
-Scripts are optional but useful when the user supplies data or a structured chart spec. They are non-interactive and print structured output.
-
-- `scripts/suggest_display.py --csv data.csv --goal auto --format markdown` inspects a CSV and recommends display families.
-- `scripts/audit_visual_display.py --spec chart.json --format markdown` audits a JSON chart spec.
-- `scripts/lie_factor.py --data-before 18 --data-after 27.5 --visual-before 0.6 --visual-after 5.3` computes visual distortion.
-- `scripts/contrast_check.py --foreground '#333333' --background '#ffffff' --format markdown` checks text/color contrast.
-- `scripts/render_chart_svg.py --csv data.csv --x month --y defect_rate --chart line --group line --output chart.svg` creates a simple, honest SVG chart for handoff or review.
-- `scripts/fingerprint_text.py --input draft.md --format markdown` flags repeated stock visualization language.
-
-Assets:
-
-- `assets/chart-spec-template.json` — starting point for structured audits.
-- `assets/critique-note-template.md` — flexible critique handoff note.
-- `assets/chart-handoff-template.md` — compact implementation spec.
-
-## Completion check
-
-Before finalizing, verify that the response names the analytical task, preserves units/context, justifies the display form, checks for misleading scales or encodings, and gives at least one concrete improvement to comparison, integrity, or accessibility.
+Run `python -m unittest discover -s "$SKILL_DIR/tests" -v` for the renderer
+regressions. These test numerical geometry and output handling, not human readability,
+all retained helpers, or a complete accessibility audit. The existing proprietary
+licence declaration is retained without a dangling LICENSE.txt link; no new
+redistribution permission or unavailable historical licence text is invented.
