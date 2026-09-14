@@ -1,182 +1,79 @@
-# Recipes (copy/paste)
+# Interaction recipes
 
-These are “good defaults” that follow the skill’s rules:
-- per-frame updates in worklets (UI runtime)
-- shared values as state
-- bridge to JS only with `scheduleOnRN`
+These patterns target Reanimated 4/RNGH 3. Adapt them to actual app types and test
+them on the target build; they are not a generic production-ready component kit.
 
-## 1) Tap-to-scale (double-tap)
+## Successful swipe requests an action
 
-(Expo shows a similar pattern in its gestures tutorial.)
-
-```tsx
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-
-export function DoubleTapScale({ size = 120 }: { size?: number }) {
-  const s = useSharedValue(1);
-
-  const doubleTap = Gesture.Tap()
-    .numberOfTaps(2)
-    .onStart(() => {
-      s.value = s.value === 1 ? 2 : 1;
-    });
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: withSpring(s.value) }],
-  }));
-
-  return (
-    <GestureDetector gesture={doubleTap}>
-      <Animated.View style={[{ width: size, height: size }, style]} />
-    </GestureDetector>
-  );
-}
-```
-
-## 2) Swipe-to-delete row (with JS callback)
+Inside a component with `x`, `startX`, and `committing` shared values, a finite
+positive row width, an appropriate gesture root, and an RN-runtime
+`onRequestDelete` callback:
 
 ```tsx
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
-import {
-  GestureDetector,
-  usePanGesture,
-} from 'react-native-gesture-handler';
-import { scheduleOnRN } from 'react-native-worklets';
-
-const THRESHOLD = 120;
-
-export function SwipeToDeleteRow({
-  width,
-  onDelete,
-  children,
-}: {
-  width: number;
-  onDelete: () => void;
-  children: React.ReactNode;
-}) {
-  const x = useSharedValue(0);
-
-  const pan = usePanGesture({
-    onUpdate: (e) => {
-      // Only allow swiping left
-      x.value = Math.min(0, e.translationX);
-    },
-    onDeactivate: (_, success) => {
-      // success indicates the gesture ended in ACTIVE
-      const shouldDelete = x.value < -THRESHOLD;
-      x.value = withTiming(shouldDelete ? -width : 0, { duration: 180 }, (finished) => {
-        if (finished && shouldDelete) {
-          scheduleOnRN(onDelete);
-        }
-      });
-    },
-  });
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value }],
-  }));
-
-  return (
-    <GestureDetector gesture={pan}>
-      <Animated.View style={style}>{children}</Animated.View>
-    </GestureDetector>
-  );
-}
+const pan = usePanGesture({
+  onActivate: () => {
+    cancelAnimation(x);
+    startX.value = x.value;
+  },
+  onUpdate: (event) => {
+    if (!committing.value) {
+      x.value = Math.max(-width, Math.min(0, startX.value + event.translationX));
+    }
+  },
+  onDeactivate: (event) => {
+    if (committing.value) return;
+    const threshold = Math.min(120, width * 0.4);
+    if (!event.canceled && x.value < -threshold) {
+      committing.value = true;
+      scheduleOnRN(onRequestDelete);
+    } else {
+      x.value = withSpring(0, { reduceMotion: ReduceMotion.System });
+    }
+  },
+});
 ```
 
-Notes:
-- `onDelete` must be defined in JS scope.
-- Don’t allocate new functions inside the worklet callback you pass to `withTiming` if you intend to `scheduleOnRN` them.
+Import cancelAnimation/withSpring/ReduceMotion from react-native-reanimated,
+usePanGesture from react-native-gesture-handler, and scheduleOnRN from
+react-native-worklets. `onRequestDelete` handles confirmation/undo/backend state
+as required by the product; only remove the row according to that actual outcome.
+On failure or cancelled confirmation, clear committing and restore its position
+through the application's state/effect flow. Gate non-gesture actions too. Provide
+an accessible Delete button/menu; swiping must not be the only route.
 
-## 3) Pinch + pan (simultaneous)
+Use onFinalize for any begin-state cleanup, including a gesture that fails before
+activation. Test cancellation beyond the threshold, repeated swipes while pending,
+backend failure, resize, and unmount. Do not keep the old (_, success) callback.
 
-If you’re using RNGH 3 hook API, compose gestures with composition hooks.
+## Persistent pinch and pan
 
-```tsx
-import {
-  GestureDetector,
-  usePanGesture,
-  usePinchGesture,
-  useSimultaneousGestures,
-} from 'react-native-gesture-handler';
-import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
+Maintain committed scale/translation separately from each gesture's starting
+values. At activation capture the current transform; update from that start and
+the event's scale/translation, then clamp to meaningful content bounds. On a
+successful end retain the result; on cancellation apply the product's defined
+rollback policy. Compose with useSimultaneousGestures only when simultaneous
+interaction is intended. Preserve focal-point behaviour and test successive
+pinches, not only the first one. Add zoom/reset controls for accessibility.
 
-export function PinchPan() {
-  const tx = useSharedValue(0);
-  const ty = useSharedValue(0);
-  const scale = useSharedValue(1);
+## Double tap and state transitions
 
-  const pan = usePanGesture({
-    onUpdate: (e) => {
-      tx.value = e.translationX;
-      ty.value = e.translationY;
-    },
-  });
+Use useTapGesture with numberOfTaps: 2 and a successful onDeactivate event.
+Store a target zoom state rather than comparing an interpolated scale to 1.
+Apply a reduced-motion-aware timing/spring to that target and provide a single-
+action button equivalent. Do not mix builder and hook APIs in the same related
+subtree.
 
-  const pinch = usePinchGesture({
-    onUpdate: (e) => {
-      scale.value = e.scale;
-    },
-  });
+For a simple state-driven CSS transition, name only the changing properties and
+set a finite duration. Apply the app's reduced-motion setting to that CSS path as
+well; disabling a spring elsewhere is not a global accessibility solution.
 
-  const gesture = useSimultaneousGestures(pan, pinch);
+## Layout accordion
 
-  const style = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: tx.value },
-      { translateY: ty.value },
-      { scale: scale.value },
-    ],
-  }));
+Use React state for open/closed, an accessible labelled toggle with expanded
+state, and layout/entering/exiting presets for the visual change. Preserve focus
+when content is removed. Ensure exit animation does not leave invisible controls
+interactive. Skip nonessential animation under reduced motion and verify dynamic
+content measurement on both platforms.
 
-  return (
-    <GestureDetector gesture={gesture}>
-      <Animated.View style={[{ width: 220, height: 220 }, style]} />
-    </GestureDetector>
-  );
-}
-```
-
-Composition reference: https://docs.swmansion.com/react-native-gesture-handler/docs/fundamentals/gesture-composition/
-
-## 4) Layout-driven accordion (layout animations)
-
-```tsx
-import Animated, { LinearTransition, FadeIn, FadeOut } from 'react-native-reanimated';
-
-export function Accordion({ open, children }: { open: boolean; children: React.ReactNode }) {
-  return (
-    <Animated.View layout={LinearTransition}>
-      {open && (
-        <Animated.View entering={FadeIn} exiting={FadeOut}>
-          {children}
-        </Animated.View>
-      )}
-    </Animated.View>
-  );
-}
-```
-
-## 5) Simple state change: CSS transitions
-
-```tsx
-import Animated from 'react-native-reanimated';
-
-export function TogglePill({ on }: { on: boolean }) {
-  return (
-    <Animated.View
-      style={{
-        width: on ? 64 : 40,
-        opacity: on ? 1 : 0.6,
-        transitionProperty: ['width', 'opacity'],
-        transitionDuration: 180,
-      }}
-    />
-  );
-}
-```
+The templates illustrate application decisions; official lifecycle source:
+https://docs.swmansion.com/react-native-gesture-handler/docs/guides/upgrading-to-3/
