@@ -63,7 +63,7 @@ function clock(ms) {
   return `${String(Math.floor(sec / 3600)).padStart(2, '0')}:${String(Math.floor(sec / 60) % 60).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
 }
 // Escaping makes transcript text inert Markdown; it is still untrusted input to an agent.
-function escape(text) { return text.replace(/[\\`*_{}\[\]()#+.!<>|~-]/g, '\\$&'); }
+function escape(text) { return text.replace(/[\\`*_{}\[\]()#+.!<>|~=\-]/g, '\\$&'); }
 export function markdown(data) {
   const lines = ['# Transcript', '', 'Machine transcription; verify names, numbers, and material quotations against the recording.', '', '## Transcript', ''];
   if (!data.utterances.length) lines.push(escape(data.text));

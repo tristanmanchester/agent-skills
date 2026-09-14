@@ -47,3 +47,10 @@ test('bundle preserves unknown annotations and hashes files', async t => {
   for (const entry of m.files) assert.equal(createHash('sha256').update(await fs.readFile(path.join(dest,entry.path))).digest('hex'),entry.sha256);
   await assert.rejects(writeBundle(r,dest));
 });
+
+
+test('Setext heading markers remain literal transcript text', () => {
+  const out=markdown(normalise({status:'completed',text:'Injected heading\n===\nActual prose'}));
+  assert.ok(!out.includes('\n===\n'));
+  assert.ok(out.includes('\\=\\=\\='));
+});
