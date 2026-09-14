@@ -1,198 +1,106 @@
 #!/usr/bin/env python3
-"""Redact an OpenClaw config file for safer sharing.
+"""Redact parsed JSON/JSON5 configuration; never emit unparsed source text.
 
-The active OpenClaw config is often JSON5-like (`~/.openclaw/openclaw.json` by
-default), so this script tries strict JSON first, then an optional JSON5 parser,
-then falls back to regex-based redaction on the raw text.
-
-What it redacts (best-effort):
-- Secret-like keys: token, password, secret, api key, cookie, session key, etc.
-- String values that strongly resemble long secrets or JWT-style tokens.
-- Query-string secrets in URLs such as ?token=... or ?access_token=...
-
-Examples:
-  python3 "{baseDir}/scripts/redact_openclaw_config.py" ~/.openclaw/openclaw.json > openclaw.json.redacted
-  cat ~/.openclaw/openclaw.json | python3 "{baseDir}/scripts/redact_openclaw_config.py" - > openclaw.json.redacted
-
-Always review the redacted output before sharing it.
+JSON5 input requires json5 or pyjson5. Output is JSON, not a usable backup.
+Unknown secret names and secrets in free text still require human review.
 """
-
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import re
 import sys
-from typing import Any, Callable, Optional
+from pathlib import Path
+from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
+REDACTED = "[REDACTED]"
 SENSITIVE_KEY_RE = re.compile(
-    r"(token|password|secret|api[_-]?key|apikey|client[_-]?secret|private[_-]?key|session[_-]?key|cookie|bearer|access[_-]?token|refresh[_-]?token)\b",
-    re.IGNORECASE,
+    r"token|password|passwd|passphrase|secret|apikey|privatekey|sessionkey|"
+    r"cookie|bearer|authorization|credential|signature", re.IGNORECASE
 )
-
-JWT_LIKE_RE = re.compile(r"^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$")
-HEXISH_RE = re.compile(r"^[A-Fa-f0-9]{32,}$")
-ALNUMISH_RE = re.compile(r"^[A-Za-z0-9_\-]{24,}$")
-
-URL_QS_SECRET_RE = re.compile(
-    r"(?P<prefix>[?&](?:token|password|api[_-]?key|apikey|key|access_token|refresh_token|session[_-]?key)=)(?P<val>[^&\s#]+)",
-    re.IGNORECASE,
-)
+URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://[^\s<>\"']+")
+OPAQUE_RE = re.compile(r"(?:[A-Za-z0-9_-]{24,}|[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\Z")
 
 
-def mask(s: str) -> str:
-    s = s or ""
-    if len(s) <= 8:
-        return "***"
-    return f"{s[:4]}…{s[-4:]}"
+def sensitive_key(key: str) -> bool:
+    normalised = re.sub(r"[^a-z0-9]", "", key.lower())
+    return bool(SENSITIVE_KEY_RE.search(normalised))
 
 
-def looks_secret(s: str) -> bool:
-    if len(s) < 24:
-        return False
-    if s.startswith(("http://", "https://", "/", "./", "../", "~/")):
-        return False
-    return bool(JWT_LIKE_RE.match(s) or HEXISH_RE.match(s) or ALNUMISH_RE.match(s))
-
-
-def redact_string(s: str) -> str:
-    if looks_secret(s):
-        return mask(s)
-    return URL_QS_SECRET_RE.sub(lambda m: m.group("prefix") + mask(m.group("val")), s)
-
-
-def redact_obj(obj: Any) -> Any:
-    if isinstance(obj, dict):
-        out: dict[str, Any] = {}
-        for key, value in obj.items():
-            skey = str(key)
-            if SENSITIVE_KEY_RE.search(skey):
-                if isinstance(value, str):
-                    out[skey] = redact_string(value)
-                else:
-                    out[skey] = "***"
-            else:
-                out[skey] = redact_obj(value)
-        return out
-
-    if isinstance(obj, list):
-        return [redact_obj(item) for item in obj]
-
-    if isinstance(obj, str):
-        return redact_string(obj)
-
-    return obj
-
-
-def try_json5_parser() -> Optional[Callable[[str], Any]]:
-    for module_name in ("json5", "pyjson5"):
-        try:
-            module = __import__(module_name)
-            loads = getattr(module, "loads", None)
-            if callable(loads):
-                return loads  # type: ignore[return-value]
-        except Exception:
-            continue
-    return None
-
-
-def text_fallback_redact(raw: str) -> str:
-    redacted = URL_QS_SECRET_RE.sub(lambda m: m.group("prefix") + mask(m.group("val")), raw)
-
-    quoted_kv_re = re.compile(
-        r"(?P<key>\b[\w.-]*(?:token|password|secret|api[_-]?key|apikey|client[_-]?secret|private[_-]?key|session[_-]?key|cookie|bearer|access[_-]?token|refresh[_-]?token)[\w.-]*\b)"
-        r"(?P<ws>\s*:\s*)"
-        r"(?P<val>(?:\"[^\"]*\"|'[^']*'))",
-        re.IGNORECASE,
-    )
-
-    def repl_quoted(match: re.Match[str]) -> str:
-        key = match.group("key")
-        ws = match.group("ws")
-        val = match.group("val")
-        if val.startswith('"'):
-            inner = val[1:-1]
-            return f'{key}{ws}"{mask(inner)}"'
-        inner = val[1:-1]
-        return f"{key}{ws}'{mask(inner)}'"
-
-    redacted = quoted_kv_re.sub(repl_quoted, redacted)
-
-    bare_kv_re = re.compile(
-        r"(?P<key>\b[\w.-]*(?:token|password|secret|api[_-]?key|apikey|client[_-]?secret|private[_-]?key|session[_-]?key|cookie|bearer|access[_-]?token|refresh[_-]?token)[\w.-]*\b)"
-        r"(?P<ws>\s*:\s*)"
-        r"(?P<val>[A-Za-z0-9._-]{12,})",
-        re.IGNORECASE,
-    )
-
-    def repl_bare(match: re.Match[str]) -> str:
-        value = match.group("val")
-        redacted_value = mask(value) if looks_secret(value) else value
-        return f"{match.group('key')}{match.group('ws')}{redacted_value}"
-
-    return bare_kv_re.sub(repl_bare, redacted)
-
-
-def load_raw(path: str) -> str:
-    if path == "-":
-        return sys.stdin.read()
-    with open(path, "r", encoding="utf-8", errors="replace") as handle:
-        return handle.read()
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Redact an OpenClaw config file before sharing it.",
-        epilog="The tool prefers structured JSON/JSON5 redaction when possible and falls back to raw-text redaction otherwise.",
-    )
-    parser.add_argument(
-        "path",
-        nargs="?",
-        default="-",
-        help="Path to the config file, or '-' to read from stdin.",
-    )
-    parser.add_argument(
-        "--text-fallback-only",
-        action="store_true",
-        help="Skip JSON/JSON5 parsing and redact the raw text directly.",
-    )
-    args = parser.parse_args()
-
-    raw = load_raw(args.path)
-
-    if args.text_fallback_only:
-        sys.stdout.write(text_fallback_redact(raw))
-        if not raw.endswith("\n"):
-            sys.stdout.write("\n")
-        return
-
-    parsed = False
-    obj: Any = None
-
+def redact_url(match: re.Match[str]) -> str:
     try:
-        obj = json.loads(raw)
-        parsed = True
-    except Exception:
-        parsed = False
+        parts = urlsplit(match.group(0))
+        # Remove all userinfo, not just passwords. Do not expose URI fragments.
+        authority = parts.netloc.rsplit("@", 1)[-1]
+        if "@" in parts.netloc:
+            authority = "REDACTED@" + authority
+        query = urlencode([
+            (key, REDACTED if sensitive_key(key) or key.lower() in {"key", "code", "sig"} else value)
+            for key, value in parse_qsl(parts.query, keep_blank_values=True)
+        ])
+        return urlunsplit((parts.scheme, authority, parts.path, query, "REDACTED" if parts.fragment else ""))
+    except ValueError:
+        return REDACTED
 
-    if not parsed:
-        json5_loads = try_json5_parser()
-        if json5_loads is not None:
+
+def redact_string(value: str) -> str:
+    if "PRIVATE KEY-----" in value or OPAQUE_RE.fullmatch(value):
+        return REDACTED
+    return URL_RE.sub(redact_url, value)
+
+
+def redact_obj(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            str(key): REDACTED if sensitive_key(str(key)) else redact_obj(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [redact_obj(item) for item in value]
+    if isinstance(value, str):
+        return redact_string(value)
+    return value
+
+
+def parse_config(raw: str) -> dict[str, Any]:
+    try:
+        value = json.loads(raw)
+    except ValueError:
+        value = None
+        for name in ("json5", "pyjson5"):
             try:
-                obj = json5_loads(raw)
-                parsed = True
+                parser = importlib.import_module(name)
+            except ImportError:
+                continue
+            try:
+                value = parser.loads(raw)
+                break
             except Exception:
-                parsed = False
+                # Parser errors can contain the source line: do not print them.
+                continue
+        if value is None:
+            raise ValueError("Cannot parse configuration. Install json5 for JSON5 input; no output was produced.") from None
+    if not isinstance(value, dict):
+        raise ValueError("Configuration must be an object; no output was produced.")
+    return value
 
-    if parsed:
-        json.dump(redact_obj(obj), sys.stdout, indent=2, ensure_ascii=False)
-        sys.stdout.write("\n")
-        return
 
-    sys.stdout.write(text_fallback_redact(raw))
-    if not raw.endswith("\n"):
-        sys.stdout.write("\n")
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("path", nargs="?", default="-", help="JSON/JSON5 file, or - for stdin")
+    args = parser.parse_args()
+    try:
+        raw = sys.stdin.read() if args.path == "-" else Path(args.path).expanduser().read_text(encoding="utf-8")
+        # Serialize completely before writing: parsing/encoding errors produce no stdout.
+        result = json.dumps(redact_obj(parse_config(raw)), indent=2, ensure_ascii=False, allow_nan=False)
+    except (OSError, UnicodeError, ValueError, RecursionError):
+        print("Redaction failed: provide valid UTF-8 JSON/JSON5 (JSON5 needs json5 or pyjson5). No configuration was emitted.", file=sys.stderr)
+        return 2
+    print(result)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
