@@ -66,7 +66,8 @@ result, or an exploratory analysis into a preregistered test.
 
 Remove formulaic transitions, redundant conclusions, inflated adjectives, and
 unnecessary noun chains. Vary rhythm naturally, not to hit a score. Passive voice,
-repeated terms, and technical compounds can be the clearest choices. A shorter
+repeated terms, and technical compounds can be the clearest choices.
+A shorter
 sentence is not automatically a better scientific sentence.
 
 Use [sentence craft](references/sentence-craft.md),
@@ -81,7 +82,7 @@ Resolve `SKILL_DIR` to this skill's installed directory. The local checker now
 requires an exact dated profile or a validated custom profile:
 
 ```bash
-python "$SKILL_DIR/scripts/nature_preflight.py" --input /absolute/draft.md \
+python3 "$SKILL_DIR/scripts/nature_preflight.py" --input /absolute/draft.md \
   --profile nature-communications-article
 ```
 
@@ -126,4 +127,4 @@ Return the revised prose/patch first, with the chosen target and only the import
 unresolved facts. For an audit, prioritise concrete structural/scientific problems
 before sentence preferences. State which journal checks actually ran and which
 remain. Maintainer regression tests:
-`python -m unittest discover -s "$SKILL_DIR/tests" -v`.
+`python3 -m unittest discover -s "$SKILL_DIR/tests" -v`.

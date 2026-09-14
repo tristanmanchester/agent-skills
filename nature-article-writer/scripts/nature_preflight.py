@@ -51,9 +51,17 @@ def bounded_text(path):
     return raw.decode('utf-8-sig')
 
 
+def strip_comments(text):
+    # Preserve line boundaries and token separation; this is not a full Markdown parser.
+    cleaned = re.sub(r'<!--.*?-->', lambda m: ''.join('\n' if c == '\n' else ' ' for c in m[0]), text, flags=re.S)
+    if '<!--' in cleaned or '-->' in cleaned:
+        raise ValueError('Unclosed or unmatched HTML comment; supply an unambiguous opening')
+    return cleaned
+
+
 def extract_opening(text, heading):
     """ATX Markdown only; no guessed first paragraph, duplicate heading, or nested structure."""
-    lines = text.splitlines()
+    lines = strip_comments(text).splitlines()
     headers = []
     fence = None
     for index, line in enumerate(lines):
