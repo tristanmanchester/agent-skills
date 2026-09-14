@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "snapshot_date": "2026-09-13",
+  "snapshot_date": "2026-09-14",
   "baseline_commit": "b28669d18b1731233a07fb73da3d00b39d41bee2",
   "scope": "All 37 source-review dispositions recorded; not exhaustive reference, runtime, or agent-output certification",
   "counts": {"skills":37,"open_skill_prs":34,"closed_unmerged_skill_prs":1,"retained_without_change":2,"reviews_outstanding":0},
@@ -31,14 +31,14 @@
     {"directory":"nextjs-framer-motion-animations","status":"proposed_in_open_pr","pr":30,"published_head":"0ff950d834a99a50bbdca8f80bf2b400d51a5bb9"},
     {"directory":"optimising-expo-react-native-performance","status":"proposed_in_open_pr","pr":6},
     {"directory":"parallel-ai-search","status":"proposed_in_open_pr","pr":16},
-    {"directory":"react-native-skia","status":"proposed_in_open_pr","pr":29,"published_head":"ac44a407c01fb13a2b8fcecc81fdba6f16e2725d"},
+    {"directory":"react-native-skia","status":"proposed_in_open_pr","pr":29,"published_head":"dae6239b4a0b938e40d36b7cd5275b98a52a922a"},
     {"directory":"reddit","status":"proposed_in_open_pr","pr":32,"published_head":"fcf3cac2e0af023b11fa4d5e067ebdbf7db37dad"},
     {"directory":"relationship-science-coach","status":"proposed_in_open_pr","pr":35,"published_head":"44cdbf1d5bc026a6788c13a19166d28919028882"},
     {"directory":"resend-api","status":"proposed_in_open_pr","pr":14},
     {"directory":"resend-cli","status":"proposed_in_open_pr","pr":13},
     {"directory":"rust-anti-slop","status":"retained_after_source_review"},
     {"directory":"styling-nativewind-v4-expo","status":"proposed_in_open_pr","pr":7},
-    {"directory":"textual-tui","status":"proposed_in_open_pr","pr":31,"published_head":"6adfd65671f1eafd772eb4cbc817bf3c37d34f99"},
+    {"directory":"textual-tui","status":"proposed_in_open_pr","pr":31,"published_head":"f8149ebbec737718c662ed2ef7d5a0b786199919"},
     {"directory":"todoist-api","status":"proposed_in_open_pr","pr":11},
     {"directory":"track17","status":"proposed_in_open_pr","pr":4},
     {"directory":"tracking-pettracer-location","status":"proposed_in_open_pr","pr":33,"published_head":"45e57451bd4b75f6083bd5932f8a5eb393b153c4"},
@@ -49,8 +49,18 @@
     "runtime":"Python 3.13.5, Linux",
     "passed_methods":30,
     "suites":{"textual-tui":8,"tracking-pettracer-location":10,"wordly-wisdom":12},
-    "scope":"Offline local regressions; no live provider, native/browser, clinical, or model-output tests"
+    "scope":"Offline local regressions from September 13; not rerun as a batch on September 14"
   },
-  "closed_pr_policy":"PR22 was observed closed unmerged and was not reopened or recreated",
+  "latest_follow_up": {
+    "date":"2026-09-14",
+    "record":"maintenance/follow-up-20260914.md",
+    "updated_existing_skill_prs":[29,31],
+    "new_prs":0,
+    "passed_tests":24,
+    "suites":{"skia_geometry_node_tests":12,"textual_chat_method_tests_with_doubles":12},
+    "syntax_only_checks":["two Skia TSX components","two rendered Textual Python chat templates"],
+    "scope":"Pure geometry and actual template methods with doubles; no native dependency type-check, rendering, Textual/Pilot runtime, provider operation, or complete retained-template certification"
+  },
+  "closed_pr_policy":"PR22 was rechecked closed unmerged and was not reopened or recreated",
   "repository_housekeeping_pr":25
 }
