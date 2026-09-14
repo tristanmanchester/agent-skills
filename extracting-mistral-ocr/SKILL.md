@@ -57,3 +57,8 @@ Run offline regressions with `python3 -m unittest discover -s "$SKILL_DIR/tests"
 - `references/mistral_ocr_api.md`: SDK/request contract and primary sources.
 - `references/output_mapping.md`: output paths, manifest, and failure behaviour.
 - `references/annotation_prompts.md`: JSON Schema example and annotation prompts.
+
+Output staging is created and write-probed before any upload or OCR request. This
+catches an invalid destination early; it cannot reserve future disk capacity.
+Valid JSON annotations, including scalar strings and `null`, are exported as JSON;
+only non-JSON annotations use the text sidecar.

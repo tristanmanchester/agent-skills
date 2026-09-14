@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import base64
 from dataclasses import dataclass
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -144,93 +145,115 @@ def render_links(markdown: str, assets: dict[str, str], prefix: str = "") -> str
     return markdown
 
 
-def write_outputs(out: Path, response: dict[str, Any]) -> None:
+@contextmanager
+def prepare_output(out: Path):
+    """Probe the actual destination before uploads or billed work; clean failed staging."""
     if out.exists() or out.is_symlink():
         raise CLIError("Output path already exists; choose a new directory")
+    out.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with tempfile.TemporaryDirectory(prefix=".mistral-ocr-", dir=out.parent) as temporary:
+        root = Path(temporary)
+        # Creating the directory alone does not establish file-write permission.
+        probe = root / ".write-probe"
+        with probe.open("xb") as stream:
+            stream.write(b"probe")
+        probe.unlink()
+        yield root
+
+
+def write_outputs(out: Path, response: dict[str, Any], *, staging: Path | None = None) -> None:
+    if staging is None:
+        with prepare_output(out) as root:
+            write_outputs(out, response, staging=root)
+        return
+    if out.exists() or out.is_symlink():
+        raise CLIError("Output path already exists; choose a new directory")
+    root = staging
     pages = response.get("pages")
     if not isinstance(pages, list) or not pages:
         raise CLIError("OCR response has no pages")
-    out.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".mistral-ocr-", dir=out.parent) as temporary:
-        root = Path(temporary)
-        for name in ("pages", "images", "tables"):
-            (root / name).mkdir()
-        write_json(root / "raw_response.json", response)
-        combined, manifest, seen = [], [], set()
-        for page in pages:
-            if not isinstance(page, dict) or isinstance(page.get("index"), bool) or not isinstance(page.get("index"), int) or page["index"] < 0:
-                raise CLIError("OCR response contains an invalid page index")
-            index = page["index"]
-            if index in seen:
-                raise CLIError("OCR response contains duplicate page indices")
-            seen.add(index)
-            markdown = page.get("markdown")
-            if not isinstance(markdown, str):
-                raise CLIError("OCR page is missing Markdown")
-            mapping: dict[str, str] = {}
-            for image in page.get("images") or []:
-                identifier = asset_id(image.get("id"))
-                encoded = image.get("image_base64")
-                if encoded is None:
-                    continue
-                if not isinstance(encoded, str):
-                    raise CLIError("Invalid image data")
-                if encoded.startswith("data:"):
-                    encoded = encoded.split(",", 1)[1]
-                data = base64.b64decode(encoded, validate=True)
-                relative = f"images/page-{index:03d}-{identifier}"
-                if identifier in mapping:
-                    raise CLIError("Duplicate asset ID within a page")
-                (root / relative).write_bytes(data)
-                mapping[identifier] = relative
-            for table in page.get("tables") or []:
-                identifier = asset_id(table.get("id"))
-                content, format_ = table.get("content"), table.get("format")
-                if not isinstance(content, str) or format_ not in ("html", "markdown"):
-                    raise CLIError("Unsupported table shape; expected content and format")
-                if identifier in mapping:
-                    raise CLIError("Duplicate asset ID within a page")
-                extension = "html" if format_ == "html" else "md"
-                relative = f"tables/page-{index:03d}-{identifier}"
-                if not relative.endswith("." + extension):
-                    relative += "." + extension
-                if relative in mapping.values():
-                    raise CLIError("Asset filename collision")
-                (root / relative).write_text(content, encoding="utf-8")
-                mapping[identifier] = relative
-            (root / "pages" / f"page-{index:03d}.md").write_text(render_links(markdown, mapping, "../"), encoding="utf-8")
-            combined.append(f"<!-- page {index} -->\n\n" + render_links(markdown, mapping))
-            manifest.append({"page": index, "assets": mapping})
-        (root / "combined.md").write_text("\n\n---\n\n".join(combined), encoding="utf-8")
-        annotation = response.get("document_annotation")
-        if annotation is not None:
-            if isinstance(annotation, str):
-                try:
-                    annotation = json.loads(annotation)
-                except ValueError:
-                    (root / "document_annotation.txt").write_text(annotation, encoding="utf-8")
-            if not isinstance(annotation, str):
-                write_json(root / "document_annotation.json", annotation)
-        write_json(root / "manifest.json", {"model": response.get("model"), "pages": manifest})
-        root.rename(out)
+    for name in ("pages", "images", "tables"):
+        (root / name).mkdir()
+    write_json(root / "raw_response.json", response)
+    combined, manifest, seen = [], [], set()
+    for page in pages:
+        if not isinstance(page, dict) or isinstance(page.get("index"), bool) or not isinstance(page.get("index"), int) or page["index"] < 0:
+            raise CLIError("OCR response contains an invalid page index")
+        index = page["index"]
+        if index in seen:
+            raise CLIError("OCR response contains duplicate page indices")
+        seen.add(index)
+        markdown = page.get("markdown")
+        if not isinstance(markdown, str):
+            raise CLIError("OCR page is missing Markdown")
+        mapping: dict[str, str] = {}
+        for image in page.get("images") or []:
+            identifier = asset_id(image.get("id"))
+            encoded = image.get("image_base64")
+            if encoded is None:
+                continue
+            if not isinstance(encoded, str):
+                raise CLIError("Invalid image data")
+            if encoded.startswith("data:"):
+                encoded = encoded.split(",", 1)[1]
+            data = base64.b64decode(encoded, validate=True)
+            relative = f"images/page-{index:03d}-{identifier}"
+            if identifier in mapping:
+                raise CLIError("Duplicate asset ID within a page")
+            (root / relative).write_bytes(data)
+            mapping[identifier] = relative
+        for table in page.get("tables") or []:
+            identifier = asset_id(table.get("id"))
+            content, format_ = table.get("content"), table.get("format")
+            if not isinstance(content, str) or format_ not in ("html", "markdown"):
+                raise CLIError("Unsupported table shape; expected content and format")
+            if identifier in mapping:
+                raise CLIError("Duplicate asset ID within a page")
+            extension = "html" if format_ == "html" else "md"
+            relative = f"tables/page-{index:03d}-{identifier}"
+            if not relative.endswith("." + extension):
+                relative += "." + extension
+            if relative in mapping.values():
+                raise CLIError("Asset filename collision")
+            (root / relative).write_text(content, encoding="utf-8")
+            mapping[identifier] = relative
+        (root / "pages" / f"page-{index:03d}.md").write_text(render_links(markdown, mapping, "../"), encoding="utf-8")
+        combined.append(f"<!-- page {index} -->\n\n" + render_links(markdown, mapping))
+        manifest.append({"page": index, "assets": mapping})
+    (root / "combined.md").write_text("\n\n---\n\n".join(combined), encoding="utf-8")
+    annotation = response.get("document_annotation")
+    if annotation is not None:
+        parsed = True
+        if isinstance(annotation, str):
+            try:
+                annotation = json.loads(annotation)
+            except ValueError:
+                parsed = False
+                (root / "document_annotation.txt").write_text(annotation, encoding="utf-8")
+        if parsed:
+            write_json(root / "document_annotation.json", annotation)
+    write_json(root / "manifest.json", {"model": response.get("model"), "pages": manifest})
+    if out.exists() or out.is_symlink():
+        raise CLIError("Output appeared during processing; choose a new directory")
+    root.rename(out)
 
 
 def execute(client: Any, args: argparse.Namespace) -> None:
     options = request_options(args)
     if args.out.exists() or args.out.is_symlink():
         raise CLIError("Output already exists; no request was sent")
-    source = prepare_source(client, args)
-    try:
-        response = client.ocr.process(document=source.payload, **options)
-        write_outputs(args.out, response.model_dump(mode="json", by_alias=True))
-    finally:
-        if source.uploaded_file_id and not args.keep_upload:
-            # Cleanup failure is an error, not a silent claim that data was deleted.
-            try:
-                client.files.delete(file_id=source.uploaded_file_id)
-            except Exception as exc:
-                raise CLIError(f"Uploaded file cleanup failed: {source.uploaded_file_id}. Check remote retention; local output may already exist.") from exc
-
+    with prepare_output(args.out) as staging:
+        source = prepare_source(client, args)
+        try:
+            response = client.ocr.process(document=source.payload, **options)
+            write_outputs(args.out, response.model_dump(mode="json", by_alias=True), staging=staging)
+        finally:
+            if source.uploaded_file_id and not args.keep_upload:
+                # Cleanup failure is an error, not a silent claim that data was deleted.
+                try:
+                    client.files.delete(file_id=source.uploaded_file_id)
+                except Exception as exc:
+                    raise CLIError(f"Uploaded file cleanup failed: {source.uploaded_file_id}. Check remote retention; local output may already exist.") from exc
 
 def main(argv: list[str] | None = None) -> int:
     args = build_arg_parser().parse_args(argv)
