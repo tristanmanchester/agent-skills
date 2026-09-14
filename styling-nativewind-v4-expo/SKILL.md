@@ -1,102 +1,52 @@
 ---
 name: styling-nativewind-v4-expo
-description: >-
-  Sets up and uses NativeWind v4 (Tailwind CSS v3) in Expo React Native apps, including Expo Router.
-  Configures tailwind.config.js, global.css, babel.config.js (jsxImportSource + nativewind/babel),
-  metro.config.js (withNativeWind + input), and app.json (web bundler metro).
-  Troubleshoots “className not applying”, Tailwind CLI compilation, and Metro cache issues.
-  Implements reusable components/variants, dark mode + theming via CSS variables (vars/useColorScheme),
-  and third-party component styling (remapProps/cssInterop).
-  Use when working on Expo projects using NativeWind v4, Tailwind-style className utilities, or when debugging NativeWind configuration.
+description: Set up, repair, and build components with NativeWind v4 and Tailwind CSS v3 in Expo React Native apps. Use for an explicitly v4 project, v4 configuration failures, className interoperability, or v4 theming; not for NativeWind v5 or generic web Tailwind setup.
+compatibility: An Expo project using nativewind major 4 and tailwindcss major 3. Native peer versions must match the project's Expo SDK.
+metadata:
+  version: "2.0.0"
+  reviewed: "2026-09-13"
 ---
 
-# NativeWind v4 for Expo (React Native)
+# NativeWind v4 in Expo
 
-## Non‑negotiables (v4)
+This is deliberately a **v4** skill. On the review date, the official site labels v5 a prerelease; v5/Tailwind v4 configuration is a separate stack, not a drop-in refresh of these files. Inspect the lockfile before editing and keep this skill's dependency majors explicit.
 
-- Use Tailwind CSS v3 and include `presets: [require("nativewind/preset")]` in `tailwind.config.js`.
-- Keep exactly one Tailwind entry CSS file (commonly `global.css`) and keep its path consistent across:
-  - `metro.config.js` → `withNativeWind(..., { input: "./global.css" })`
-  - your app entry → `import "./global.css"` (or `import "../global.css"` from `app/_layout.tsx`)
-- Keep `nativewind/babel` in **Babel `presets`** and set `jsxImportSource: "nativewind"` on `babel-preset-expo`.
-- After any config change, restart Metro **without cache**: `npx expo start --clear`.
+## Establish the configuration
 
-## Quick start checklist
+Read package.json and the lockfile, the actual app entry, Expo config, Babel config, Metro config, Tailwind config, and the CSS entry. Identify Expo Router versus a classic entry and account for `src/app`, monorepos, or a custom project root.
 
-Copy/paste and tick off:
+Use `references/expo-setup.md` for the coordinated v4 setup. The invariant is:
 
-- [ ] Install deps (NativeWind + Tailwind + peers). See `references/expo-setup.md`.
-- [ ] Create/verify `tailwind.config.js` (content globs + `nativewind/preset`).
-- [ ] Create/verify `global.css` with Tailwind directives.
-- [ ] Create/verify `babel.config.js` (jsxImportSource + `nativewind/babel`).
-- [ ] Create/verify `metro.config.js` (wrap config with `withNativeWind`, set `input`).
-- [ ] If targeting web, set `app.json` → `expo.web.bundler = "metro"`.
-- [ ] If TypeScript, add `nativewind-env.d.ts` with `/// <reference types="nativewind/types" />`.
-- [ ] Start with cache cleared and validate on-device + web: `npx expo start --clear`.
-- [ ] Validate with an obvious “smoke test” screen: background colour + centred text.
+- `nativewind@^4` with `tailwindcss@^3.4.17`; native peers resolved through the app's Expo SDK.
+- `nativewind/preset` and content globs covering every source of complete utility strings.
+- One CSS entry using the Tailwind v3 directives, connected to both Metro's `withNativeWind` input and the real application entry.
+- `nativewind/babel` in Babel **presets**, with `jsxImportSource: "nativewind"` on `babel-preset-expo`.
+- `nativewind-env.d.ts` referencing `nativewind/types`, without shadowing the package/module name.
 
-## Project type selection
+Preserve unrelated Metro wrappers, Babel plugins, config plugins, and project module format. Do not replace a working app's configuration wholesale or install a second incompatible Reanimated/Worklets stack.
 
-- **Expo Router**: entry is usually `app/_layout.tsx` → import CSS there (relative path is typically `../global.css`).
-- **Classic**: entry is usually `App.tsx` → import CSS there (`./global.css`).
+## Debug in a useful order
 
-If unsure, search `package.json` for `"main": "expo-router/entry"`.
+1. Verify resolved dependency majors and the first actual error; a cache reset does not repair a Tailwind v4/v3 mismatch.
+2. Compile the CSS entry with the project's installed Tailwind v3 CLI. Check content globs, static class strings, and the NativeWind preset.
+3. Verify the CSS file, Metro input, and application import refer to the same file. Calculate paths from their real locations, including `src/app/_layout.tsx`.
+4. Merge the required Babel/Metro integration, then restart Metro with `npx expo start --clear`.
+5. Test an obvious layout/text/colour change on each target platform, then the failing component. A successful web render alone does not prove native interop.
 
-## Implementation patterns
+Use `references/troubleshooting.md` for further diagnosis. Resolve bundled reference paths from this skill's directory, not the app's directory.
 
-### Build reusable components (recommended)
+## Build components
 
-Accept `className`, merge defaults, and optionally use a class-variance helper.
+Use literal variant maps rather than dynamically constructing class names the scanner cannot see. `references/patterns.md` covers typed components, explicit override semantics, and accessible Pressable content. Concatenating class strings does not guarantee that the last conflicting utility wins.
 
-Read: `references/patterns.md`
+Use `references/third-party-components.md` only when a component needs `remapProps` or `cssInterop`; configure interop once, not during every render. Use `references/theming-dark-mode.md` for the v4 colour-scheme and CSS-variable APIs.
 
-### Style third‑party components (only when necessary)
+Inspect the existing safe-area provider before adding another. Expo Router normally supplies the root integration; separate native roots or modal boundaries may need their own provider. Verify actual insets, nested navigation, and rotation rather than treating provider count as a universal rule.
 
-Use `remapProps` (multiple style props) or `cssInterop` (map a class prop to a style prop).
+## Verify and report
 
-Read: `references/third-party-components.md`
+Run the project's typecheck and Expo dependency checks, compile/bundle its actual targets, and inspect native/web rendering where those environments are available. Check dark mode, disabled/pressed states, font scaling, safe areas, and third-party components affected by the change. Report the resolved dependency versions, files changed, and platforms actually tested; static configuration inspection is not a device test.
 
-### Dark mode + theming
+## Sources
 
-Use `useColorScheme` / `colorScheme.set()` and CSS variables via `vars()`.
-
-Read: `references/theming-dark-mode.md`
-
-### Safe area utilities
-
-On Expo Router, do **not** add your own `SafeAreaProvider` (Router already does).
-Use `p-safe`, `pt-safe`, etc.
-
-If you are **not** using Expo Router, wrap the root with `SafeAreaProvider`.
-
-## Troubleshooting workflow (always in this order)
-
-1. Start Expo without cache: `npx expo start --clear`.
-2. Verify Tailwind CLI works by compiling your CSS entry file to an output file.
-3. Confirm the “three paths” match:
-   - CSS file exists
-   - `metro.config.js` `input` points to it
-   - your app imports it from the entry component
-4. Confirm `tailwind.config.js` `content` globs include every directory that contains `className` strings.
-5. Only then debug platform-specific behaviour (web bundler, Router, safe area, etc).
-
-Read: `references/troubleshooting.md`
-
-## THE EXACT PROMPT — NativeWind v4 config audit
-
-Use this prompt to perform a deterministic audit of an existing repo:
-
-```
-You are auditing an Expo React Native repo for NativeWind v4 correctness.
-
-1) Identify whether the project uses Expo Router (app/ directory + package.json main = expo-router/entry) or classic App.tsx.
-2) Check and report on:
-   - tailwind.config.js: presets + content globs
-   - global.css: Tailwind directives exist
-   - babel.config.js: jsxImportSource nativewind + nativewind/babel in presets; preserve any existing required plugins
-   - metro.config.js: withNativeWind wrapper; input path matches the CSS file
-   - app.json: web bundler metro when web is used
-   - TypeScript: nativewind-env.d.ts present and correctly named
-3) For every issue, propose the minimal diff needed to fix it.
-4) End by listing the exact commands to restart Metro and validate the fix.
-```
+Reviewed 2026-09-13 against [NativeWind installation](https://www.nativewind.dev/docs/getting-started/installation) and [custom components](https://www.nativewind.dev/docs/guides/custom-components). For optional conflict merging, [tailwind-merge](https://github.com/dcastil/tailwind-merge) explicitly directs Tailwind v3 users to its v2.6.0 line.
