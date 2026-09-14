@@ -102,3 +102,7 @@ retries or re-login loops; verify an unexpected endpoint/schema before retrying.
 Maintainers: `python -m unittest discover -s "$SKILL_DIR/tests" -v` tests parsing,
 selection, request boundaries, and mocked transport. No live account or collar was
 queried in this review. Vendor operational help: https://help.pettracer.com/.
+
+History results retain each original record and label its measurement time as inside,
+outside, or unknown relative to the requested inclusive window. This is separate
+from fix age. A non-object `lastPos` is a schema error, not evidence of no GPS fix.

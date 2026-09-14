@@ -83,7 +83,10 @@ def position(raw, now, max_age):
         raise ValueError('Freshness threshold must be 1 to 604800 seconds')
     if now.utcoffset() is None:
         raise ValueError('Reference time must include a timezone')
-    raw = raw if isinstance(raw, dict) else {}
+    if raw is None:
+        raw = {}
+    elif not isinstance(raw, dict):
+        raise ValueError('Unexpected position shape; expected an object or absent fix')
     lat, lon = number(raw.get('posLat'), -90, 90), number(raw.get('posLong'), -180, 180)
     measured = timestamp(raw.get('timeMeasure'))
     age = (now - measured).total_seconds() if measured is not None else None
@@ -94,6 +97,15 @@ def position(raw, now, max_age):
             'database_time': raw.get('timeDb') if isinstance(raw.get('timeDb'), str) else None,
             'age_seconds': age, 'freshness': state, 'freshness_threshold_seconds': max_age,
             'quality_fields_unverified_units': {k: number(raw.get(k), 0, 1e9) for k in ('acc', 'horiPrec')}}
+
+def history_position(raw, now, max_age, start, end):
+    item = position(raw, now, max_age)
+    measured = timestamp(item['measurement_time'])
+    item['window_membership'] = ('unknown' if measured is None else
+                                 'inside' if start <= measured <= end else 'outside')
+    item['raw'] = raw
+    return item
+
 
 def device_id(value):
     if isinstance(value, bool) or not re.fullmatch(r'[0-9]+', str(value)) or int(value) <= 0:
@@ -155,7 +167,9 @@ def main(argv=None):
                 if not isinstance(raw, list) or any(not isinstance(p, dict) for p in raw):
                     raise ValueError('Unexpected history shape')
                 result['requested_window'] = payload
-                result['positions'] = [position(p, datetime.now(timezone.utc), args.max_age_seconds) for p in raw]
+                result['window_bounds'] = {'start': start.isoformat(), 'end': end.isoformat(), 'inclusive': True}
+                observed_at = datetime.now(timezone.utc)
+                result['positions'] = [history_position(p, observed_at, args.max_age_seconds, start, end) for p in raw]
                 result['history_completeness'] = 'not_verified'
                 result['order'] = 'provider_response_order'
         print(json.dumps(result, allow_nan=False, indent=2))
