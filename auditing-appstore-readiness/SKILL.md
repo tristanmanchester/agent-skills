@@ -1,141 +1,95 @@
 ---
 name: auditing-appstore-readiness
-description: Audit an iOS app repo (Swift/Xcode or React Native/Expo) for App Store compliance and release readiness; output a pass/warn/fail report and publish checklist.
-metadata: {"openclaw":{"emoji":"🧾","requires":{"bins":["git"]}}}
+description: >-
+  Audit an iOS app's source, distribution archive, runtime behaviour, and App Store
+  Connect setup for a planned submission. Use for explicit App Store/TestFlight
+  readiness reviews of native, React Native, or Expo apps. Distinguish verified
+  blockers from checks that still need build, device, account, or policy evidence.
+compatibility: Static inventory requires Python 3.10+. Archive/runtime checks require an authorised macOS/Xcode or CI environment; live policy and App Store Connect checks require their respective access.
+metadata:
+  version: "2.0.0"
+  reviewed: "2026-09-13"
 ---
 
-# App Store Readiness Audit
+# App Store readiness audit
 
-This skill reviews an app repository and produces a release readiness report for iOS **App Store** / **TestFlight** submission.
+A source scan cannot establish submission readiness. Assess four separate layers:
+source configuration, the exact distribution archive, runtime behaviour, and
+App Store Connect/policy state. Mark untested layers explicitly.
 
-It supports:
-- Native iOS (Swift/Obj‑C, Xcode project/workspace)
-- React Native (bare)
-- Expo (managed or prebuild)
+## Establish scope and evidence
 
-## Quick start (recommended)
+Identify the intended app, target/scheme, platforms, release configuration, commit
+and local changes, bundle ID, version/build, archive/build ID, and submission date.
+In a monorepo, enumerate candidates rather than choosing the first plist or an
+arbitrary 'best' project. Generated settings and `$(...)` placeholders need actual
+resolved-build evidence.
 
-Run the read‑only audit script from the repo root:
+Resolve `SKILL_DIR` to the installed directory containing this file, not the app
+repository. The optional inventory reads bounded source metadata without executing
+project code, installing dependencies, resolving dynamic config, or contacting services:
 
-{ "tool": "exec", "command": "node {baseDir}/scripts/audit.mjs --repo . --format md" }
+```bash
+python "$SKILL_DIR/scripts/inspect_repo.py" --repo /absolute/path/to/app > /private/output/inventory.json
+```
 
-If you want JSON output as well:
+Choose an existing private output directory and a new filename before redirecting.
+The script emits JSON with `submission_readiness: NOT_ASSESSED` **in every case**.
+Exit 0 means inventory completed within its stated scope, 2 means partial/metadata
+issues, and 1 means a fatal tool error. It excludes dependency/build directories,
+skips symlinks, and reports traversal/size/entry limits. Its output is not a
+secret-redacted public report or a full security/compliance scan.
 
-{ "tool": "exec", "command": "node {baseDir}/scripts/audit.mjs --repo . --format md --json audit.json" }
+## Check current submission requirements
 
-If the repo is a monorepo, point at the app directory:
+Read Apple's [requirements](https://developer.apple.com/news/upcoming-requirements/)
+and [review guidelines](https://developer.apple.com/app-store/review/guidelines/)
+for the intended submission date and storefront. Record the applicable rule,
+effective date, evidence, and any access limitation.
 
-{ "tool": "exec", "command": "node {baseDir}/scripts/audit.mjs --repo apps/mobile --format md" }
+At this review (2026-09-13), iOS/iPadOS uploads have required Xcode 26 or later
+and an iOS/iPadOS 26 SDK since **April 28, 2026**. Verify the actual uploaded
+archive's build provenance, not just a locally installed Xcode version. A minimum
+build SDK is not the same as the app's minimum supported OS. Recheck this rule
+for each future submission rather than treating this dated snapshot as permanent.
 
-## Output contract
+## Source findings are leads, not automatic policy verdicts
 
-Always return:
-- Overall verdict: **PASS** / **WARN** / **FAIL**
-- Detected project flavour and key identifiers (bundle id, version, build)
-- A list of checks with evidence and remediation steps
-- A **Publish checklist** the developer can tick off
+Recognise arbitrary-named `.appiconset` resources, modern universal entries,
+Icon Composer `.icon` resources, and Expo icon strings/appearance objects. A missing
+`ios-marketing` entry is not by itself a blocker. Presence is also not enough:
+verify the selected target's compiled icon and inspect required appearances.
 
-Use: [references/report-template.md](references/report-template.md)
+Missing checked-in `Info.plist`, storyboard, or privacy manifest can reflect
+generation/configuration, not a broken app. Resolve the actual build before
+calling it a blocker. Trace runtime API use before requiring purpose strings or
+ATT; a dependency name alone does not establish microphone use or tracking.
+Public certificates are not automatically leaked private keys.
 
-## Safety rules (don’t break the repo)
+Use [evidence gates](references/GATES.md) for the full source/archive/runtime/store
+checklist. Do not add boilerplate privacy declarations, collect extra permissions,
+change signing, upload a build, or erase data merely to make a checker green.
 
-Default to **read‑only** commands. Do not run commands that modify the workspace unless:
-- the user explicitly asks, **or**
-- the fix is trivial and clearly desired (then explain what will change first)
+## Build and runtime checks
 
-Examples of mutating commands:
-- dependency installs (`npm i`, `yarn`, `pnpm i`, `pod install`)
-- config generation (`expo prebuild`)
-- signing automation (`fastlane match`)
-- archiving (`xcodebuild archive`, `eas build`) — creates artefacts and may require signing
+Use an available authorised environment; do not invent a paired Mac or remote shell.
+Record installed tool versions and select actual schemes/runtimes. Dependency
+resolution, Expo config execution/prebuild, build scripts, signing, archiving, and
+uploads can execute code or modify local/remote state; stay within authorised scope.
+A simulator Release build is useful but not a substitute for a signed device archive
+or device-only behaviours. Preserve logs/result bundles and exact artefact identity.
 
-If you must run a mutating command, label it clearly as **MUTATING** before running.
+## Report
 
-## Main workflow
+Return a compact gate table with `verified`, `blocked`, `unverified`, or
+`not applicable` for each layer, followed by actionable findings. Each finding
+needs evidence, consequence, remediation, and the verification that closes it.
 
-### 1) Identify the repo and project flavour
+Use **BLOCKED** for demonstrated submission blockers; **UNVERIFIED** when required
+checks remain; **READY TO SUBMIT** only when the defined gates have actually been
+checked for the exact build and account. That recommendation does not guarantee
+Apple approval. Keep assumptions and unresolved items visible; a static inventory
+must never be relabelled PASS/ready-to-submit.
 
-Prefer scripted detection (`audit.mjs`). If doing manually:
-
-- Expo likely: `package.json` contains `expo` and `app.json` / `app.config.*` exists
-- React Native (bare): `package.json` contains `react-native` and `ios/` exists
-- Native iOS: `*.xcodeproj` or `*.xcworkspace` exists
-
-If multiple apps exist, pick the one matching the user’s intent; otherwise pick the directory with:
-- a single `ios/<AppName>/Info.plist`, and
-- exactly one `.xcodeproj` or `.xcworkspace` near the root.
-
-### 2) Run static compliance checks (works everywhere)
-
-Run these checks even without Xcode:
-
-- Repo hygiene: clean git status; obvious secrets not committed
-- iOS identifiers: bundle id, version, build number
-- App icons: includes an App Store (1024×1024) icon
-- Launch screen present
-- Privacy & permissions:
-  - Privacy manifest present (`PrivacyInfo.xcprivacy`) or explicitly accounted for
-  - Permission usage strings present when relevant (camera, location, tracking, etc.)
-  - Avoid broad ATS exemptions (`NSAllowsArbitraryLoads`)
-- Third‑party SDK hygiene: licences, privacy manifests, tracking disclosures
-- Store listing basics: privacy policy URL exists somewhere in repo/docs; support/contact info
-
-The script outputs PASS/WARN/FAIL for these.
-
-### 3) Run build‑accuracy checks (macOS + Xcode, optional but high confidence)
-
-Only if you have **Xcode** available (local macOS gateway or a paired macOS node).
-
-Recommended sequence (creates build artefacts):
-
-1) Show Xcode + SDK versions:
-{ "tool": "exec", "command": "xcodebuild -version" }
-
-2) List schemes (project/workspace as detected):
-{ "tool": "exec", "command": "xcodebuild -list -json -workspace <path>.xcworkspace" }
-or
-{ "tool": "exec", "command": "xcodebuild -list -json -project <path>.xcodeproj" }
-
-3) Release build for simulator (fast, avoids signing):
-{ "tool": "exec", "command": "xcodebuild -workspace <...> -scheme <...> -configuration Release -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15' build" }
-
-4) If you need a distribution artefact (**MUTATING / signing**):
-- Prefer Fastlane if already configured
-- Otherwise `xcodebuild archive` + `xcodebuild -exportArchive`
-
-If build checks aren’t possible, the report must explicitly say so and keep the verdict at **WARN** (unless there are definite FAIL items).
-
-### 4) Produce the final readiness report
-
-- Use [references/report-template.md](references/report-template.md)
-- Include a “Go / No‑Go” recommendation:
-  - **FAIL** → must fix before submitting
-  - **WARN** → submission may work, but risk areas remain
-  - **PASS** → ready to submit; remaining items are administrative
-
-## Manual checks the agent cannot fully verify
-
-Always include these as a final checklist section (even if automated checks pass):
-
-- App Store Connect metadata: screenshots, description, keywords, age rating, pricing, categories
-- Privacy Nutrition Labels match actual behaviour
-- Export compliance (encryption) answers are correct
-- Content/IP rights: licences, third‑party assets, trademarks
-- Account / regional requirements (e.g. EU trader status if applicable)
-- In‑app purchases / subscriptions configured if used
-
-See: [references/manual-checklist.md](references/manual-checklist.md)
-
-## When the user asks “make it compliant”
-
-Switch to fix mode:
-1) Identify failing items that can be fixed safely in‑repo (Info.plist strings, `PrivacyInfo.xcprivacy` template, ATS exceptions tightening, etc.)
-2) Propose minimal patches and apply with `apply_patch`
-3) Re‑run `audit.mjs` and update the report
-
-## Quick search
-
-- Permissions mapping: [references/permissions-map.md](references/permissions-map.md)
-- Expo‑specific checks: [references/expo.md](references/expo.md)
-- React Native iOS checks: [references/react-native.md](references/react-native.md)
-- Native iOS checks: [references/native-ios.md](references/native-ios.md)
+Maintainer tests: `python -m unittest discover -s "$SKILL_DIR/tests" -v`.
+These test source-inventory behaviour, not Apple acceptance or a native build.
