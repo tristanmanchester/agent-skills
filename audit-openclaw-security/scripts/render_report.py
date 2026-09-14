@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -41,10 +42,28 @@ def strip_cmd_banner(text: str) -> str:
     return "\n".join(lines).strip()
 
 
+def capture_status(path: Path) -> str:
+    if path.is_symlink() or not path.is_file():
+        return "missing or non-regular capture"
+    status_path = path.with_suffix(".exit-code")
+    if status_path.is_symlink() or not status_path.is_file():
+        return "exit status missing"
+    try:
+        code = status_path.read_text(encoding="ascii").strip()
+    except (OSError, UnicodeError):
+        return "exit status unreadable"
+    if not re.fullmatch(r"[0-9]{1,3}", code) or int(code) > 255:
+        return "exit status invalid"
+    return "succeeded" if int(code) == 0 else f"failed (exit {int(code)})"
+
+
 def load_capture(path: Path) -> Optional[Capture]:
-    if not path.exists():
+    if capture_status(path) != "succeeded":
         return None
-    raw = path.read_text(encoding="utf-8", errors="replace")
+    try:
+        raw = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
     return Capture(name=path.stem, path=path, raw=raw, body=strip_cmd_banner(raw))
 
 
@@ -274,26 +293,36 @@ def parse_gateway_runtime(in_dir: Path) -> str:
     return body.splitlines()[0].strip()
 
 
+def config_display(in_dir: Path, stem: str) -> str:
+    path = in_dir / f"{stem}.txt"
+    status = capture_status(path)
+    if status != "succeeded":
+        return f"(unverified: {status})"
+    if not read_capture_body(in_dir, stem):
+        return "(unverified: empty or unreadable capture)"
+    return one_line(read_config_value(in_dir, stem))
+
+
 def build_environment_rows(in_dir: Path) -> List[Tuple[str, str]]:
     rows = [
         ("OS", detect_os(in_dir)),
         ("OpenClaw version", parse_version(in_dir)),
         ("Gateway status", parse_gateway_runtime(in_dir)),
-        ("Gateway bind", one_line(read_config_value(in_dir, "openclaw_config_gateway_bind"))),
-        ("Gateway auth mode", one_line(read_config_value(in_dir, "openclaw_config_gateway_auth_mode"))),
-        ("Gateway auth.allowTailscale", one_line(read_config_value(in_dir, "openclaw_config_gateway_auth_allow_tailscale"))),
-        ("Control UI allowed origins", one_line(read_config_value(in_dir, "openclaw_config_gateway_controlui_allowed_origins"))),
-        ("Trusted proxies", one_line(read_config_value(in_dir, "openclaw_config_gateway_trusted_proxies"))),
-        ("allowRealIpFallback", one_line(read_config_value(in_dir, "openclaw_config_gateway_allow_real_ip_fallback"))),
-        ("Discovery mDNS mode", one_line(read_config_value(in_dir, "openclaw_config_discovery_mdns_mode"))),
-        ("Session dmScope", one_line(read_config_value(in_dir, "openclaw_config_session_dm_scope"))),
-        ("Default DM policy", one_line(read_config_value(in_dir, "openclaw_config_channels_defaults_dm_policy"))),
-        ("Default group policy", one_line(read_config_value(in_dir, "openclaw_config_channels_defaults_group_policy"))),
-        ("Tools profile", one_line(read_config_value(in_dir, "openclaw_config_tools_profile"))),
-        ("FS workspaceOnly", one_line(read_config_value(in_dir, "openclaw_config_tools_fs_workspace_only"))),
-        ("Exec security", one_line(read_config_value(in_dir, "openclaw_config_tools_exec_security"))),
-        ("Elevated tools enabled", one_line(read_config_value(in_dir, "openclaw_config_tools_elevated_enabled"))),
-        ("Logging redactSensitive", one_line(read_config_value(in_dir, "openclaw_config_logging_redact_sensitive"))),
+        ("Gateway bind", config_display(in_dir, "openclaw_config_gateway_bind")),
+        ("Gateway auth mode", config_display(in_dir, "openclaw_config_gateway_auth_mode")),
+        ("Gateway auth.allowTailscale", config_display(in_dir, "openclaw_config_gateway_auth_allow_tailscale")),
+        ("Control UI allowed origins", config_display(in_dir, "openclaw_config_gateway_controlui_allowed_origins")),
+        ("Trusted proxies", config_display(in_dir, "openclaw_config_gateway_trusted_proxies")),
+        ("allowRealIpFallback", config_display(in_dir, "openclaw_config_gateway_allow_real_ip_fallback")),
+        ("Discovery mDNS mode", config_display(in_dir, "openclaw_config_discovery_mdns_mode")),
+        ("Session dmScope", config_display(in_dir, "openclaw_config_session_dm_scope")),
+        ("Default DM policy", config_display(in_dir, "openclaw_config_channels_defaults_dm_policy")),
+        ("Default group policy", config_display(in_dir, "openclaw_config_channels_defaults_group_policy")),
+        ("Tools profile", config_display(in_dir, "openclaw_config_tools_profile")),
+        ("FS workspaceOnly", config_display(in_dir, "openclaw_config_tools_fs_workspace_only")),
+        ("Exec security", config_display(in_dir, "openclaw_config_tools_exec_security")),
+        ("Elevated tools enabled", config_display(in_dir, "openclaw_config_tools_elevated_enabled")),
+        ("Logging redactSensitive", config_display(in_dir, "openclaw_config_logging_redact_sensitive")),
     ]
     docker_ps = read_capture_body(in_dir, "docker_ps")
     if docker_ps:
@@ -301,7 +330,9 @@ def build_environment_rows(in_dir: Path) -> List[Tuple[str, str]]:
     return rows
 
 
-def overall_risk(counts: Dict[str, int]) -> str:
+def overall_risk(counts: Dict[str, int], *, complete: bool = True) -> str:
+    if not complete:
+        return "Unverified — incomplete audit evidence; review any parsed findings below"
     if counts.get("critical"):
         return "Critical"
     if counts.get("high"):
@@ -351,11 +382,18 @@ def main() -> None:
     ]
     findings: List[Dict[str, Any]] = []
     parsed_files: List[str] = []
+    audit_gaps: List[Tuple[str, str]] = []
     for path in audit_sources:
         obj = load_json_capture(path)
-        if obj is not None:
+        valid_shape = (isinstance(obj, list) and all(isinstance(item, dict) for item in obj)) or (
+            isinstance(obj, dict) and any(isinstance(obj.get(key), list) and
+                all(isinstance(item, dict) for item in obj[key]) for key in ("findings", "checks", "results", "issues")))
+        if valid_shape:
             parsed_files.append(path.name)
             findings.extend(extract_findings(obj))
+        else:
+            status = capture_status(path)
+            audit_gaps.append((path.name, status if status != "succeeded" else "unreadable or unsupported audit JSON"))
 
     findings = dedupe_findings(findings)
     findings_sorted = sorted(findings, key=sort_key)
@@ -365,7 +403,7 @@ def main() -> None:
     report: List[str] = []
     report.append("# OpenClaw Security Audit Report\n\n")
     report.append("## Executive summary\n\n")
-    report.append(f"- **Overall risk rating:** {overall_risk(counts)}\n")
+    report.append(f"- **Overall risk rating:** {overall_risk(counts, complete=not audit_gaps)}\n")
     report.append(f"- **OpenClaw version:** {parse_version(in_dir)}\n")
     report.append(f"- **Audit artefacts folder:** `{in_dir}`\n")
     if parsed_files:
@@ -382,6 +420,18 @@ def main() -> None:
             report.append(f"  - `{check_id}` ({sev}): {summary}\n")
     else:
         report.append("- **Most urgent issues:** none parsed automatically; inspect raw audit outputs.\n")
+    report.append("\n")
+
+    report.append("## Capture coverage\n\n")
+    report.append("Only captures with a recorded zero exit status contribute configuration or audit evidence.\n\n")
+    for name, status in audit_gaps:
+        report.append(f"- `{name}`: {status}; missing audit evidence.\n")
+    for path in sorted(in_dir.glob("*.txt")):
+        if path in audit_sources or path.name == "manifest.txt":
+            continue
+        status = capture_status(path)
+        if status != "succeeded":
+            report.append(f"- `{path.name}`: {status}; not interpreted as configuration.\n")
     report.append("\n")
 
     report.append("## Environment overview\n\n")
@@ -496,7 +546,10 @@ def main() -> None:
     )
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text("".join(report), encoding="utf-8")
+    # Exclusive creation prevents clobbering an earlier report or following a symlink.
+    fd = os.open(out_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as stream:
+        stream.write("".join(report))
 
 
 if __name__ == "__main__":
