@@ -1,141 +1,89 @@
-# Boundary enforcement patterns
+# Enforce real dependency boundaries
 
-The goal is simple: **prevent cross-domain imports** that make the codebase hard to navigate and refactor.
+First define ownership and permitted dependencies. Then choose enforcement that
+matches the language, resolver, and build. Prevent foreign access to implementation
+details without blocking a module's own facade or internal collaborations.
 
-Start light (conventions), then add tooling as soon as drift appears.
+## JavaScript and TypeScript
 
-## Shared principles
-
-1. **One public entrypoint per module**
-   - TS/JS: `src/<module>/index.ts`
-   - Python: `src/<module>/__init__.py`
-2. **No external imports from internal folders**
-   - `src/<module>/internal/**` is off-limits
-3. **Explicit dependency direction**
-   - Agree a small set of “platform/shared” modules
-   - Domain modules may depend on platform/shared, not on each other (unless explicitly allowed)
-
-## TypeScript / JavaScript
-
-### Option A — ESLint `no-restricted-imports` (pragmatic default)
-
-Example idea (adjust paths to your repo):
-
-- Allow: `import { login } from "@/auth"`
-- Disallow: `import { hash } from "@/auth/internal/password"`
-
-Config sketch:
+Current ESLint uses flat configuration. Add a narrowly scoped rule to the existing
+config rather than replacing it with an obsolete .eslintrc.js. For example, an
+alias-based rule for a particular external consumer region could be:
 
 ```js
-// .eslintrc.js
-module.exports = {
+// A fragment for the existing eslint.config.mjs, not a complete TS configuration.
+export default [{
+  files: ['src/billing/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}'],
   rules: {
-    "no-restricted-imports": [
-      "error",
-      {
-        patterns: [
-          // Block importing internals from anywhere
-          "**/internal/*",
-          "**/internal/**",
-
-          // Optional: block cross-feature imports (example)
-          // "@/auth/**" may only be imported via "@/auth"
-        ],
-      },
-    ],
+    'no-restricted-imports': ['error', {
+      patterns: [{ group: ['@/auth/internal', '@/auth/internal/**'],
+        message: 'Use the public auth contract from billing.' }],
+    }],
   },
-};
+}];
 ```
 
-Add a **path alias** so the “public entrypoint only” rule is ergonomic:
+Derive the file patterns from the repository's actual extensions and generated-file
+policy. This example covers JS/TS module and JSX/TSX extensions; configure the
+appropriate parser for each, and test a prohibited static import in every matched
+extension plus an allowed public import. File matching does not add parsing support.
 
-```json
-// tsconfig.json
-{
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    }
-  }
-}
-```
+This does not block auth's own internal imports. It also does **not** resolve every
+relative-path/alias spelling or dynamic import. The core rule covers static imports
+and relevant re-exports, not all require()/import() calls. For stronger guarantees,
+use an appropriate resolver-aware dependency rule/check and test the project's
+actual syntax, including type-only imports, re-exports, aliases, and generated code.
+Do not call a grep match a resolved dependency graph.
 
-Then keep module entrypoints short and stable:
-- `src/auth/index.ts`
-- `src/billing/index.ts`
+TypeScript paths affects type/module resolution; it does not rewrite emitted
+imports. Keep runtime/bundler/test resolution consistent and avoid unnecessary
+baseUrl configuration. An alias is ergonomic naming, not a privacy boundary.
+Workspace package exports can define supported consumer entry points; do not claim
+those boundaries protect secrets from code running in the same trusted process.
 
-### Option B — Packages with explicit exports
-
-If you already use workspaces (`packages/*`), make each module a package and expose only the public surface.
-
-Example:
-
-```
-packages/auth/
-  package.json  # "exports" points to dist/index.js
-  src/index.ts  # public API
-  src/internal/ # private implementation
-```
-
-Consumers import `@acme/auth` only.
-
-### Option C — Architecture tests (when you need stronger guarantees)
-
-Write a test that fails on forbidden imports (many libraries exist; also easy to script with `grep`/AST parsing).
-
-Keep it simple:
-- fail on `../auth/internal`
-- fail on `src/auth/` imports that aren’t `src/auth/index`
+Sources reviewed 2026-09-13:
+- https://eslint.org/docs/latest/use/configure/configuration-files
+- https://eslint.org/docs/latest/rules/no-restricted-imports
+- https://www.typescriptlang.org/tsconfig/paths.html
 
 ## Python
 
-### Convention + Import Linter
+A package facade and __all__ document an intended public interface; they do not
+prevent explicit imports of internal modules. Packaging a distribution also does
+not automatically hide its installed implementation. Use the actual project's
+import-linter or architecture-test contract, accounting for relative imports,
+plugins, dynamic imports, and test-only exceptions. A lightweight AST/grep check
+is useful only with its stated limitations and positive/negative fixtures.
 
-Use a tool like `import-linter` (or a simple AST check) to enforce rules:
-
-- `billing` may import `platform` but not `auth.internal`
-- only `billing/__init__.py` is imported from outside
-
-If you don’t want extra tooling yet:
-- keep `internal/` as a convention
-- enforce via PR review and a lightweight CI grep check
+Source: https://docs.python.org/3/tutorial/modules.html#packages
 
 ## Go
 
-Use `internal/` packages to make illegal imports impossible.
+An internal directory restricts imports to code within its parent tree, as defined
+by the Go toolchain. It does not prohibit every sibling domain dependency when
+those siblings fall within that permitted parent. Place internal at the boundary
+you intend, and use package dependency checks for additional architecture rules.
 
-If you still have cross-domain coupling, it usually comes from:
-- shared types in the wrong place
-- shared DB access logic
-- shared configuration
+Source: https://pkg.go.dev/cmd/go#hdr-Internal_Directories
 
-Fix by extracting a `platform` package or by inverting dependencies via interfaces.
+## Java and Kotlin
 
-## JVM (Java/Kotlin)
+Java package-private visibility applies to the exact package, not a hierarchy.
+com.acme.auth and com.acme.auth.internal are different packages; a package-private
+class in the latter is not accessible to a facade in the former. Keep collaborating
+package-private types together or use a deliberate module/public bridge and an
+architecture rule. Do not widen every implementation type publicly just to match
+a folder sketch. Kotlin internal is module visibility, not Java package-private;
+use the actual build/module boundary and account for tests/friend modules.
 
-Two solid options:
-- **ArchUnit** tests: assert package dependency rules
-- **JPMS / Gradle conventions**: split domains into modules
+Source: https://docs.oracle.com/javase/specs/jls/se25/html/jls-6.html#jls-6.6.1
+Check the installed Kotlin/compiler/build contract when applying the Kotlin case.
 
-Even without tooling:
-- keep “public API” classes in the top package
-- keep internal classes package-private and under `.internal`
+## Acceptance tests
 
-## Dealing with necessary cross-domain calls
-
-Sometimes modules must interact. Prefer one of these:
-
-1. **Service interface inversion**
-   - `billing` defines `UserLookup` interface
-   - `auth` implements it
-   - wire together in a composition root
-
-2. **Events**
-   - `auth` emits `UserLoggedIn`
-   - `billing` subscribes
-   - avoids direct imports
-
-3. **Shared primitives module**
-   - move only truly generic types/utilities into `platform/` (or `shared/`)
-   - keep it small; avoid turning it into a junk drawer
+Include an allowed own-internal import; forbidden foreign-internal import;
+allowed public cross-domain dependency; forbidden cycle; relative and alias forms;
+type-only/re-export forms; dynamic/plugin paths; test-only exception; and an actual
+runtime build resolving the approved imports. Scope exceptions narrowly and explain
+why they exist. A boundary rule without negative fixtures can silently do nothing;
+a global ban without positive fixtures can forbid the architecture it describes.
