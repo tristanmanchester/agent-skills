@@ -13,7 +13,7 @@ alias-based rule for a particular external consumer region could be:
 ```js
 // A fragment for the existing eslint.config.mjs, not a complete TS configuration.
 export default [{
-  files: ['src/billing/**/*.{js,ts,tsx}'],
+  files: ['src/billing/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}'],
   rules: {
     'no-restricted-imports': ['error', {
       patterns: [{ group: ['@/auth/internal', '@/auth/internal/**'],
@@ -22,6 +22,11 @@ export default [{
   },
 }];
 ```
+
+Derive the file patterns from the repository's actual extensions and generated-file
+policy. This example covers JS/TS module and JSX/TSX extensions; configure the
+appropriate parser for each, and test a prohibited static import in every matched
+extension plus an allowed public import. File matching does not add parsing support.
 
 This does not block auth's own internal imports. It also does **not** resolve every
 relative-path/alias spelling or dynamic import. The core rule covers static imports
