@@ -11,13 +11,16 @@ import sys
 
 
 def build_report(smoke=False):
-    packages = {}
+    packages, package_errors = {}, {}
     for name in ('jax', 'jaxlib', 'numpy', 'scipy', 'flax', 'optax', 'equinox', 'orbax-checkpoint'):
         try: packages[name] = importlib.metadata.version(name)
         except importlib.metadata.PackageNotFoundError: packages[name] = None
+        except Exception as error:
+            packages[name] = None
+            package_errors[name] = type(error).__name__
     report = {'ok': False, 'python': platform.python_version(), 'platform': platform.platform(),
-              'packages': packages, 'environment_names_only': sorted(
-                  k for k in os.environ if k.startswith(('JAX_', 'XLA_', 'CUDA_', 'NCCL_', 'TPU', 'ROCM', 'HIP_')))}
+              'packages': packages, 'package_errors': package_errors, 'environment_names_only': sorted(
+                  k for k in os.environ if k.startswith(('JAX_', 'XLA_', 'CUDA_', 'NVIDIA_', 'NCCL_', 'TPU', 'ROCM', 'HIP_')))}
     try:
         import jax
         import jax.numpy as jnp
@@ -30,7 +33,7 @@ def build_report(smoke=False):
             jax.block_until_ready(output)
             report['smoke_test'] = {'ok': bool(jnp.all(output == x + 1)), 'scope': 'small compiled addition'}
             if not report['smoke_test']['ok']: return report
-        report['ok'] = True
+        report['ok'] = not package_errors
     except Exception as error:
         # Exception messages may contain paths, endpoint addresses, or configuration values.
         report['error_type'] = type(error).__name__
