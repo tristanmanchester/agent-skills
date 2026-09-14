@@ -68,9 +68,9 @@ For authorised writes, use `note`, `link`, or `file` when the type is known.
 creating a note. Verify that inference before using it.
 
 ```bash
-fabric --json note --parent "Work/Projects" < /private/output/reviewed-note.md
+fabric --json note --parent "Work/Projects" < "/private/output/reviewed-note.md"
 fabric --json link "https://example.com" --title "Reference" --parent "Work/Reading"
-fabric --json file /absolute/path/reviewed-report.pdf --parent "Work/Reports"
+fabric --json file "/absolute/path/reviewed-report.pdf" --parent "Work/Reports"
 ```
 
 The note command's positional text is the **body**, not a title. Set a separate
