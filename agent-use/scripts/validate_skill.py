@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import sys
 from urllib.parse import unquote, urlsplit
+sys.dont_write_bytecode = True
 import yaml
 
 LIMIT = 2 * 1024 * 1024
@@ -41,6 +42,24 @@ def read_text(path: Path) -> str:
     if len(content) > LIMIT:
         raise ValueError('File exceeds structural-check size limit')
     return content.decode('utf-8')
+
+def markdown_link_text(text: str) -> str:
+    """Remove fenced/inline code from conventional link scanning, not full Markdown parsing."""
+    lines, fence = [], None
+    for line in text.splitlines():
+        marker = re.match(r'^ {0,3}(`{3,}|~{3,})(.*)$', line)
+        if marker:
+            token, suffix = marker.groups()
+            if fence is None:
+                fence = (token[0], len(token))
+            elif token[0] == fence[0] and len(token) >= fence[1] and not suffix.strip():
+                fence = None
+            continue
+        if fence is None:
+            lines.append(line)
+    # Match equal-length backtick runs; literal links inside code are not navigation.
+    return re.sub(r'(?<!`)(`+)(?!`)(.*?)(?<!`)\1(?!`)', '', '\n'.join(lines), flags=re.S)
+
 
 def validate(skill_dir: Path) -> dict:
     root = Path(skill_dir).resolve(strict=True)
@@ -105,7 +124,7 @@ def validate(skill_dir: Path) -> dict:
                     json.loads(content)
                 else:
                     # Conventional inline links only, not a complete Markdown parser.
-                    for target in re.findall(r'\[[^\]\n]*\]\(([^\s)]+)\)', content):
+                    for target in re.findall(r'\[[^\]\n]*\]\(([^\s)]+)\)', markdown_link_text(content)):
                         parsed = urlsplit(target)
                         if parsed.scheme or parsed.netloc or not parsed.path or parsed.path.startswith('/'):
                             continue
