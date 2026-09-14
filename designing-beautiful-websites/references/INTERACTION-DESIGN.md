@@ -116,8 +116,11 @@ Rules:
 
 ### Accessibility essentials
 - every input has a label associated with it;
-- errors are announced to assistive tech;
-- focus moves to the first error on submit;
+- errors are associated with the relevant fields; use an appropriate announcement
+  mechanism rather than assuming `aria-describedby` announces an update;
+- after invalid submission, choose an error-summary or first-invalid-field focus
+  pattern that suits the form. Preserve input and avoid moving focus on every
+  keystroke; test the chosen pattern with keyboard and assistive technology;
 - keyboard navigation works logically.
 
 ## States and edge cases
