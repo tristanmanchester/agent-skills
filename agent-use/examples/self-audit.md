@@ -1,3 +1,6 @@
+Historical captured output; not a current score or a live link inventory.
+
+````text
 # Agent-use audit: `/Users/tristan/Projects/skills/agent-use`
 
 Overall: **91/100** (A)
@@ -135,3 +138,5 @@ Evidence:
 ```
 
 Heuristic scan only. Confirm findings by walking through real agent tasks and the action/context parity map.
+
+````

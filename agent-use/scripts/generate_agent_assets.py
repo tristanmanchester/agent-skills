@@ -1,49 +1,92 @@
 #!/usr/bin/env python3
-"""Scaffold common agent-facing files from bundled templates."""
+"""Preview selected agent-facing drafts; --write creates a new private directory."""
 from __future__ import annotations
-import argparse, datetime as dt, re, sys
-from dataclasses import dataclass
+import argparse
+import datetime as dt
+import json
 from pathlib import Path
-from typing import Sequence
-@dataclass(frozen=True)
-class Asset:
-    source:str; target:str; surface:str; description:str
-ASSETS=[
- Asset("AGENTS.md.template","AGENTS.md","core","Repository instructions for coding agents"),
- Asset("LLMS_TXT.template","llms.txt","web","Concise LLM/agent docs index"),
- Asset("WEB_DISCOVERY_HEADERS.txt","docs/agent-use/web-discovery-headers.txt","web","HTTP Link header examples"),
- Asset("CAPABILITY_MAP.csv","docs/agent-use/capability-map.csv","core","Capability map worksheet"),
- Asset("ACTION_PARITY_REVIEW.md.template","docs/agent-use/action-parity-review.md","app","Action/context parity worksheet"),
- Asset("CONTEXT_INJECTION.md.template","docs/agent-use/context-injection-contract.md","app","Dynamic context injection contract"),
- Asset("permission-matrix.csv","docs/agent-use/permission-matrix.csv","security","Permission/approval matrix"),
- Asset("API_AGENT_CONTRACT.md.template","docs/agent-use/api-agent-contract.md","api","API agent contract"),
- Asset("CLI_AGENT_CONTRACT.md.template","docs/agent-use/cli-agent-contract.md","cli","CLI/TUI agent contract"),
- Asset("EVALS.json","evals/agent-use-evals.json","evals","Agent task eval seed file"),
- Asset("api-catalog.linkset.json",".well-known/api-catalog","web","RFC 9727 API catalog Linkset draft"),
- Asset("mcp-server-card.json",".well-known/mcp.json","mcp","MCP server-card draft"),
- Asset("a2a-agent-card.json",".well-known/agent-card.json","a2a","A2A-style agent card draft"),
- Asset("agent-skills-index.json",".well-known/agent-skills/index.json","skills","Agent skills index draft"),
-]
-def slug(s): return re.sub(r"[^a-z0-9]+","-",s.lower()).strip("-") or "project"
-def render(t, name, base):
-    vals={"<Project name>":name,"<project>":name,"<Product or docs name>":name,"<target>":name,"<date>":dt.date.today().isoformat(),"https://example.com":base,"https://api.example.com":base.rstrip('/')+"/api","<api-name>":name,"<cli-name>":slug(name)}
-    for k,v in vals.items(): t=t.replace(k,v)
-    return t
+import re
+import sys
+from urllib.parse import urlsplit
 
-def main(argv: Sequence[str]|None=None)->int:
-    p=argparse.ArgumentParser(description="Scaffold agent-use assets from templates.")
-    p.add_argument("--root", required=True); p.add_argument("--project-name", required=True); p.add_argument("--base-url", default="https://example.com"); p.add_argument("--surface", choices=["all","core","web","app","api","cli","mcp","a2a","skills","security","evals"], default="all"); p.add_argument("--force", action="store_true"); p.add_argument("--dry-run", action="store_true")
-    a=p.parse_args(argv); root=Path(a.root); tmpl=Path(__file__).resolve().parents[1]/"assets"/"templates"; root.mkdir(parents=True,exist_ok=True)
-    rows=[]
-    for asset in ASSETS:
-        if a.surface!="all" and asset.surface!=a.surface and not (a.surface=="core" and asset.surface=="core"): continue
-        src=tmpl/asset.source; dst=root/asset.target
-        if not src.exists(): rows.append({"status":"error","path":asset.target,"message":"missing template"}); continue
-        status="would_write" if a.dry_run else "written"
-        if dst.exists() and not a.force: status="exists"
-        elif not a.dry_run:
-            dst.parent.mkdir(parents=True,exist_ok=True); dst.write_text(render(src.read_text(encoding="utf-8"),a.project_name,a.base_url),encoding="utf-8")
-        rows.append({"status":status,"path":asset.target,"description":asset.description})
-    for r in rows: print(f"{r['status']}\t{r['path']}\t{r.get('description',r.get('message',''))}")
-    return 1 if any(r["status"]=="error" for r in rows) else 0
-if __name__=="__main__": raise SystemExit(main())
+ASSETS = {
+    'core': [('AGENTS.md.template', 'AGENTS.md.draft'), ('CAPABILITY_MAP.csv', 'capability-map.csv')],
+    'web': [('LLMS_TXT.template', 'llms.txt.draft')],
+    'api': [('API_AGENT_CONTRACT.md.template', 'api-contract.md'), ('api-catalog.linkset.json', 'api-catalog.json')],
+    'cli': [('CLI_AGENT_CONTRACT.md.template', 'cli-contract.md')],
+    'app': [('ACTION_PARITY_REVIEW.md.template', 'action-parity.md'), ('CONTEXT_INJECTION.md.template', 'context-contract.md')],
+    'a2a': [('a2a-agent-card.json', 'agent-card.json')],
+    'mcp': [('mcp-server-card.json', 'local-mcp-description.json')],
+    'skills': [('agent-skills-index.json', 'local-skills-index.json')],
+    'security': [('permission-matrix.csv', 'permission-matrix.csv')],
+    'evals': [('EVALS.json', 'evals.json')],
+}
+
+def render(text: str, name: str, base: str, *, is_json: bool) -> str:
+    replacements = {
+        '<Project name>': name, '<project>': name, '<Product or docs name>': name,
+        '<target>': name, '<date>': dt.date.today().isoformat(), '<api-name>': name,
+        '<cli-name>': re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-') or 'project',
+        'https://api.example.com': base.rstrip('/') + '/api', 'https://example.com': base.rstrip('/'),
+    }
+    def replace(value):
+        if isinstance(value, str):
+            for before, after in replacements.items():
+                value = value.replace(before, after)
+            return value
+        if isinstance(value, list):
+            return [replace(item) for item in value]
+        if isinstance(value, dict):
+            return {key: replace(item) for key, item in value.items()}
+        return value
+    return json.dumps(replace(json.loads(text)), indent=2) + '\n' if is_json else replace(text)
+
+def generate(output: Path, name: str, base: str, surfaces: list[str], *, write: bool = False, templates: Path | None = None) -> dict:
+    if not name.strip() or any(ord(char) < 32 for char in name):
+        raise ValueError('Project name must be nonempty and contain no control characters')
+    parsed = urlsplit(base)
+    if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise ValueError('Base URL must be HTTPS without credentials, query, or fragment')
+    if not surfaces or any(surface not in ASSETS for surface in surfaces):
+        raise ValueError('Choose explicit supported surfaces')
+    templates = templates or Path(__file__).resolve().parents[1] / 'assets/templates'
+    files = {}
+    for surface in dict.fromkeys(surfaces):
+        for source, target in ASSETS[surface]:
+            text = (templates / source).read_text(encoding='utf-8')
+            files[target] = render(text, name, base, is_json=source.endswith('.json'))
+    output = Path(output).absolute()
+    if output.exists() or output.is_symlink():
+        raise FileExistsError('Choose a new output directory; existing paths are never overwritten')
+    report = {'mode': 'written' if write else 'preview', 'output': str(output),
+              'files': sorted(files), 'publication': 'DRAFTS_ONLY'}
+    if not write:
+        return report
+    # Preflight all templates first. Parent must exist; do not create arbitrary trees.
+    output.mkdir(mode=0o700)
+    for target, content in files.items():
+        with (output / target).open('x', encoding='utf-8') as stream:
+            stream.write(content)
+    # A missing final manifest indicates an interrupted/partial write, not success.
+    with (output / 'manifest.json').open('x', encoding='utf-8') as stream:
+        json.dump({**report, 'complete': True}, stream, indent=2)
+    return report
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--project-name', required=True)
+    parser.add_argument('--base-url', required=True)
+    parser.add_argument('--surface', action='append', choices=sorted(ASSETS), required=True)
+    parser.add_argument('--write', action='store_true')
+    args = parser.parse_args(argv)
+    try:
+        report = generate(args.output, args.project_name, args.base_url, args.surface, write=args.write)
+    except (OSError, ValueError) as error:
+        print(json.dumps({'ok': False, 'error': str(error)}), file=sys.stderr)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0
+
+if __name__ == '__main__':
+    raise SystemExit(main())
