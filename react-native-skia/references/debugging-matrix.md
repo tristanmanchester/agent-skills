@@ -8,17 +8,19 @@ Use this file when the repo already contains Skia code and something feels wrong
 Native build fails after installing Skia.
 
 ### Likely causes
-- Skia postinstall script never ran.
-- Bun blocked untrusted postinstall scripts.
-- Yarn Berry disabled scripts.
-- App versions do not match the supported React / React Native range.
+- Required platform packages are absent or incompatible with the selected target.
+- Lockfile, dependency resolution, or native build output belongs to a different stack.
+- React / React Native / Skia versions do not match their compatibility requirements.
 
 ### Fixes
-- Check `package.json`, lockfile, and package manager configuration.
-- For Bun, add `@shopify/react-native-skia` to `trustedDependencies`.
-- For Yarn Berry, make sure `enableScripts` is not `false`.
-- Verify React Native / React / Skia version compatibility.
-- Reinstall dependencies and rebuild native targets.
+- Inspect the resolved versions, installed platform dependencies, target architecture,
+  and first relevant native build error, not only declared package ranges.
+- Current Skia binaries arrive through package dependencies. Do not add Bun trust
+  entries or enable Yarn lifecycle scripts as a stock postinstall fix.
+- Match React Native / React / Skia / Reanimated / Worklets using the installed
+  Expo SDK and [current contracts](official-doc-notes.md).
+- Repair the identified dependency or native build issue, then rebuild as authorised;
+  do not reinstall or broaden script permissions without a concrete cause.
 
 ## Web blank screen
 
