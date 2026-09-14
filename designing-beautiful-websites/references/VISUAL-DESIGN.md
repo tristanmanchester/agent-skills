@@ -152,23 +152,16 @@ To make elevation feel real:
 - shadows fall below the element;
 - keep blur modest; sharp-ish edges feel more natural.
 
-### Use shadows to convey meaning
-Shadows are not decoration; they indicate z-position and focus.
+### Choose separation for the composition
+A shadow can suggest elevation when that metaphor fits the interface. It is not
+an automatic focus indicator or a requirement for cards, buttons, or modals.
+Use a consistent elevation system when the design needs one, and give keyboard
+focus its own visible treatment.
 
-Guidelines:
-- subtle shadows for cards/buttons,
-- stronger shadows for popovers,
-- strongest for modals.
-
-Define a small elevation system (3–5 shadows) and reuse them.
-
-### Use fewer borders
-Borders can make a UI feel busy.
-Try, in this order:
-1. more spacing,
-2. slight background difference,
-3. subtle shadow,
-4. border (last resort).
+Spacing, background differences, borders, and shadows are alternatives, not a
+quality ranking. Choose the cue that makes grouping and boundaries clear in the
+actual composition, including dark mode and high-contrast settings. A crisp border
+can be more effective than a shadow; no separator may be needed for a simple group.
 
 ## Working with images
 

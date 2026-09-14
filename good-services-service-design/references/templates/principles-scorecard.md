@@ -1,33 +1,47 @@
-# Principles Scorecard (template)
+# Evidence-linked service review worksheet
 
-Score each principle 0–2:
+Define service boundary, user groups, channels, dates, and evidence sources first.
+This is a **local 0–2 ordinal rubric**, not Lou Downe's published 0–4 Good Services
+Scale. The labels support prioritisation; they are not a validated aggregate metric.
 
-- **0** = failing / significant harm or friction
-- **1** = partial / inconsistent / only works for some users
-- **2** = solid / works reliably end-to-end
+Use an evidence status for every finding:
 
-> Add evidence. If you can't cite evidence, mark as an assumption and note what to measure/test.
+- **Assessed:** sufficient evidence for a stated group, channel, and part of the journey.
+- **Unverified:** no evidence, conflicting evidence, or insufficient coverage. Leave score blank.
+- **Out of scope:** not assessed in this review; explain why. Do not silently treat it as a pass.
 
-| # | Principle | Score (0–2) | Evidence (data/research/ops) | Where it fails in the journey | Fix ideas |
-|---|-----------|-------------|------------------------------|-------------------------------|----------|
-| 1 | Easy to find | | | | |
-| 2 | Explains its purpose | | | | |
-| 3 | Sets expectations | | | | |
-| 4 | Enables outcome completion | | | | |
-| 5 | Works in a familiar way | | | | |
-| 6 | Requires no prior knowledge | | | | |
-| 7 | Agnostic to org structures | | | | |
-| 8 | As few steps as possible | | | | |
-| 9 | Consistent throughout | | | | |
-| 10 | No dead ends | | | | |
-| 11 | Usable by everyone equally | | | | |
-| 12 | Encourages right behaviours | | | | |
-| 13 | Responds to change quickly | | | | |
-| 14 | Explains decisions | | | | |
-| 15 | Easy human assistance | | | | |
+For assessed findings only, use 0 for demonstrated serious failure/friction, 1 for
+mixed or incomplete performance, and 2 for performance supported within the stated
+scope. Record contradictory examples and group differences. Don't average a harmed
+minority out of a high overall score or label a whole principle irrelevant merely
+because it was outside this project's scope.
 
-## Summary
+| Principle area | Evidence status | Local score, if justified | Group/channel and observed evidence | Consequence | Proposed fix or next evidence |
+| --- | --- | --- | --- | --- | --- |
+| Findability | | | | | |
+| Purpose | | | | | |
+| Expectations | | | | | |
+| Outcome completion | | | | | |
+| Familiar interaction | | | | | |
+| Prior knowledge burden | | | | | |
+| Organisational handoffs | | | | | |
+| Necessary effort | | | | | |
+| Consistency | | | | | |
+| Recovery and alternatives | | | | | |
+| Inclusion and access | | | | | |
+| Incentives | | | | | |
+| Changed circumstances | | | | | |
+| Decision explanation | | | | | |
+| Human support | | | | | |
 
-- **Top 5 principle failures (by harm/impact)**:
-- **Most systemic root cause** (language, data, incentives, policy, capacity, tooling):
-- **Quick wins (high impact / low effort)**:
+## Findings that affect the decision
+
+Name the most consequential demonstrated failures, affected groups, and dependencies.
+Keep root-cause hypotheses separate from observations. Specify the smallest useful
+fix/test, owner when known, and acceptance evidence. A blank evidence column is an
+investigation need, not an invitation to invent a score.
+
+Report coverage and outstanding evidence alongside findings; do not add ordinal
+scores into a universal quality percentage or use them as proof of compliance.
+For the author's scale, use its actual current definitions instead of translating
+these local numbers mechanically.

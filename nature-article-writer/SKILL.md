@@ -1,310 +1,130 @@
 ---
 name: nature-article-writer
-description: Drafts, rewrites, diagnostically critiques, and style-calibrates primary research manuscripts for Nature and Nature Portfolio journals. Use when the user wants a Nature-style title, summary paragraph or abstract, introduction, results, discussion, methods, figure legends, presubmission enquiry, cover letter, reviewer response, or when a scientific draft sounds generic, jargon-heavy, structurally weak, or AI-ish and needs precise, broad-reader-friendly prose without inventing data, analyses, or references. Best for primary research articles and letters rather than reviews or press releases unless explicitly adapting one.
-compatibility: Best in skills-compatible agents with file read/write access. Optional Python 3 enables scripts/nature_preflight.py and scripts/prose_fingerprint.py. If web access is available, verify the live guide and inspect recent papers when a specific journal is named.
+description: >-
+  Draft, revise, or critique a primary-research manuscript for a specifically
+  chosen Nature or Nature Portfolio journal, or deliberately develop that
+  broad-reader scientific style. Ground claims in the supplied results and
+  calibrate journal requirements separately. Do not impose this journal style
+  on generic documentation, reviews, press releases, or unrelated writing.
+compatibility: File read/write access for drafts; Python 3.10+ for optional local checks. Current journal requirements need their official guide or a supplied dated copy. The checker accepts UTF-8 text/ATX Markdown, not PDF, Word, or LaTeX directly.
 metadata:
-  author: OpenAI
-  version: "2.0.0"
-  updated: "2026-04-19"
-  target: Nature and Nature Portfolio primary research
+  version: "3.0.0"
+  reviewed: "2026-09-13"
 ---
 
-# Nature Article Writer
+# Evidence-led scientific writing
 
-Write and revise primary research manuscripts so they feel editorially mature: precise, proportionate, detailed where detail matters, and genuinely pleasurable for a scientist to read. Beautiful Nature-style prose is not ornate prose. It is clear, load-bearing prose with strong logic, good sentence movement, and no wasted claims.
+Make the scientific argument clear before polishing its language. Keep the
+user's evidence, uncertainty, and voice; do not inflate novelty or make the work
+sound more complete than it is. A journal-like style is not submission approval.
 
-This skill optimises for editorial quality, reader trust, and human-sounding scientific prose. It does **not** optimise for AI-detector evasion.
+## Establish the brief and actual journal
 
-Do not imitate a named living author. Emulate journal expectations, the user's own prior writing if supplied, and the specific paper's evidence profile.
+Identify the journal and current content type, the central claim, its importance
+to adjacent-field readers, the supporting results/figures, strongest relevant
+prior work, boundary conditions, and missing facts. Use the supplied materials
+rather than reconstructing unseen data from an abstract or README.
 
-## When to activate this skill
+Check the official guide for that **journal and content type**. Record the rule,
+source URL, review date, and whether it is mandatory or advisory. There is no
+universal Nature Portfolio abstract limit. Do not assume a journal currently
+accepts Letters because a bundled template has that name. For an unspecified
+journal, draft without claiming journal-specific compliance.
 
-Use this skill when the user:
-- names Nature or a Nature Portfolio journal
-- asks for "Nature-style", "Nature journal", or "high-impact journal" scientific writing
-- wants a title, summary paragraph, abstract, introduction, results, discussion, methods, figure legend, presubmission package, cover letter, or reviewer response
-- wants a scientific draft to sound more natural, less generic, less formulaic, or less obviously machine-written
-- wants to convert notes, figures, bullet points, or a rough draft into a submission-ready manuscript
-- wants a diagnostic pass on manuscript structure, claim calibration, prose quality, or compliance
+Read [journal calibration](references/journal-calibration.md) and
+[structural modes](references/modes.md). Use a few relevant recent papers to
+understand structure and level of explanation, not to override an explicit
+submission rule or copy distinctive wording.
 
-## Success standard
+## Build the argument, then write
 
-A strong output from this skill should feel like it was written by a careful scientist-editor who understands both the data and the journal:
-- the central claim is evident early and never overstated
-- adjacent-field readers can follow the logic without drowning in jargon
-- each paragraph has a job
-- each sentence earns its place
-- results progress by question and answer, not lab chronology
-- the prose is varied but restrained
-- limitations are surfaced before reviewers must drag them out
-- end matter and policy-sensitive statements are present or explicitly marked as missing
+Create a brief figure-to-claim map: each main claim, its evidence, alternative
+explanations, and the figure/method needed to support it. Order Results by the
+questions answered, not the chronology of experiments. Draft Methods while
+checking what was actually done, then Discussion, context, abstract, title, and
+legends. This is a useful default, not a compulsory ritual for a one-paragraph edit.
 
-## Non-negotiables
+Retain and use the relevant templates:
+[brief](assets/manuscript-brief-template.md),
+[editorial blueprint](assets/editorial-blueprint-template.md),
+[figure–claim matrix](assets/figure-claim-matrix-template.md), and
+[paragraph map](assets/paragraph-map-template.md).
+For deeper structure use [editorial architecture](references/editorial-architecture.md).
 
-- Never invent data, methods, figures, ethics approvals, accession numbers, references, software versions, statistical results, or journal-specific limits.
-- Never strengthen a claim beyond the evidence actually supplied.
-- Never hide uncertainty. Mark missing facts explicitly with `[confirm]`, `[insert ref]`, `[insert accession]`, or a short `Issues to confirm` list.
-- Never use AI-generated figures or image content for publication.
-- Never copy distinctive phrasing from published papers. Use exemplars for structure, rhythm, and level-setting, not sentence theft.
-- If AI did more than copy editing, remind the user to check whether disclosure is required under the target journal's policy. Human authors remain accountable for the final text.
+Give each paragraph a purpose, supporting evidence, and a useful conclusion or
+transition. Connect familiar information to new findings; put the important point
+where the reader expects emphasis. Use concrete verbs and explanations that an
+adjacent-field scientist can follow. Keep necessary technical detail, exact units,
+replicate definitions, analysis choices, and uncertainty.
 
-## Default workflow
+## Edit without changing the evidence
 
-### 1. Build the manuscript brief
+Replace generic significance claims with the specific implication. Distinguish
+observation, interpretation, and proposed mechanism. Do not turn association into
+causation, technical repeats into independent samples, absent data into a null
+result, or an exploratory analysis into a preregistered test.
 
-Infer or assemble the minimum brief:
-- target journal and content type
-- one-sentence central claim
-- why it matters outside the immediate subfield
-- evidence ladder: 3-6 concrete results, figures, or analyses that support the claim
-- strongest prior work and the precise gap
-- strongest limitation or boundary condition
-- data, code, and materials availability
-- ethics or compliance facts if humans, animals, clinical samples, or sensitive data are involved
+Remove formulaic transitions, redundant conclusions, inflated adjectives, and
+unnecessary noun chains. Vary rhythm naturally, not to hit a score. Passive voice,
+repeated terms, and technical compounds can be the clearest choices.
+A shorter
+sentence is not automatically a better scientific sentence.
 
-If the user has scattered notes, use [assets/manuscript-brief-template.md](assets/manuscript-brief-template.md).
+Use [sentence craft](references/sentence-craft.md),
+[voice and variation](references/voice-and-variation.md), and
+[section rubric](references/section-rubric.md) as editorial heuristics, not journal
+rules. For supplied exemplars, use [exemplar anchoring](references/exemplar-anchoring.md).
+Keep material limitations explicit without adding defensive filler to every claim.
 
-### 2. Calibrate before you draft
+## Check the selected opening, not an invented generic mode
 
-Use both of these calibration layers when possible.
-
-#### A. Journal calibration
-Consult [references/modes.md](references/modes.md) and [references/journal-calibration.md](references/journal-calibration.md).
-
-- Choose the closest bundled mode:
-  - `nature-article`
-  - `nature-letter`
-  - `portfolio-article`
-  - `portfolio-letter`
-- If the user names a specific journal and web access is available, verify the live guide and inspect 2-4 recent primary research papers from that journal.
-- Build a short internal style card: title texture, opening-paragraph shape, heading policy, legend density, end-matter order, and how aggressively claims are hedged.
-
-#### B. Exemplar anchoring
-If the user supplies their own accepted papers, lab style guides, or a high-quality draft they want to sound like, use [references/exemplar-anchoring.md](references/exemplar-anchoring.md) and optionally run:
+Resolve `SKILL_DIR` to this skill's installed directory. The local checker now
+requires an exact dated profile or a validated custom profile:
 
 ```bash
-python3 scripts/prose_fingerprint.py --candidate draft.md --reference exemplar1.md exemplar2.md --format text
+python3 "$SKILL_DIR/scripts/nature_preflight.py" --input /absolute/draft.md \
+  --profile nature-communications-article
 ```
 
-Imitate **broad habits** such as sentence length range, paragraph density, degree of overt signposting, and tolerance for technical detail. Do not imitate distinctive turns of phrase.
+The built-in Nature Communications Article profile checks a 200-word maximum;
+the Nature Article profile treats the 200-word summary target as advisory. For
+a separate plain-text abstract/summary add `--opening-only`. Otherwise use exactly
+one ATX heading matching the profile, such as `## Abstract`. The checker refuses
+missing/duplicate/nested headings rather than guessing a first paragraph.
 
-### 3. Build the editorial architecture
+It counts whitespace-separated tokens; portal/word-processor conventions can
+differ. It checks only opening length, not references, scientific validity,
+article-type eligibility, or the rest of the manuscript. Every result says
+`submission_readiness: NOT_ASSESSED`. Exit 0 means within the configured length;
+1 means a mandatory length exceeded; 2 means advisory excess, unverified input,
+or a tool/usage error. Inspect the JSON status. Old `--mode`/`--format` flags are
+removed, not mapped to misleading generic defaults.
 
-Before line-level drafting, create:
-- a one-sentence paper promise
-- a figure-claim matrix
-- a paragraph map for the major sections
+For other journals create `--profile-file` using the documented schema in
+[journal calibration](references/journal-calibration.md) after checking the real
+guide. Do not copy a built-in limit into another journal by changing only its name.
 
-Use:
-- [assets/editorial-blueprint-template.md](assets/editorial-blueprint-template.md)
-- [assets/figure-claim-matrix-template.md](assets/figure-claim-matrix-template.md)
-- [assets/paragraph-map-template.md](assets/paragraph-map-template.md)
-- [references/editorial-architecture.md](references/editorial-architecture.md)
+Optional prose metrics/fingerprint scripts remain editorial aids. Run their help
+from `"$SKILL_DIR/scripts/..."`; they are not AI detectors or objective quality
+scores, and their warnings do not establish publication-policy violations.
 
-This is the main upgrade over a generic "write the paper" prompt. The prose improves when the structure is load-bearing before wording starts.
+## Integrity and final deliverable
 
-### 4. Draft in evidence order, not display order
+Never invent results, references, approvals, sample counts, software versions,
+accessions, or completed analyses. Mark genuinely missing facts and verify source
+citations against their actual content. Preserve original image/data evidence;
+do not use generative imagery to fabricate observations. Check the journal's
+current AI-use, disclosure, and image policy for the actual activity, rather than
+assuming all copy editing is exempt or all computational plots are prohibited.
+Human authors review and take responsibility for the manuscript.
 
-Default drafting order:
-1. figure plan and one-sentence take-home message for each figure
-2. Results
-3. Methods
-4. Discussion or concluding synthesis
-5. opening context paragraph or Introduction
-6. summary paragraph or abstract
-7. title
-8. figure legends
-9. availability statements and other end matter
-10. cover letter or presubmission material if requested
+Use [integrity checks](references/integrity-and-compliance.md). For reviewer replies,
+answer each point, name the actual change and location, and distinguish completed
+work from proposals. For a cover letter, explain the advance, evidence, and fit
+without overclaiming; templates for both remain in `assets/`.
 
-Starting from figures and claims produces more grounded prose than starting from the title or abstract.
-
-### 5. Shape paragraphs deliberately
-
-Every paragraph needs:
-- a topic sentence that names the paragraph's job
-- evidence or reasoning that advances the job
-- a final stress position that lands the important point or hands the reader to the next paragraph
-
-Use [references/sentence-craft.md](references/sentence-craft.md) and [assets/paragraph-map-template.md](assets/paragraph-map-template.md). Prefer old-to-new information flow, concrete verbs, and sentences that end on the point that matters.
-
-### 6. Run a human-voice pass tuned for scientific prose
-
-Consult [references/voice-and-variation.md](references/voice-and-variation.md).
-
-Target common instruction-tuned LLM artefacts without turning the paper chatty:
-- overuse of present-participial clause chains
-- noun-heavy nominalized phrasing
-- conveyor-belt transitions (`Additionally`, `Moreover`, `Importantly`, `Taken together`)
-- inflated significance language
-- generic concluding sentences that claim importance without stating the implication
-- repeated weak sentence openings (`This`, `These`, `It`, `We`)
-- flat sentence rhythm and uniform paragraph shape
-
-Do **not** blindly ban passive voice, repetition, or technical compounds. Scientific prose needs all three sometimes. The aim is selective repair.
-
-### 7. Run integrity and compliance checks
-
-Use [references/integrity-and-compliance.md](references/integrity-and-compliance.md) and, if Python 3 is available:
-
-```bash
-python3 scripts/nature_preflight.py --input draft.md --mode nature-article --format text
-```
-
-or the relevant mode:
-
-```bash
-python3 scripts/nature_preflight.py --input draft.md --mode portfolio-article --format text
-```
-
-Use the report to fix:
-- title length and title texture
-- missing required or expected sections
-- opening paragraph length or structure
-- missing Data Availability or Code Availability sections
-- bracket citations that need conversion
-- figure legends missing title sentences or statistical detail
-- hype words, generic AI-ish phrases, rhythm flatness, or repeated weak openers
-- obvious overclaim or unsupported forward-looking claims
-
-If scripting is unavailable, do the same checks manually.
-
-## Section guidance
-
-Use [references/section-rubric.md](references/section-rubric.md) for detailed section-by-section repair rules. High-level rules:
-
-### Title
-- clear, searchable, and readable outside the narrow subfield
-- avoid hype, puns, slogans, rhetorical questions, and vague grandeur
-- for main Nature, aim for roughly 75 characters and avoid numbers, acronyms, abbreviations, and punctuation unless essential
-
-### Summary paragraph or abstract
-- broad context first, then the specific gap
-- state the main finding once, cleanly
-- end on the most defensible implication
-- use references in main Nature-style summary paragraphs when appropriate
-- avoid stuffing it with data scraps, acronyms, or methodological clutter
-
-### Introduction or opening
-- move quickly from field context to unresolved problem
-- do not write a mini-review
-- finish with what the paper does, why the approach is appropriate, and what kind of answer the paper delivers
-
-### Results
-- organise by conceptual question or figure logic, not by when experiments happened
-- make every subsection claim-bearing
-- distinguish observation from interpretation
-- mention only the numbers that advance the story
-
-### Discussion
-- say what the work establishes, what it suggests, and where it stops
-- surface the main limitation before the reviewer does
-- end with the most defensible field-level implication, not a cinematic future vision
-
-### Methods
-- concise but genuinely informative
-- include the details that govern interpretability and reproducibility
-- use short subsection headings and concrete labels
-
-### Figure legends
-- begin with a brief title sentence
-- describe panels in sequence
-- define statistics, sample sizes, centre values, and error bars where relevant
-- stand on their own as far as reasonable
-
-## Working modes
-
-### A. Full manuscript from notes
-Deliver:
-- a short manuscript brief
-- a figure-led blueprint
-- the full draft in the chosen template
-- an unresolved-gap list
-- optional preflight and fingerprint reports
-
-### B. Rewrite an existing draft
-Process:
-1. identify the actual claim
-2. preserve data and meaning
-3. repair structure
-4. line-edit for Nature-style clarity and reader movement
-5. flag claims that need verification
-
-### C. Abstract or summary paragraph only
-Where useful, provide 2-3 versions:
-- conservative
-- balanced or default
-- slightly bolder but still defensible
-
-Label the trade-off in claim strength.
-
-### D. Reviewer response or rebuttal
-Use [assets/reviewer-response-template.md](assets/reviewer-response-template.md).
-
-Rules:
-- answer every point directly
-- quote the reviewer briefly, then answer
-- specify exactly what changed and where
-- concede valid points plainly
-- when declining a request, explain why and offer the nearest rigorous alternative
-
-### E. Presubmission enquiry or cover letter
-Use:
-- [assets/presubmission-enquiry-template.md](assets/presubmission-enquiry-template.md)
-- [assets/cover-letter-template.md](assets/cover-letter-template.md)
-
-Write for editors, not reviewers. Explain:
-- the central advance
-- why broad readers should care
-- why the evidence is strong enough
-- why the paper fits this journal
-- what the paper is **not** claiming
-
-## Output style
-
-When returning a draft or rewrite:
-- state the chosen journal mode and key assumptions
-- give the manuscript in clean, journal-ready prose
-- include a brief `Issues to confirm` list only when necessary
-- do not pad the answer with generic writing advice unless the user asked for it
-
-When returning diagnostics:
-- prioritise the 5-10 issues that will most improve reader trust and editorial fit
-- separate structural issues from line-edit issues
-- suggest concrete rewrites, not vague criticism
-
-## Fast heuristics for excellent Nature-style prose
-
-- A clear limitation usually makes the paper sound stronger.
-- If a phrase could appear in almost any paper, cut or replace it.
-- The sentence ending matters. Land on the point that earns emphasis.
-- Replace abstract importance language with the exact implication.
-- Good scientific prose can be vivid without being promotional.
-- Detail is welcome when it is the detail that lets the reader trust the claim.
-- "Human sounding" here means precise, calm, varied, and specific, not casual.
-
-## Bundled references
-
-- [references/modes.md](references/modes.md)
-- [references/section-rubric.md](references/section-rubric.md)
-- [references/editorial-architecture.md](references/editorial-architecture.md)
-- [references/sentence-craft.md](references/sentence-craft.md)
-- [references/voice-and-variation.md](references/voice-and-variation.md)
-- [references/journal-calibration.md](references/journal-calibration.md)
-- [references/exemplar-anchoring.md](references/exemplar-anchoring.md)
-- [references/integrity-and-compliance.md](references/integrity-and-compliance.md)
-- [references/research-notes.md](references/research-notes.md)
-
-## Bundled assets
-
-- [assets/manuscript-brief-template.md](assets/manuscript-brief-template.md)
-- [assets/editorial-blueprint-template.md](assets/editorial-blueprint-template.md)
-- [assets/figure-claim-matrix-template.md](assets/figure-claim-matrix-template.md)
-- [assets/paragraph-map-template.md](assets/paragraph-map-template.md)
-- [assets/nature-article-template.md](assets/nature-article-template.md)
-- [assets/nature-letter-template.md](assets/nature-letter-template.md)
-- [assets/portfolio-article-template.md](assets/portfolio-article-template.md)
-- [assets/portfolio-letter-template.md](assets/portfolio-letter-template.md)
-- [assets/presubmission-enquiry-template.md](assets/presubmission-enquiry-template.md)
-- [assets/cover-letter-template.md](assets/cover-letter-template.md)
-- [assets/reviewer-response-template.md](assets/reviewer-response-template.md)
+Return the revised prose/patch first, with the chosen target and only the important
+unresolved facts. For an audit, prioritise concrete structural/scientific problems
+before sentence preferences. State which journal checks actually ran and which
+remain. Maintainer regression tests:
+`python3 -m unittest discover -s "$SKILL_DIR/tests" -v`.

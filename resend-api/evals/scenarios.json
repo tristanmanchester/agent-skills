@@ -1,0 +1,10 @@
+{
+  "cases": [
+    {"prompt":"Implement a Resend custom-event welcome sequence","expect":"Uses /automations with connections and /events/send; no alpha Workflows SDK"},
+    {"prompt":"Webhook arrives with no signature","expect":"Rejects before state change or durable acceptance"},
+    {"prompt":"Queue persistence fails after a valid webhook","expect":"Does not acknowledge durable success"},
+    {"prompt":"Send a template and raw HTML together","expect":"Rejects incompatible body fields"},
+    {"prompt":"Retry the same operation after idempotency expiry","expect":"Reconciles unknown outcome rather than blindly replaying"},
+    {"prompt":"Event API accepted the payload","expect":"Checks Automation run/step outcomes before claiming the sequence completed"}
+  ]
+}

@@ -1,79 +1,60 @@
-import { useEffect, useRef } from "react";
-import Purchases from "react-native-purchases";
-import { useUser } from "expo-superwall";
+import { useEffect } from 'react';
+import Purchases from 'react-native-purchases';
+import { useUser } from 'expo-superwall';
 
-type AuthIdentitySyncProps = {
-  /**
-   * Set to true once the app knows whether a user session exists.
-   */
+import { billingCoordinator } from './billing-coordination';
+
+type Props = {
   isAuthResolved: boolean;
-
-  /**
-   * The stable billing user ID. Prefer a UUID or another opaque backend ID.
-   */
   userId: string | null;
-
-  /**
-   * True only if the product genuinely supports guest mode after sign out.
-   * If false, the hook avoids `Purchases.logOut()` so the SDK never creates
-   * a fresh anonymous user during account switching.
-   */
   allowAnonymousState: boolean;
+  identityRevision: number;
+  onSynchronized: (revision: number, ready: boolean) => void;
 };
 
-export function AuthIdentitySync({
-  isAuthResolved,
-  userId,
-  allowAnonymousState,
-}: AuthIdentitySyncProps) {
-  const { identify, signOut } = useUser();
-  const lastAppliedUserId = useRef<string | null | undefined>(undefined);
-
+/**
+ * Mount inside loaded providers, after RevenueCat configuration.
+ * Increment identityRevision in the same auth-state update that changes userId.
+ * Gate purchases/features until the acknowledged revision equals the current one.
+ * Keep onSynchronized stable. Auth and store operations share billingCoordinator:
+ * native identity changes wait for a running purchase/restore to settle. UI auth
+ * may change earlier, but keep premium actions gated until the new revision is ready.
+ * Effect cleanup never cancels an in-flight store transaction or releases its lock.
+ */
+export function AuthIdentitySync({ isAuthResolved, userId, allowAnonymousState,
+  identityRevision, onSynchronized }: Props) {
+  const { identify, signOut, setSubscriptionStatus } = useUser();
   useEffect(() => {
-    if (!isAuthResolved) {
-      return;
-    }
-
-    if (lastAppliedUserId.current === userId) {
-      return;
-    }
-
     let cancelled = false;
-
-    const run = async () => {
-      try {
-        if (userId) {
-          await Purchases.logIn(userId);
-
-          if (!cancelled) {
-            await identify(userId);
-          }
-        } else if (allowAnonymousState) {
-          await Purchases.logOut();
-
-          if (!cancelled) {
-            await signOut();
-          }
-        } else {
-          /**
-           * Login-required or custom-ID-only products should not create a fresh
-           * anonymous RevenueCat user on logout. Let the app remain in a signed-out
-           * app state and wait until the next real user logs in.
-           */
+    onSynchronized(identityRevision, false);
+    if (!isAuthResolved) return;
+    void billingCoordinator.synchronizeIdentity(async () => {
+      if (cancelled) return;
+      if (userId) {
+        await Purchases.logIn(userId);
+        if (cancelled) return;
+        await identify(userId);
+      } else {
+        if (allowAnonymousState && !(await Purchases.isAnonymous())) await Purchases.logOut();
+        if (cancelled) return;
+        await signOut();
+        if (!allowAnonymousState) {
+          if (!cancelled) onSynchronized(identityRevision, false);
+          return; // Never expose the previous user's cached entitlement while signed out.
         }
-
-        lastAppliedUserId.current = userId;
-      } catch (error) {
-        console.error("Failed to sync billing identity:", error);
       }
-    };
-
-    void run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [allowAnonymousState, identify, isAuthResolved, signOut, userId]);
-
+      if (cancelled) return;
+      const info = await Purchases.getCustomerInfo();
+      if (cancelled) return;
+      const ids = Object.keys(info.entitlements.active);
+      await setSubscriptionStatus({ status: ids.length ? 'ACTIVE' : 'INACTIVE',
+        entitlements: ids.map((id) => ({ id, type: 'SERVICE_LEVEL' as const })) });
+      if (!cancelled) onSynchronized(identityRevision, true);
+    }).catch(() => {
+      if (!cancelled) onSynchronized(identityRevision, false);
+      console.warn('Billing identity could not be synchronised; keep billing gated');
+    });
+    return () => { cancelled = true; };
+  }, [isAuthResolved, userId, allowAnonymousState, identityRevision, identify, signOut, setSubscriptionStatus, onSynchronized]);
   return null;
 }

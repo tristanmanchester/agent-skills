@@ -1,191 +1,112 @@
 ---
 name: nextjs-framer-motion-animations
-description: Adds production-safe Motion for React or Framer Motion animations to Next.js apps, including reveal, hover and tap micro-interactions, whileInView, stagger, AnimatePresence, layout and layoutId transitions, reorder, scroll-linked UI, and lightweight route-content transitions. Use when the user asks to add, refactor, or debug Motion or Framer Motion in App Router or Pages Router codebases, especially around server/client boundaries, reduced motion, LazyMotion, bundle size, hydration, or route transitions. Avoid for GSAP-style timelines, WebGL or 3D scenes, heavy scroll storytelling, or CSS-only effects unless Motion is explicitly requested.
-license: MIT
-compatibility: Designed for Next.js projects with React 18.2+ and Node package tooling. Works with App Router and Pages Router. Supports legacy framer-motion repos and the current motion package. Bundled scripts use Node.js.
+description: >-
+  Implement and debug Motion for React in Next.js: local interaction, presence,
+  layout, shared elements, scroll, reduced motion, and router integration. Use for
+  explicit Motion/Framer Motion work or interactions that need it; prefer CSS for
+  simple effects and framework-native view transitions for supported route cases.
+license: MIT. See LICENSE.txt
+compatibility: Use the current motion package and the app's supported React/Next.js/runtime versions. Inspect locked versions and router type. No legacy import-rewriting wrapper or automatic project scaffolding is provided.
 metadata:
-  author: openai
-  version: "4.0.0"
-  category: frontend-animation
-  keywords: nextjs,framer-motion,motion,react,animation,ui
-allowed-tools: Bash(node:*) Bash(npm:*) Bash(pnpm:*) Bash(yarn:*) Bash(bun:*) Read Write
+  version: "5.0.0"
+  reviewed: "2026-09-13"
 ---
 
-# Next.js + Motion/Framer Motion
+# Purposeful Motion in Next.js
 
-## Mission
-Build small, purposeful, accessible animations in Next.js using Motion for React (the current package) or legacy `framer-motion`, without breaking server/client boundaries, performance, or usability.
+Choose motion to explain state or improve interaction, not to add a mandatory
+layer to every page. Keep existing design tokens and semantic controls. For a
+small colour/focus/hover transition, CSS may avoid unnecessary client JavaScript.
 
-## Use this skill for
-- First-render reveals and section entrances
-- Hover, tap, and focus feedback on buttons, links, cards, tabs, and navigation
-- Scroll-triggered reveals and modest scroll-linked effects
-- Modals, drawers, dropdowns, accordions, tabs, and other enter/exit UI
-- Layout and shared-element transitions with `layout` and `layoutId`
-- Reorderable lists and light route-content transitions
-- Debugging Motion behaviour in Next.js
+## Inspect before choosing the boundary
 
-## Do not use this skill for
-- GSAP-style timelines or cinematic sequences
-- Canvas, WebGL, Three.js, or Lottie-led animation systems
-- Heavy parallax or scroll-jacking storytelling
-- Large creative-direction rewrites
-- Pure CSS effects that do not justify client JavaScript, unless Motion is explicitly requested
+Read the actual component, router (App or Pages), package/lockfiles, installed
+Motion API, and build configuration. Identify who owns mounting, state, focus,
+scroll, and navigation. Distinguish a local reveal from a route transition.
+A filename/token scanner cannot prove these relationships or build compatibility.
 
-## Non-negotiables
-- Prefer the lightest Motion API that solves the task.
-- Preserve repo consistency. Do not mix `motion` and `framer-motion` imports in the same diff unless the task is an explicit migration.
-- Keep animated logic in the smallest possible Client Component boundary.
-- Respect reduced motion globally with `MotionConfig reducedMotion="user"` and locally with `useReducedMotion()` when behaviour must change.
-- Prefer reusable primitives, variants, and motion tokens over repeated inline animation objects.
-- Do not add a global provider, root-layout Client Component, or route-wide animation system unless the request genuinely needs it.
+For modernised/new Motion code, use `motion/react`. In a Server Component, the
+supported `motion/react-client` entry point exposes motion elements; it does not
+turn hooks or arbitrary callbacks into server-safe code. Put interactive/hooks
+in the smallest Client Component, keeping fetching and secrets server-side.
+Server-rendered children can pass through a client wrapper without moving their
+implementation into the client bundle. Props across that boundary must meet
+React's actual serialisation contract.
 
-## Default workflow
+For an existing framer-motion project, inspect its installed version and decide
+whether migration is in scope. A deliberate migration updates package, imports,
+lockfile, tests, and any changed APIs together. Do not mix runtimes or mechanically
+rewrite namespace imports from motion/react-m into a different module. This skill
+ships no compatibility branch or automatic import rewriting.
 
-### 1) Audit the codebase first
-Inspect:
-- Router type: `app/`, `pages/`, or both.
-- Current package: `motion`, `framer-motion`, or neither.
-- Existing animation patterns and design-system components.
-- Candidate transition boundaries: `app/layout.tsx`, `app/template.tsx`, `pages/_app.tsx`, shared UI shells.
-- Whether the change is local animation, mount/unmount animation, layout animation, shared-element animation, reorder, or scroll-linked animation.
+## Choose the mechanism
 
-If shell access is available, run:
-```bash
-node scripts/audit-nextjs-motion.mjs --root /path/to/repo
-node scripts/inspect-motion-target.mjs path/to/target-file.tsx --root /path/to/repo
-node scripts/plan-motion-change.mjs --root /path/to/repo --target path/to/target-file.tsx --task "user request"
-```
+| Need | Start with | Essential condition |
+| --- | --- | --- |
+| Small local tween/gesture | motion element | Preserve semantic element and disabled/focus behaviour |
+| Several coordinated children | variants and stagger | Stable identity and a bounded delay budget |
+| Local removal | AnimatePresence | It survives and observes the removed keyed child |
+| Layout change | layout / layout="position" | Correct measurement and retained identity |
+| Shared element within a live tree | layoutId / LayoutGroup | Unique, intentionally scoped IDs |
+| Visibility reveal | whileInView | Correct scroll root and progressive visibility |
+| Scroll-linked value | useScroll plus motion values | Correct target/container and reduced-motion policy |
+| Imperative sequence | useAnimate | Scoped targets and cancellation/cleanup |
+| Bundle-sensitive region | LazyMotion with m | Feature set covers the used layout/drag APIs |
+| Route/shared-view transition | Framework-supported ViewTransition | Actual Next/React/browser contract, not a pathname wrapper |
 
-For broad skill iteration or repo-health checks, also run:
-```bash
-node scripts/check-motion-antipatterns.mjs --root /path/to/repo
-```
+Read [component patterns](references/COMPONENTS.md) for implementation decisions
+and [router integration](references/ROUTING.md) for route changes. Do not assume
+one package-wide provider or one animation duration fits every interaction.
 
-### 2) Choose a package strategy
-Default rules:
-- **New work or modernised motion layer:** prefer the current `motion` package with imports from `motion/react`.
-- **Existing repo already on `framer-motion`:** stay consistent unless the task explicitly includes migration.
-- **Passive App Router component with no hooks or client-only logic:** `motion/react-client` can be appropriate, but it is an exception, not the default.
-- **Leaf animations with hooks, route state, presence, reorder, or interactivity:** use a small Client Component boundary.
+## Presence and application state
 
-See `references/MIGRATION.md` and `references/DECISION_TREE.md`.
+A persistent AnimatePresence is necessary for its own exits but is not sufficient
+to control a router-owned subtree. Keying a wrapper by pathname does not establish
+that outgoing route content is retained unchanged. Do not freeze private router
+context, intercept every click, or delay all navigation to make an exit demo work.
+Use the supported framework route mechanism or an honest enter-only enhancement.
 
-### 3) Choose the lightest correct API
-Use this decision rule:
-- **Simple local animation:** `motion.*`
-- **Bundle-sensitive shared shell:** `m.*` with `LazyMotion`
-- **Repeated parent/child orchestration:** variants plus `stagger`
-- **Mount/unmount or route exits:** `AnimatePresence`
-- **Layout changes from React re-render:** `layout`
-- **Shared-element transition:** `layoutId`
-- **Sibling layout coordination or namespaced shared layout IDs:** `LayoutGroup`
-- **Simple scroll reveal:** `whileInView`
-- **Scroll-linked progress or parallax:** `useScroll` plus motion values
-- **Imperative sequence or external trigger:** `useAnimate`
-- **Design-system component wrapper:** `motion.create()` with ref forwarding
+An animation callback is not a transaction boundary. Do not make a payment,
+delete, navigation confirmation, or other application outcome depend on whether
+an animation happened to finish. Cancellation, interruption, remount, and reduced
+motion must preserve the same logical outcome.
 
-See `references/EXPERT_PLAYBOOK.md` and `references/DECISION_TREE.md`.
+## Accessibility and rendering
 
-### 4) Wire it correctly for the router
-#### App Router
-- **Passive, hook-free animation in a server-friendly file:** consider `motion/react-client`.
-- **Interactive or hook-driven UI:** create a small Client Component leaf and keep data fetching server-side.
-- **Client wrapper around server-rendered children:** useful for modal shells, drawers, and local visibility wrappers.
-- **Route enter/exit choreography:** mount a persistent Client shell from a layout so `AnimatePresence` stays mounted.
-- **Segment replay on navigation:** `template.tsx` is useful when you want remount semantics at a specific segment boundary.
+Use MotionConfig reducedMotion="user" where it fits the existing tree, plus local
+useReducedMotion decisions for scroll, autoplay, and bespoke effects. Opacity-only
+animations and independent CSS/view-transition paths need their own policy; one
+Motion provider is not a universal motion switch.
 
-See `references/APP_ROUTER.md`.
+Use real buttons/links/dialogs. Preserve keyboard paths, visible focus, logical
+reading order, and an equivalent to drag-only interaction. Exiting invisible
+controls must not remain focusable or intercept input. A visual modal shell is
+not focus management, Escape behaviour, a label, or background inertness.
 
-#### Pages Router
-- Keep `AnimatePresence` stable in `pages/_app.tsx` for route transitions.
-- Key routed children by a stable value that changes when you actually want a transition. For dynamic routes, `router.asPath` is usually safer than `router.route`.
-- Do not rewrite `_app.tsx` for a one-off local animation.
+Do not server-render critical text permanently invisible and depend on successful
+hydration/intersection observation to reveal it. Keep layout boxes stable and
+handle font/image loading, viewport changes, and no-JavaScript/failure behaviour
+where required. Use transform/opacity where suitable, but measure actual paint,
+layout, compositing, and bundle costs before claiming a speed improvement.
 
-See `references/PAGES_ROUTER.md`.
+## Validate the actual change
 
-### 5) Apply the motion budget
-Default ranges unless the user or design system says otherwise:
-- **Micro-interactions:** 0.12s to 0.22s, scale no larger than 1.03, travel no more than 4px.
-- **Reveal / list entrance:** 0.18s to 0.35s, travel 8px to 24px.
-- **Page / route transition:** 0.22s to 0.45s, mostly opacity plus small Y translation.
-- **Layout animation:** prefer Motion springs or `layout`; do not fake these with large manual transforms.
+Run the project's existing typecheck/lint/build as authorised; do not assume its
+scripts are named npm run lint/build. Test in the browser with rapid interactions,
+back/forward navigation, slow data, interruptions, reduced motion, keyboard use,
+and multiple copies of shared-layout components. Check console/hydration errors,
+scroll restoration, focus, and usable nonanimated fallback. Unit mocks are not a
+browser performance or router-lifetime test.
 
-See `references/EXPERT_PLAYBOOK.md` and `references/PERFORMANCE.md`.
+Deliver the patch, chosen boundary/mechanism, actual verification, and remaining
+browser checks. The old generic scanners, generated plans, all-assets scaffolder,
+and their golden-output pack are removed; real integration evidence is the goal,
+not reproducing a heuristic's preferred output.
 
-### 6) Validate before finishing
-Always check:
-- No server/client boundary mistakes
-- Reduced motion works
-- Focus is preserved for interactive UI
-- No unnecessary layout shift or stretched content
-- No duplicate or conflicting route wrappers
-- Project still builds
+## Sources and maintenance
 
-Run repo checks when available:
-```bash
-npm run lint
-npm run build
-```
-
-For repo audits or skill iteration, also run:
-```bash
-node scripts/check-motion-antipatterns.mjs --root /path/to/repo
-```
-
-Use `references/CHECKLIST.md` before finalising. When improving the skill itself, use `references/EVALUATION.md` and `node scripts/run-evaluation-pack.mjs`.
-
-## Implementation rules
-- Prefer animating **transform** and **opacity**. Avoid animating `top`, `left`, large filters, and large shadows on big surfaces.
-- When possible, turn the existing root element into a Motion element instead of adding a new wrapper. Extra wrappers often break layout, refs, selectors, or spacing.
-- If using `m` plus `LazyMotion`, use:
-  - `domAnimation` for standard animations, variants, exit, hover, tap, and focus.
-  - `domMax` only when you need layout animations or drag/pan.
-- Use `AnimatePresence initial={false}` for app-level wrappers unless first-load animation is explicitly desired.
-- Use `AnimatePresence mode="wait"` only when a single child should fully exit before the next enters.
-- Never key exit-sensitive children by array index.
-- Start with `layout` before manual height choreography. If content stretches, add `layout` to the affected children or switch to `layout="position"` for aspect-ratio changes.
-- If the scroll container is not the window, configure `viewport.root` or use `useInView` with the correct root.
-- When animating `next/image` or image wrappers, preserve the layout box and animate transform or opacity rather than intrinsic size.
-- When wrapping design-system components, call `motion.create()` outside render and make sure the wrapped component forwards its ref.
-- If the user did not explicitly ask for Motion and the effect is just a tiny hover or focus style on a static server-rendered element, CSS may be the cleaner answer.
-
-## Scripts
-- `scripts/audit-nextjs-motion.mjs` - inspects a repo, ranks likely target files, and emits JSON recommendations.
-- `scripts/inspect-motion-target.mjs` - inspects one file and recommends boundary, import path, risks, and likely pattern fit.
-- `scripts/plan-motion-change.mjs` - combines repo audit, target inspection, and task wording into a structured expert plan.
-- `scripts/check-motion-antipatterns.mjs` - scans a repo for common Motion and Framer Motion anti-patterns and emits JSON findings.
-- `scripts/run-evaluation-pack.mjs` - runs the bundled fixture-and-golden evaluation pack for skill iteration.
-- `scripts/scaffold-motion-primitives.mjs` - copies template components from `assets/` into a target directory, with optional import rewriting for legacy `framer-motion`.
-
-## Reference map
-- `references/EXPERT_PLAYBOOK.md` - API selection, heuristics, motion tokens, anti-patterns
-- `references/DECISION_TREE.md` - fast pattern and boundary selection
-- `references/APP_ROUTER.md` - App Router boundaries, route shells, `template.tsx`, and server-friendly patterns
-- `references/PAGES_ROUTER.md` - `_app.tsx`, keys, dynamic route nuances
-- `references/RECIPES.md` - copy/paste implementations
-- `references/PERFORMANCE.md` - bundle size, LazyMotion, layout and scroll performance
-- `references/ACCESSIBILITY.md` - reduced motion, focus, modal guidance
-- `references/MIGRATION.md` - `framer-motion` to `motion` package strategy
-- `references/TROUBLESHOOTING.md` - failure modes and fixes
-- `references/CHECKLIST.md` - final review before finishing
-- `references/EVALUATION.md` - trigger tests, scenario fixtures, anti-pattern scans, and golden-output review
-
-## Output expectations
-When modifying a repo, finish with:
-1. The files changed
-2. The Motion API and pattern chosen
-3. Boundary strategy and package migration decision, if any
-4. Reduced-motion handling
-5. Performance or bundle-size choices, if relevant
-6. Manual validation notes or commands run
-7. Any caveats the developer should know
-
-## Typical request mapping
-- "Make this button feel better" -> micro-interaction recipe
-- "Animate cards in on scroll" -> reveal recipe; variants if staggered
-- "Add a smooth route transition in App Router" -> persistent layout-mounted shell or content wrapper, not a root rewrite by default
-- "Animate this accordion or tab underline" -> `layout` / `layoutId` / `LayoutGroup`
-- "Make this drag list reorder smoothly" -> `Reorder.Group` / `Reorder.Item`
-- "This breaks in App Router" -> inspect boundary and import path before editing
-- "Modernise our Framer Motion setup" -> audit first, then use `references/MIGRATION.md`
+Reviewed 2026-09-13: [Motion installation](https://motion.dev/docs/react-installation),
+[AnimatePresence](https://motion.dev/docs/react-animate-presence),
+[Next templates](https://nextjs.org/docs/app/api-reference/file-conventions/template),
+and [Next view transitions](https://nextjs.org/docs/app/guides/view-transitions).
+[Evaluation cases](evals/scenarios.json) describe required checks, not tests run.

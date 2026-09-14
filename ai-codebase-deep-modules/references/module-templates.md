@@ -1,139 +1,60 @@
-# Module templates for deep (greybox) modules
+# Module sketches, not mandates
 
-These templates are **examples**, not mandates. The key idea is always the same:
+A deep module hides useful complexity behind a clear contract. Directory depth,
+export counts, and a universal Result type do not establish that property.
+Choose types/functions/classes and error semantics that fit the existing language
+and consumer expectations; a blanket ban on exceptions is not required.
 
-- A module has a **small public interface**
-- Everything else is **internal**
-- External code imports from the public interface only
-- Tests lock behaviour at the boundary
+## TypeScript
 
-## TypeScript / JavaScript
+A possible source layout is:
 
-### Recommended structure (single repo)
-
-```
-src/
-  auth/
-    index.ts        # public exports
-    types.ts        # public types
-    internal/       # implementation (not imported from outside)
-      token.ts
-      password.ts
-      db.ts
-    __tests__/      # boundary/contract tests
-      auth.contract.test.ts
+```text
+src/auth/
+  index.ts              public operations/types, when a facade fits loading semantics
+  types.ts              public data contract
+  internal/             implementation owned by auth
+  auth.contract.test.ts behaviour through the public interface
 ```
 
-### Public interface pattern
-
-`src/auth/index.ts`:
-
-```ts
-export type { User, Session, AuthError } from "./types";
-export { login, logout, requireAuth, getCurrentUser } from "./internal/public-api";
-```
-
-`src/auth/types.ts`:
-
-```ts
-export type User = { id: string; email: string };
-export type Session = { userId: string; token: string };
-
-export type AuthError =
-  | { type: "invalid-credentials" }
-  | { type: "locked" }
-  | { type: "unknown"; message: string };
-```
-
-Key rules:
-- `index.ts` should be short and obvious.
-- Prefer exporting **functions** over exporting internal classes.
-- Keep error semantics explicit (union types / result objects).
-
-### Result object pattern (optional)
-
-For fragile boundaries, avoid throwing across module boundaries:
-
-```ts
-export type Result<T, E> =
-  | { ok: true; value: T }
-  | { ok: false; error: E };
-```
+Keep server/client code and expensive imports separated when the framework requires
+it. Public error categories should be actionable and preserve appropriate cause
+context; don't leak internal messages, passwords, or tokens merely to be explicit.
+A generic not-implemented function and a test of that stub are scaffolding only,
+not a feature or verified contract.
 
 ## Python
 
-### Recommended structure
-
-```
-src/
-  billing/
-    __init__.py     # public exports
-    types.py        # public types (dataclasses / TypedDict)
-    internal/
-      invoices.py
-      stripe_adapter.py
-      db.py
-    tests/
-      test_billing_contract.py
-```
-
-`src/billing/__init__.py` should expose the stable API:
-
-```py
-from .types import Invoice, BillingError
-from .internal.public_api import create_invoice, get_invoice
-
-__all__ = ["Invoice", "BillingError", "create_invoice", "get_invoice"]
-```
-
-Enforcement options:
-- Keep `internal/` as a convention, and enforce with import-linter.
-- In larger systems, package each module as its own distribution with explicit exports.
+__init__.py can expose the intended interface, while implementation lives in
+private-named or internal modules. __all__ controls star-import behaviour, not
+access control. Keep import side effects, packaging layout, and test imports correct
+for the real project. A module does not need several wrappers just because this
+sketch has multiple files.
 
 ## Go
 
-Go gives you a built-in boundary mechanism:
+Choose packages around ownership and cohesive operations. internal restricts
+imports relative to its parent tree; place it deliberately. Use an external test
+package when testing the consumer-facing API is useful, plus internal tests for
+important algorithms. Do not invent service interfaces before there is a concrete
+substitution or dependency-direction need.
 
-```
-billing/
-  billing.go         # public package API
-  types.go
-  internal/
-    db/
-    stripe/
-  billing_test.go    # contract tests at package level
-```
+## JVM
 
-Anything under `internal/` cannot be imported by other packages outside the parent tree.
+Use Java package-private collaborators in the same exact package as their facade,
+or design explicit module exports/architecture rules for a multi-package module.
+A child package does not inherit access to its parent's package-private members,
+or vice versa. Kotlin visibility follows its own module rules. Verify the actual
+compiler and build rather than copying a Java layout into Kotlin mechanically.
 
-## Java / Kotlin
+## Contract worksheet
 
-Use packages + visibility:
+For a proposed seam, record the consumer's job, operations, validated inputs,
+outputs/errors, invariants, state ownership, side effects, resource lifetime,
+permitted dependencies, and tests. Fill only the parts relevant to the task.
+Keep an implementation detail private because callers should not depend on it,
+not because the folder name claims privacy.
 
-```
-src/main/java/com/acme/auth/
-  AuthService.java        // public API
-  AuthTypes.java
-  internal/
-    JwtTokens.java
-    PasswordHasher.java
-src/test/java/com/acme/auth/
-  AuthContractTest.java
-```
-
-Prefer:
-- `public` for interface surface
-- package-private for internals (no modifier)
-- enforcement via build tooling / architecture tests (ArchUnit)
-
-## “Deep module” smell checks
-
-A module is *too shallow* when:
-- it is mostly re-exports of other modules
-- it has many “helper” files but no cohesive interface
-- consumers import lots of internals to “get work done”
-
-A module is *deep enough* when:
-- consumers can do their work via 3–12 exported functions/types
-- most code lives behind the interface
-- tests at the boundary make internal changes safe
+The former automatic scaffold is removed; implement a real slice through the
+normal patch workflow and verify actual consumers. See boundary-enforcement.md
+for source-backed language and linter distinctions.

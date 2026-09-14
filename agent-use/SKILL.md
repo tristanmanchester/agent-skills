@@ -1,109 +1,114 @@
 ---
 name: agent-use
-description: Audit or design websites, docs, apps, CLIs/TUIs, APIs, SDKs, MCP/A2A agents, Agent Skills, and repos so AI agents can discover, understand, safely operate, verify, and recover from real tasks. Use for agent-readiness audits, action/context parity reviews, AGENTS.md/llms.txt/OpenAPI/API catalog/MCP/A2A/tool design, CLI JSON/non-interactive ergonomics, shared workspaces, prompt-native features, evals, templates, and implementation roadmaps.
+description: >-
+  Audit or design agent-facing product capabilities: action/context parity,
+  discoverable contracts, safe mutations, verifiable outcomes, and recovery.
+  Use for explicit agent-readiness reviews of apps, repos, CLIs, APIs, MCP/A2A
+  integrations, or Agent Skills; not every general code or documentation task.
 license: MIT
-compatibility: Optional scripts require Python 3.10+. Web checks require network access. Repository scans require read access to the target tree.
+compatibility: Local helper scripts require Python 3.10+; structural validation also requires PyYAML 6.0.3 or later in major 6. Network and execution checks need separately authorised tools and environments.
 metadata:
-  version: "2.0.0"
-  updated: "2026-06-29"
-  origin: "Synthesizes deprecated compound agent-native architecture/audit skills with current public agent-readiness practices."
+  version: "3.0.0"
+  reviewed: "2026-09-13"
 ---
 
-# agent-use
+# Agent-useful products
 
-Use this skill to make work easier for AI agents to use: easier to discover, easier to understand in a small context window, easier to operate safely, easier to verify, and easier to recover.
+Start with real tasks, not a checklist of fashionable protocols. Retain the core
+method: action parity, context parity, stable object identity, bounded outputs,
+verification, and recovery. A documented capability is not an implemented one;
+a directory of manifests is not evidence that an agent can finish the task.
 
-Audit mode reviews existing work and produces an evidence-backed score, gap list, and remediation plan. Build mode guides new work so the agent contract is designed before implementation ossifies.
+## Audit an existing surface
 
-The doctrine: **agents need action parity, context parity, safe primitives, structured outputs, durable state, explicit completion signals, and recovery paths.** Prose helps, but agent-useful systems also provide inspectable contracts, examples, commands, schemas, evals, and stable entry points.
+1. Select 5–10 representative tasks with expected outcomes, including a read,
+   an authorised mutation, a denied operation, and interrupted-work recovery.
+2. Map each task's necessary context, object IDs, available action, permission,
+   success evidence, and retry/resume path. Use the noun test: discover, identify,
+   read, change where appropriate, verify, recover.
+3. Inspect source/contracts, then execute only the authorised checks. Record
+   whether each observation is a source signal, documented claim, or runtime proof.
+4. Compare the human and agent paths. Preserve intentionally human-only consent,
+   MFA, CAPTCHA, and biometric boundaries; do not score bypassing them as parity.
+5. Prioritise demonstrated blockers and test the proposed repair on the same tasks.
+   Report unresolved evidence rather than turning missing tool access into a failure.
 
-## Audit workflow
+Use [the report template](references/report-template.md),
+[architecture methods](references/agent-native-architecture.md), and
+[evaluation guidance](references/evaluation.md) as needed. The retained local/web
+scanners and scoring rubric are heuristic inventory aids, not protocol validators
+or measured agent-success scores. A missing optional discovery convention is not
+an interoperability defect without a consumer that actually requires it.
 
-1. Classify the target: website/docs, app UI, repository, CLI/TUI, HTTP API, SDK, MCP server, A2A agent, Agent Skill, file/workspace system, mobile app, or mixed product.
-2. Gather evidence from applicable surfaces. For repositories, run `scripts/audit_agent_use.py --root <path> --markdown`. For UI/app repos, also run `scripts/action_parity_inventory.py <path> --output action-parity-inventory.md --csv-output capability-map.csv`. For websites, run `scripts/web_agent_readiness.py <url> --markdown --profile auto`. For Agent Skills, run `scripts/validate_agent_assets.py --skill-dir <skill-dir> --run-help --py-compile --markdown`.
-3. Build a capability map. List the important things a capable human can see, decide, and do; then map agent-readable context, agent action path, verification path, safety tier, and recovery path.
-4. Run the noun test. For every important domain object, ask whether the agent can discover it, identify it, read it, mutate it when appropriate, verify results, and recover from failure.
-5. Score only dimensions that apply using `references/scoring-rubric.md`. Mark non-applicable dimensions explicitly rather than penalizing them.
-6. Write findings with file paths, URLs, commands, response snippets, schemas, or screenshots. Avoid generic advice that cannot be patched.
-7. Prioritize fixes into quick wins, medium work, and structural work. Include evals that prove the improvements help agents complete tasks.
+## Design the smallest useful contract
 
-Recommended audit output is in `references/report-template.md`.
+Prefer the surface already native to the product. A small CLI may need help,
+structured output, and explicit exit codes, not an A2A server. An HTTP integration
+may need its current OpenAPI contract and SDK, not a parallel handwritten client.
+Use a workflow-level operation when it owns atomicity or a real server-side job;
+otherwise expose composable operations with identifiable results.
 
-## Build workflow
+For writes, define what happens after timeout, partial success, concurrent edits,
+and repeated delivery. Request IDs are not automatically idempotency keys. Keep
+confirmed outcomes separate from unknown outcomes, and define the retention/scope
+of any deduplication guarantee. A preview or hash cannot authorise additional work.
+Long-running tasks need durable IDs, explicit terminal states, and bounded waits;
+local cancellation is not proof remote work stopped.
 
-1. Define 5-10 real agent tasks before choosing surfaces. Include read-only tasks, mutation tasks, recovery tasks, permission-sensitive tasks, and long-running tasks if relevant.
-2. Publish only the discovery entry points that match the target:
-   - Docs/site: `llms.txt`, robots/sitemap, markdown canonical docs, freshness/changelog.
-   - API: OpenAPI/GraphQL/schema, `/.well-known/api-catalog`, auth metadata, error schema, examples.
-   - CLI/TUI: `--help`, `--version`, JSON mode, exit codes, non-interactive flags, examples.
-   - MCP/A2A/tool server: server/agent card, tool schemas, resource discovery, consent model.
-   - App UI: action/context parity map, durable object links, audit trail, safe agent entry points.
-   - Agent Skill: compact `SKILL.md`, references, scripts, assets, examples, trigger evals.
-3. Expose primitives, not brittle workflows. Tools should give agents capability; prompts/docs/recipes should describe behavior. Use workflow tools only when atomicity, safety, performance, or external orchestration justifies them.
-4. Design context parity. Inject current resources, capabilities, constraints, user-visible state, recent activity, domain vocabulary, permissions, and completion criteria into the agent path.
-5. Design action parity. Core user-visible actions should have agent-accessible paths unless they are intentionally human-only, such as CAPTCHA, biometric prompts, MFA enrollment, or legal consent.
-6. Make outputs parseable and bounded. Prefer typed JSON or schema-backed objects for agents and concise markdown for humans. Separate diagnostics from data.
-7. Make mutations safe. Add dry-run/preview, idempotency keys, scoped permissions, audit logs, confirmation for high-impact actions, sandbox/test mode, and undo/rollback where practical.
-8. Make work resumable. Long-running jobs need progress, checkpoints, partial results, completion signals, and retry/resume tokens.
-9. Ship evals. Compare baseline versus improved surfaces and cover discovery, happy paths, permissions, edge cases, recovery, and regression.
+Read [web/discovery contracts](references/web-and-docs-readiness.md) or
+[API/MCP/A2A contracts](references/api-sdk-mcp-readiness.md) for the chosen surface.
+The A2A example now targets protocol 1.0; `/.well-known/mcp.json` and the bundled
+skills index are local design examples, not universal standards. A2A skills are
+protocol capability descriptions, not filesystem Agent Skills packages.
 
-Use templates in `assets/templates/` when creating new agent-facing assets.
+## Inspect a skill without executing it
 
-## What to inspect
+Resolve `SKILL_DIR` to the installed directory containing this file. Paths below
+are skill-relative, not scripts expected in the target repository.
 
-Web/docs: `llms.txt`, markdown availability, stable URLs, stale-doc avoidance, robots/sitemap, API catalog, OAuth/OIDC metadata, MCP/A2A discovery, examples, small pages, canonical docs, content access policy, and docs that fit context windows.
+```bash
+python "$SKILL_DIR/scripts/validate_agent_assets.py" --skill-dir /absolute/path/to/skill
+```
 
-CLIs/TUIs: `--help`, `--version`, non-interactive mode, `--output json`, schema introspection, stdout/stderr separation, stable exit codes, explicit error envelopes, dry-run, idempotency, bounded output, no spinners in machine mode, no prompts without `--yes`/`--no-input` alternatives.
+Install the declared PyYAML dependency in an authorised environment first, or run
+the implementation file with a PEP 723-aware runner. Validation parses real YAML,
+checks required fields, JSON/Python syntax, and conventional relative Markdown
+links. It does not execute scripts, write bytecode, contact services, validate
+complete protocol schemas, or evaluate whether the skill improves agent behaviour.
+The old `--run-help` and `--py-compile` modes are removed. Running even `--help`
+can execute arbitrary project code; do that separately only after trust review.
 
-APIs/SDKs: OpenAPI/GraphQL/JSON Schema/Protobuf contracts, examples, pagination, consistent errors, idempotency, auth scopes, sandbox mode, webhooks/events, rate-limit metadata, SDK parity with API operations, generated docs, versioning, deprecation policy.
+See [skill/instruction checks](references/agent-instructions-and-skills.md).
+Optional directories are optional, not automatic quality failures. Prefer current
+commands and useful examples rather than retaining aliases solely for compatibility.
 
-MCP/A2A/tools: clear names/descriptions, typed schemas, examples, resource and prompt support, server/agent cards, consent model, safe defaults, high-signal responses, no hidden side effects, task lifecycle for asynchronous work.
+## Generate drafts, not deployed discovery endpoints
 
-Apps/UIs: action parity, context parity, noun-test coverage, shared workspace, dynamic context injection, prompt-native features, UI reflection of agent mutations, durable links to entities/files, approval matrix, audit trail, latent-demand capture.
+```bash
+python "$SKILL_DIR/scripts/generate_agent_assets.py" \
+  --output /private/existing-parent/new-drafts --project-name "Example" \
+  --base-url https://example.com --surface a2a
+```
 
-Files/workspaces/mobile: files as a universal interface, explicit working directories, safe self-modification, checkpoints, offline/battery/network constraints, background execution policy, conflict resolution, and inspectable artifacts.
+This previews without creating directories. Select each surface explicitly;
+add `--write` only to create a new private draft directory. Existing paths are
+never overwritten. The final manifest marks completion; an interrupted write can
+leave a partial directory. No `--force`, default `all`, live `.well-known` publication,
+or automatic replacement of a project's AGENTS.md remains.
 
-Agent Skills: precise trigger description, compact `SKILL.md`, progressive disclosure through references/assets/scripts, runnable helpers, eval seeds, versioning, and backwards-compatible commands.
+Review generated placeholders and validate the protocol with the actual chosen
+SDK/schema before publication. Declare only implemented capabilities and enforced
+authentication. The A2A fixture uses HTTP+JSON, a real service endpoint separate
+from the card URL, and a bearer-auth declaration that the server must implement.
 
-## References
+## Maintenance evidence
 
-Load only the needed reference:
+Run `python -m unittest discover -s "$SKILL_DIR/tests" -v` for local regression
+checks. The new fixture tests cover scaffold/validator behaviour and selected A2A
+shape regressions, not full A2A or MCP conformance. Preserve the substantive domain
+references, evaluation seeds, capability maps, and existing MIT licence.
 
-- `references/framework.md` — overall agent-use model and dimensions.
-- `references/scoring-rubric.md` — scoring rubric, maturity levels, evidence standards, severity definitions.
-- `references/audit-playbook.md` — detailed audit process for existing systems.
-- `references/build-playbook.md` — design process for new agent-useful work.
-- `references/review-recipes.md` — full-repo, PR, and parallel-review recipes.
-- `references/agent-native-architecture.md` — action/context parity, noun test, prompt-native behavior, shared workspace, completion signals.
-- `references/web-and-docs-readiness.md` — web/docs discovery, llms.txt, API catalog, OAuth/OIDC, MCP/A2A discovery.
-- `references/cli-tui-readiness.md` — CLI/TUI contract patterns.
-- `references/api-sdk-mcp-readiness.md` — API, SDK, MCP, A2A, and tool design.
-- `references/app-ui-and-workspace-readiness.md` — action/context parity, shared workspace, prompt-native product patterns.
-- `references/files-mobile-and-long-running-work.md` — files, mobile/offline, checkpoints, background execution, self-modification.
-- `references/agent-instructions-and-skills.md` — AGENTS.md, Agent Skills, llms.txt, and instruction assets.
-- `references/security-recovery.md` — permissions, approval, safety, rollback, privacy, abuse resistance.
-- `references/evaluation.md` — evals, observability, decay prevention, release checks.
-- `references/report-template.md` — audit report template.
-- `references/original-compound-comparison.md` — what changed versus the original deprecated compound skills.
-- `references/source-map.md` — source synthesis and standards map.
-
-## Scripts
-
-- `scripts/audit_agent_use.py --root <repo-or-dir> --markdown` scans local projects for agent-use signals. `scripts/agent_use_audit.py` remains as a v1-compatible entry point.
-- `scripts/action_parity_inventory.py <repo-or-dir> --output action-parity-inventory.md --csv-output capability-map.csv` inventories UI actions and candidate agent paths.
-- `scripts/web_agent_readiness.py <url> --markdown --profile auto` checks web discovery and agent-readiness endpoints with profile-aware scoring.
-- `scripts/generate_llms_txt.py <docs-root> --site-url <url> --output llms.txt` drafts an `llms.txt`.
-- `scripts/generate_agent_assets.py --root <project> --project-name <name> --surface all` scaffolds common agent-facing files.
-- `scripts/validate_agent_assets.py --skill-dir <skill-dir> --run-help --py-compile --markdown` validates this or another Agent Skill. `scripts/validate_skill.py` remains as a v1-compatible entry point.
-
-## Quality bar
-
-A recommendation is good only if an engineer can implement it, a PM can prioritize it, and an evaluator can test whether it worked.
-
-Do not equate agent-useful with fully autonomous. A high-quality agent path may require explicit human approval for high-impact changes.
-
-Do not count prose alone as implementation evidence. Good docs can guide agents, but actual capability needs contracts, scripts, tools, schemas, tests, and working routes.
-
-Do not flag intentionally human-only flows as action-parity failures. Document the boundary and provide a safe agent alternative when one exists.
-
-Do not recommend MCP/A2A/OAuth/OpenAPI merely because the words appear in docs; require an actual product surface or linked external service that agents can use.
+Reviewed 2026-09-13 against [Agent Skills](https://agentskills.io/specification),
+[authoring guidance](https://agentskills.io/skill-creation/best-practices),
+[A2A 1.0](https://a2a-protocol.org/latest/specification/), and
+[RFC 9727](https://www.rfc-editor.org/rfc/rfc9727.html).

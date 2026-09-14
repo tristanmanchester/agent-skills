@@ -65,8 +65,11 @@ Move `text-*` classes onto the `<Text>` element.
 React Native can behave oddly when styles appear/disappear. Prefer explicit style pairs (both light + dark) rather than only setting one side.
 
 ## Safe area utilities not working
-- If you are **not** using Expo Router, ensure you wrap the root in `SafeAreaProvider`.
-- If you **are** using Expo Router, do not add another provider; Router already wraps routes.
+- Inspect the actual native root and existing `SafeAreaProvider` before adding one.
+- Expo Router supplies the usual route provider; do not duplicate it at that same root.
+- A separate native root or modal boundary may need its own provider. Check the
+  boundary and inset measurements on the target platforms rather than applying a
+  universal ban on nested providers.
 
 ## Expo Router breaks after adding babel/metro config
 If the Router stops finding routes, confirm:

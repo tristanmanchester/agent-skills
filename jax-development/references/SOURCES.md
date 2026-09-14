@@ -1,50 +1,53 @@
-# Sources and maintenance notes
+# Source baseline and maintenance
 
-This skill was rebuilt from two inputs:
+Reviewed 2026-09-13. The public release baseline is **JAX 0.11.1**, released
+2026-08-17, whose PyPI metadata requires Python **>=3.12**. There is no blanket
+upper bound in that metadata; this does not guarantee wheels/backend support for
+every future interpreter. Check jaxlib, accelerator plugin, driver, and platform
+requirements separately. Python 3.13 free-threaded support was dropped in 0.11.0;
+do not conflate it with ordinary CPython 3.13.
 
-1. the provided agent-skill authoring guides
-2. current JAX documentation plus the provided `jax-main.zip` source snapshot
+Traceable upstream source: tag `jax-v0.11.1`, commit
+`2d66622450e2c8633cda2307688ef7aa294bd6eb` in `jax-ml/jax`. This supersedes the
+unidentified `jax-main.zip` provenance claim; it does not assert every bundled
+example came from that tag or that a current-version runtime test was performed.
 
-## JAX topics explicitly refreshed for this version
+## Current changes relevant to the retained references
 
-- installation and platform guidance
-- asynchronous dispatch and honest benchmarking
-- typed PRNG keys and key-reuse considerations
-- control-flow primitives and `scan` / `fori_loop`
-- modern sharding APIs and `pmap` migration
-- export / serialisation and AOT lowering
-- profiling and memory-tooling guidance
-- Pallas and advanced extension points
+- Prefer `with jax.set_mesh(mesh):`; the old Mesh context is deprecated.
+- `NamedSharding` is a placement object. Explicit sharding-in-types requires the
+  appropriate mesh axis types and propagation rules; merely constructing this
+  object is not enough to claim explicit-mode semantics.
+- Ordinary pure-function design remains a useful default. Public `jax.ref` offers
+  explicit stateful arrays with defined effects; inspect its rules for transforms,
+  autodiff, and lifetimes rather than categorically banning all state.
+- `jnp.empty`/`empty_like` are uninitialised in 0.11.0+, not zero constructors.
+- Current export deserialisation checks its compatibility window. Keep provenance,
+  producer/consumer versions and actual load/execute tests; do not bypass expiry
+  errors to pretend an artefact is still supported. Prefer `in_shardings_jax` and
+  `out_shardings_jax` over the deprecated HLO sharding fields.
+- Many `jax.core`/`jax.interpreters` internals were removed. Use public interfaces
+  and documented `jax.extend` where appropriate; match source-level debugging to
+  the exact installed commit. Experimental hijax, Pallas, and custom rematerialisation
+  are targeted tools, not obligatory rewrites for every numerical function.
+- A persistent compilation cache is trusted executable infrastructure. Do not
+  use a cache directory writable by untrusted users or accept arbitrary exported
+  executables as inert data.
 
-## Maintenance checklist
+## Primary references
 
-When updating the skill for a newer JAX release:
+- [Package metadata](https://pypi.org/project/jax/)
+- [Release-tag source](https://github.com/jax-ml/jax/tree/jax-v0.11.1)
+- [Changelog](https://docs.jax.dev/en/latest/changelog.html)
+- [Installation](https://docs.jax.dev/en/latest/installation.html)
+- [Donation](https://docs.jax.dev/en/latest/buffer_donation.html)
+- [Benchmarking](https://docs.jax.dev/en/latest/benchmarking.html)
+- [Export](https://docs.jax.dev/en/latest/export/export.html)
+- [Refs](https://docs.jax.dev/en/latest/array_refs.html)
+- [Compilation cache](https://docs.jax.dev/en/latest/persistent_compilation_cache.html)
 
-1. re-check:
-   - `docs/changelog.md`
-   - `docs/installation.md`
-   - `docs/random-numbers.md`
-   - `docs/debugging.md`
-   - `docs/benchmarking.md`
-   - `docs/sharded-computation.md`
-   - `docs/migrate_pmap.md`
-   - `docs/export/export.md`
-   - `docs/device_memory_profiling.md`
-
-2. revisit:
-   - `jax/_src/api.py`
-   - `jax/_src/random.py`
-   - `jax/_src/debugging.py`
-   - `jax/_src/pjit.py`
-   - `jax/_src/sharding.py`
-   - `jax/_src/pallas/`
-
-3. refresh the eval prompts if terminology or recommended APIs shift
-
-## Notes for future editors
-
-- keep `SKILL.md` focused on workflow and escalation logic
-- push deep detail into the reference files
-- prefer scripts that produce structured output and avoid interactive prompts
-- keep claims about performance and backend behaviour tied to evidence
-- treat `pmap`, export, and Pallas guidance as likely to drift over time
+For maintenance, identify the latest stable release, read its versioned changes,
+then inspect the exact changed method/types. Do not copy unreleased examples into
+stable guidance. Test selected numerical templates, backend features, and helper
+failure paths, recording the runtime actually used. Keep static scan/evaluation
+fixtures separate from measured runtime evidence.

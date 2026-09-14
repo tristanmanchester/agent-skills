@@ -1,94 +1,21 @@
-# track17 (17TRACK) Clawdbot skill
+# track17
 
-This folder is a self-contained Clawdbot skill that lets your assistant track parcels using the **17TRACK Tracking API v2.2**.
+A shell-agent skill for 17TRACK parcel registration, polling, delivery-event inspection, and authenticated webhook ingestion. Start with [SKILL.md](SKILL.md).
 
-It includes:
+Requires Python 3.10+, `TRACK17_TOKEN`, and an explicit absolute `TRACK17_DATA_DIR`. No runtime packages are required. API calls are made only by commands that need provider access; the test suite uses synthetic inputs and a loopback HTTP server.
 
-- `SKILL.md` — the skill prompt/instructions Clawdbot loads.
-- `scripts/track17.py` — a dependency-free Python CLI that:
-  - stores packages in a local SQLite DB,
-  - registers tracking numbers with 17TRACK,
-  - polls status (`sync`),
-  - ingests webhooks (`ingest-webhook`, `process-inbox`),
-  - optionally runs an HTTP webhook receiver (`webhook-server`).
+## Revision 2
 
-## Quick install
+This revision removes optional authentication, success-before-persistence acknowledgements, implicit workspace storage discovery, local numeric-ID addressing, and the unsafe deferred inbox spooler. Webhooks are verified against the raw body and API key, deduplicated, and applied atomically before acknowledgement. Failed requests never count as successful syncs.
 
-```bash
-npx skills add https://github.com/tristanmanchester/agent-skills --skill track17
-```
+Storage uses a new schema. Old databases are detected and left unchanged; there is no automatic migration or silent reuse. Select a new data directory and deliberately re-register parcels still needed. Keep old data until you have exported and checked it.
 
-## Where data is stored
+The API remains v2.2 because 17TRACK explicitly supports it. The new v2.4 additional-field contract is not implemented by changing an endpoint string.
 
-By default (workspace-local):
-
-- `<workspace>/packages/track17/track17.sqlite3`
-- `<workspace>/packages/track17/inbox/` (raw webhook payloads)
-
-Where `<workspace>` is auto-detected as the parent directory of the nearest `skills/` directory that contains this skill.
-So if the skill is installed at `/clawd/skills/track17/`, data will be stored at `/clawd/packages/track17/`.
-
-Override with:
-
-- `TRACK17_DATA_DIR=/some/path` (data will be stored directly in that directory)
-- `TRACK17_WORKSPACE_DIR=/some/workspace` (data will be stored under `/some/workspace/packages/track17/`)
-
-## Configure the API token
-
-This skill declares `metadata.clawdbot.primaryEnv = TRACK17_TOKEN`, so you can configure it in your Clawdbot config as:
-
-```jsonc
-{
-  "skills": {
-    "entries": {
-      "track17": {
-        "enabled": true,
-        "apiKey": "YOUR_17TRACK_TOKEN"
-      }
-    }
-  }
-}
-```
-
-(Or set `TRACK17_TOKEN` in your shell/service env.)
-
-## Basic usage (manual)
+## Validation
 
 ```bash
-python3 skills/track17/scripts/track17.py init
-python3 skills/track17/scripts/track17.py add RR123456789CN --label "New headphones"
-python3 skills/track17/scripts/track17.py list
-python3 skills/track17/scripts/track17.py sync
-python3 skills/track17/scripts/track17.py status 1 --refresh
+python3 -m unittest discover -s /absolute/path/to/track17/tests -v
 ```
 
-## Webhooks (optional)
-
-If you prefer push updates:
-
-1) Run the webhook receiver:
-
-```bash
-python3 skills/track17/scripts/track17.py webhook-server --bind 127.0.0.1 --port 8789
-```
-
-2) Configure the webhook URL in your 17TRACK dashboard.
-
-3) Periodically process the inbox:
-
-```bash
-python3 skills/track17/scripts/track17.py process-inbox
-```
-
-If you set a webhook signing key, export it as:
-
-```bash
-export TRACK17_WEBHOOK_SECRET='...'
-```
-
-The tool will verify signatures when it has both the secret and a signature header.
-
-## Notes
-
-- The code uses only the standard library (no `pip install` required).
-- 17TRACK rate limits apply (docs mention 3 requests/second); the script batches up to 40 packages per API call.
+Tests cover exact-byte signatures, invalid/missing authentication with no table changes, duplicate deliveries, transaction rollback, stale updates, malformed records, unconfirmed provider mutations, old-database preservation, HTTP authentication, and storage-failure responses. They do not establish live carrier/API availability or validate a production reverse proxy.

@@ -1,52 +1,40 @@
-# Setup & compatibility (Expo-first)
+# Setup and compatibility
 
-## 1) Expo-managed projects
+Read the app's lockfile, Expo SDK, React Native version, architecture, and native
+build configuration first. Resolve exact Reanimated/Worklets compatibility from
+upstream tables and the installed package's compatibility.json: minor-version
+tables assume the latest patch, which can differ from the app's actual patch.
 
-Install with Expo so versions match your SDK:
+For an authorised current Expo installation:
 
 ```bash
-npx expo install react-native-reanimated react-native-worklets
-npx expo install react-native-gesture-handler
+npx expo install react-native-reanimated react-native-worklets react-native-gesture-handler
 ```
 
-Key points from the official docs:
-- Expo’s Reanimated integration installs both `react-native-reanimated` and `react-native-worklets` via `expo install`.
-  The Reanimated Babel plugin is configured automatically through Expo’s Babel preset when installed this way.
-  See Expo’s Reanimated page.
-  https://docs.expo.dev/versions/latest/sdk/reanimated/
-- Expo’s Gesture Handler page recommends installing via `expo install react-native-gesture-handler`.
-  https://docs.expo.dev/versions/latest/sdk/gesture-handler/
+This chooses packages for that SDK, not necessarily the newest versions. Verify
+that Gesture Handler resolves to the API generation used in the implementation.
+Do not copy RNGH 3 hooks into a v2 binary or force a mismatched dependency just to
+make imports resolve. A supported stack upgrade includes the native build.
 
-Debugging note (common gotcha):
-- Reanimated relies on APIs incompatible with “Remote JS Debugging” (JSC). Use Hermes + the Hermes JavaScript Inspector instead.
-  (Expo highlights this in its Reanimated docs.)
-  https://docs.expo.dev/versions/latest/sdk/reanimated/
+Current Expo's babel-preset-expo configures the worklets integration; inspect
+existing configuration before adding another plugin. Bare Reanimated 4 uses
+react-native-worklets/plugin, ordered as upstream requires. Do not call redundant
+or mixed plugins harmless. Rebuild the development client/native app after native
+package changes; clearing Metro cache cannot repair a binary/JS version mismatch.
 
-## 2) Reanimated 4 requirements (architecture + worklets)
+Reanimated 4 requires New Architecture. Reanimated 3 is not actively maintained
+and cannot simply be combined with react-native-worklets. This skill does not ship
+a legacy path; select an explicit compatible project strategy.
 
-Reanimated 4 is **New Architecture only** (Fabric / TurboModules). If your app is still on the legacy architecture, stay on Reanimated 3 or migrate the app to the New Architecture.
+Inspect GestureHandlerRootView around the real native root, including Android
+modal roots as required. Keep flex/layout sizing correct. Relations must share the
+appropriate gesture root. Do not add redundant roots mechanically or confuse a
+root view with the v3 hook/builder interoperability boundary.
 
-Official migration + compatibility pages:
-- Migration guide: https://docs.swmansion.com/react-native-reanimated/docs/guides/migration-from-3.x/
-- Compatibility table: https://docs.swmansion.com/react-native-reanimated/docs/guides/compatibility/
+Use Hermes-compatible inspector tooling. A package-tree read, TypeScript build,
+Jest mock, and a successful native interaction are distinct checks.
 
-Reanimated 4 also:
-- Adds a required dependency on `react-native-worklets`.
-- Renames the Babel plugin from `react-native-reanimated/plugin` to `react-native-worklets/plugin` (bare RN).
-  See the migration guide above.
-
-## 3) Gesture Handler setup essentials
-
-Wrap the app with `GestureHandlerRootView` as close to the root as possible.
-
-From the official installation guide:
-- `GestureHandlerRootView` defaults to `flex: 1`; if you provide a custom style, keep `flex: 1`.
-- Gestures outside the root view won’t be recognised, and gesture relations only work under the same root view.
-- If a dependency already renders a root view, it’s still safe to add one at the root; nested root views are ignored except for the top-most.
-- If using gestures inside a React Native `Modal` on Android, wrap the Modal’s content with `GestureHandlerRootView`.
-
-Docs:
-- https://docs.swmansion.com/react-native-gesture-handler/docs/fundamentals/installation/
-
-Expo tutorial chapter (gesture + Reanimated together):
-- https://docs.expo.dev/tutorial/gestures/
+Reviewed 2026-09-13:
+- https://docs.swmansion.com/react-native-reanimated/docs/guides/compatibility/
+- https://docs.expo.dev/versions/latest/sdk/reanimated/
+- https://docs.swmansion.com/react-native-gesture-handler/docs/guides/upgrading-to-3/

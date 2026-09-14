@@ -1,64 +1,45 @@
-# Expo setup templates (NativeWind v4)
+# Coordinated Expo setup for NativeWind v4
 
-> Use these as “known-good” templates. Always adapt `content` globs and CSS import paths to the repo.
+These examples target NativeWind **4** and Tailwind CSS **3**. Inspect the existing app and merge changes. Do not copy the NativeWind v5/Tailwind v4 preview setup into this stack.
 
-## 0) New project shortcut (Expo)
+## Dependencies
 
-If you are creating a brand new Expo project and want to skip manual setup, use:
+Use the existing package manager; npm equivalents are:
 
-```sh
-npx rn-new --nativewind
+```bash
+npm install 'nativewind@^4'
+npm install --save-dev 'tailwindcss@^3.4.17'
+npx expo install react-native-reanimated react-native-safe-area-context
 ```
 
-## 1) Install dependencies
+Retain the Expo-compatible `babel-preset-expo` already supplied by the app; install it with `npx expo install babel-preset-expo` only when absent. Follow the installed Reanimated version's Worklets requirements and Expo compatibility instead of installing arbitrary latest native packages. Commit the lockfile and run the project's dependency checks.
 
-Minimum set:
+Formatting and variant libraries are optional, not prerequisites. When using `tailwind-merge` with Tailwind v3, use its compatible v2.6.0 line, not its Tailwind-v4-focused latest major.
 
-- `nativewind`
-- `tailwindcss` (dev dependency)
-- `react-native-reanimated`
-- `react-native-safe-area-context`
-- `prettier-plugin-tailwindcss` (optional dev dependency)
+For a new app, use the current official Expo project creation flow, then apply these explicit dependency constraints. Check generated dependencies rather than trusting a template name to imply a particular NativeWind major.
 
-Notes:
-- Prefer `npx expo install` for Expo-managed native libraries if the repo uses Expo SDK pinning.
-- If the repo already pins `react-native-reanimated` / `react-native-safe-area-context`, do not “fight” the existing versions unless you have a clear incompatibility.
+## Tailwind configuration
 
-## 2) tailwind.config.js
-
-### Classic Expo (`App.tsx` entry)
+Adapt paths to the actual project. This CommonJS example covers both common Router locations and shared components:
 
 ```js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  // NOTE: Update this to include the paths to all files that contain Nativewind classes.
-  content: ["./App.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
-  presets: [require("nativewind/preset")],
-  theme: { extend: {} },
-  plugins: [],
-};
-```
-
-### Expo Router (`app/` directory)
-
-```js
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  // NOTE: Update this to include the paths to all files that contain Nativewind classes.
   content: [
-    "./App.{js,jsx,ts,tsx}",
-    "./app/**/*.{js,jsx,ts,tsx}",
-    "./components/**/*.{js,jsx,ts,tsx}",
+    './App.{js,jsx,ts,tsx}',
+    './app/**/*.{js,jsx,ts,tsx}',
+    './src/**/*.{js,jsx,ts,tsx}',
+    './components/**/*.{js,jsx,ts,tsx}',
   ],
-  presets: [require("nativewind/preset")],
+  presets: [require('nativewind/preset')],
   theme: { extend: {} },
   plugins: [],
 };
 ```
 
-## 3) global.css
+Follow the project's module format when choosing `.js`/`.cjs` or ESM configuration. Monorepo packages containing classes also need content coverage. Prefer literal complete class strings; adding broad filesystem globs is not a substitute for identifying the source directories.
 
-Create a single CSS entry file (commonly `global.css`) and add Tailwind directives:
+## CSS entry
 
 ```css
 @tailwind base;
@@ -66,71 +47,53 @@ Create a single CSS entry file (commonly `global.css`) and add Tailwind directiv
 @tailwind utilities;
 ```
 
-If you choose a different filename/location, use that same relative path in BOTH `metro.config.js` `input` and your root import.
+Save as the chosen CSS entry, commonly `global.css`. These are Tailwind **v3** directives, not the v4 CSS-first configuration.
 
-## 4) babel.config.js (Expo)
+## Babel
 
 ```js
 module.exports = function (api) {
   api.cache(true);
   return {
-    presets: [["babel-preset-expo", { jsxImportSource: "nativewind" }], "nativewind/babel"],
+    presets: [
+      ['babel-preset-expo', { jsxImportSource: 'nativewind' }],
+      'nativewind/babel',
+    ],
   };
 };
 ```
 
-If the repo already has a `babel.config.js`, merge carefully:
-- Keep `babel-preset-expo` as the base preset.
-- Keep existing plugins/presets required by other tooling.
-- Keep `nativewind/babel` in `presets` (not `plugins`).
+`nativewind/babel` belongs in **presets**, not plugins. Merge existing required compiler/animation/plugin configuration; do not duplicate plugins the matching Expo preset already configures.
 
-## 5) metro.config.js (Expo)
+## Metro
 
 ```js
-const { getDefaultConfig } = require("expo/metro-config");
-const { withNativeWind } = require("nativewind/metro");
-
+const { getDefaultConfig } = require('expo/metro-config');
+const { withNativeWind } = require('nativewind/metro');
 const config = getDefaultConfig(__dirname);
-
-module.exports = withNativeWind(config, { input: "./global.css" });
+module.exports = withNativeWind(config, { input: './global.css' });
 ```
 
-## 6) app.json (web support)
+Preserve other required wrappers and resolver changes. For web targets, verify `expo.web.bundler` is `metro` in the resolved Expo config.
 
-If the project targets web, set Metro as the web bundler:
+## Import from the real entry
 
-```json
-{
-  "expo": {
-    "web": {
-      "bundler": "metro"
-    }
-  }
-}
-```
+For root `App.tsx`: `import './global.css'`.
+For root `app/_layout.tsx`: `import '../global.css'`.
+For `src/app/_layout.tsx` with CSS at project root: `import '../../global.css'`.
 
-## 7) Import the CSS entry file
+These are examples, not detection rules. Import once at the application root and check the actual relative path.
 
-### Classic Expo (App.tsx)
-
-```tsx
-import "./global.css";
-```
-
-### Expo Router (app/_layout.tsx)
-
-```tsx
-import "../global.css";
-```
-
-Only import the CSS once at the top of the entry component.
-
-## 8) TypeScript types (optional)
-
-Create `nativewind-env.d.ts`:
+Add `nativewind-env.d.ts`:
 
 ```ts
 /// <reference types="nativewind/types" />
 ```
 
-Do **not** name it `nativewind.d.ts`, and avoid naming collisions like `app.d.ts` when an `/app` directory exists.
+Do not name the declaration `nativewind.d.ts` or another name that shadows an actual module/directory.
+
+## Verification
+
+Run the project's installed Tailwind v3 CLI against the CSS entry into a temporary output, then its TypeScript and Expo checks. Clear Metro after changing configuration. Test visible utility output on the intended native platforms and web separately. Inspect the resolved lockfile for NativeWind 4 and Tailwind 3; a successful dependency install alone is insufficient.
+
+Primary source, reviewed 2026-09-13: [NativeWind Expo installation](https://www.nativewind.dev/docs/getting-started/installation).
