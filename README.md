@@ -25,7 +25,7 @@ live mutations. Licences apply per skill; there is no blanket repository licence
 
 ## Catalogue
 
-The repository contains **36 active skill directories**. The September 2026
+The repository contains **37 active skill directories**. The September 2026
 overhaul reviewed 37 baseline directories: 33 update PRs and one retirement PR
 have merged, two skills were retained unchanged, and the `write-good-docs`
 packaging proposal (#22) remains closed unmerged. Its existing skill is retained.
@@ -51,6 +51,7 @@ verified. There is no replacement compatibility entry point.
 | [fabric-cli](fabric-cli/SKILL.md) | Operate Fabric.so through its native CLI and scoped project memory. |
 | [generating-novel-ideas](generating-novel-ideas/SKILL.md) | Explore distinct mechanisms, critique concepts, and define useful tests. |
 | [giving-presentations](giving-presentations/SKILL.md) | Develop audience-focused narratives, visuals, and rehearsal plans. |
+| [good-engineering](good-engineering/SKILL.md) | Build, change, test and audit code with enforced invariants, explicit state, deep modules and tests that catch bugs. |
 | [good-services-service-design](good-services-service-design/SKILL.md) | Review whole services with explicit evidence and scoped scoring. |
 | [ios-simulator](ios-simulator/SKILL.md) | Run and inspect simulator apps with explicit targets and checked outcomes. |
 | [jax-development](jax-development/SKILL.md) | Develop, debug, profile, and benchmark JAX code. |

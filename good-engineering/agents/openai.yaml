@@ -1,0 +1,8 @@
+interface:
+  display_name: Good Engineering
+  short_description: Enforced invariants, explicit state, deep modules, tests that catch bugs
+  default_prompt: Use $good-engineering to build, change, or audit this code.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  allow_implicit_invocation: true
